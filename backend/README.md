@@ -1,99 +1,78 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+Gestor Academico
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+La universidad necesita desarrollar un sistema para gestionar la información de sus
+departamentos, profesores, estudiantes, cursos y matrículas. El sistema debe permitir administrar los horarios de los cursos, las evaluaciones realizadas y los prerrequisitos que un estudiante debe cumplir antes de inscribirse en ciertos cursos.Cada departamento tiene un código único, un nombre y está asociado con varios profesores. Un profesor tiene un identificador único, un nombre, una fecha de contratación, y puede estar asignado a un solo departamento. Un profesor puede impartir varios cursos, pero un curso solo puede ser impartido por un profesor. Cada curso tiene un código único, un nombre, una descripción, y está asociado con un único profesor. Algunos cursos pueden requerir que el estudiante haya completado otros cursos antes de inscribirse, por lo que es necesario gestionar esta relación entre los cursos. Asimismo, cada curso puede tener un horario programado que debe almacenarse en el sistema. Los estudiantes tienen un número de identificación único, un nombre, una fecha de nacimiento, y pueden inscribirse en varios cursos. La inscripción de los estudiantes se registra en una tabla de matrículas, donde se almacena la fecha de inscripción y la calificación final obtenida en el curso. Durante el semestre, los cursos pueden tener varias evaluaciones, como exámenes o proyectos. Cada evaluación tiene un identificador único, una fecha de realización y está asociada a un curso. Los estudiantes pueden realizar varias evaluaciones en un curso, y el sistema debe permitir registrar la calificación obtenida en cada una. El sistema debe implementar políticas de integridad referencial para garantizar la consistencia de los datos.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Tablas y Relaciones de la Base de Datos
+1. Departamento
+PK (dept_id)
+name
+2. Profesor
+PK (professor_id)
+name
+FK (dept_id) → Referencia a Departamento
+hiring_date
+3. Curso
+PK (course_id)
+name
+FK (professor_id) → Referencia a Profesor
+description
+FK (schedule_id) → Referencia a Schedule
+4. Prerrequisito
+PK, FK (course_id) → Referencia a Curso
+PK, FK (prerequisite_course_id) → Referencia a otro Curso como prerrequisito
+5. Evaluación
+PK (evaluation_id)
+evaluation_date
+FK (course_id) → Referencia a Curso
+6. Evaluación_Estudiante
+PK, FK (evaluation_id) → Referencia a Evaluación
+PK, FK (student_id) → Referencia a Estudiante
+grade
+7. Inscripción
+PK, FK (student_id) → Referencia a Estudiante
+PK, FK (course_id) → Referencia a Curso
+enrollment_start_date
+enrollment_end_date
+final_grade
+8. Estudiante
+PK (student_id)
+PK (course_code) (¿Posible error? Parece otra clave primaria sin relación)
+birth_date
+9. Horario (Schedule)
+PK (schedule_id)
+start_date
+end_date
+days_week
+start_hour
+end_hour
+Relaciones Clave
+Departamento → Profesor (Uno a muchos)
+Un departamento tiene varios profesores.
+Un profesor pertenece a un solo departamento.
+Profesor → Curso (Uno a muchos)
+Un profesor imparte varios cursos.
+Un curso tiene un único profesor.
+Curso → Prerrequisito (Auto-relación)
+Un curso puede requerir otro curso como prerrequisito.
+Curso → Evaluación (Uno a muchos)
+Un curso tiene varias evaluaciones.
+Una evaluación pertenece a un solo curso.
+Evaluación → Evaluación_Estudiante (Uno a muchos)
+Una evaluación puede tener muchas notas de estudiantes.
+Cada entrada en Evaluación_Estudiante corresponde a una evaluación de un estudiante.
+Curso → Inscripción (Uno a muchos)
+Un curso puede tener muchos estudiantes inscritos.
+Un estudiante puede estar inscrito en muchos cursos.
+Estudiante → Evaluación_Estudiante (Uno a muchos)
+Un estudiante puede tener varias calificaciones de evaluaciones.
+Curso → Horario (Uno a uno)
+Cada curso tiene un horario específico.
 
-## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-## Project setup
 
-```bash
-$ npm install
-```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+8. Estudiante
+PK (student_id)
+PK (course_code) (¿Posible error? Parece otra clave primaria sin relación)
+birth_date
