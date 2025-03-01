@@ -6,6 +6,7 @@ import {
   UseGuards,
   Request,
   Headers,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterUserDto } from './dto/auth.dto';
@@ -30,6 +31,16 @@ export class AuthController {
   logout(@Headers('authorization') authHeader: string) {
     const token = authHeader.split(' ')[1];
     return this.authService.logout(token);
+  }
+
+  @Post('refresh')
+  async refresh(@Headers('authorization') authHeader: string) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Invalid token format');
+    }
+
+    const refreshToken = authHeader.split(' ')[1];
+    return this.authService.refreshToken(refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)
