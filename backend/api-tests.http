@@ -1,0 +1,123 @@
+@baseUrl = http://localhost:3000/api
+@authToken = {{login.response.body.access_token}}
+
+### Register a new user as a student
+# @name registerStudent
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "username": "studentuser",
+  "email": "student@example.com",
+  "password": "password123",
+  "role": "student",
+  "studentInfo": {
+    "name": "Student Name",
+    "birthDate": "2000-01-01"
+  }
+}
+
+### Register a new user as a professor
+# @name registerProfessor
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "username": "professoruser",
+  "email": "professor@example.com",
+  "password": "password123",
+  "role": "professor",
+  "professorInfo": {
+    "name": "Professor Name",
+    "department": "Computer Science"
+  }
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "studentuser",
+  "password": "password123"
+}
+
+### Get all users (with role-specific info)
+GET {{baseUrl}}/users
+Authorization: Bearer {{authToken}}
+
+### Get user by ID (with role-specific info)
+GET {{baseUrl}}/users/userId
+Authorization: Bearer {{authToken}}
+
+### Update user
+PATCH {{baseUrl}}/users/userId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "email": "updated@example.com"
+}
+
+### Delete user
+DELETE {{baseUrl}}/users/userId
+Authorization: Bearer {{authToken}}
+
+### Student Endpoints ###
+
+### Get all students
+GET {{baseUrl}}/students
+Authorization: Bearer {{authToken}}
+
+### Get student by ID
+GET {{baseUrl}}/students/studentId
+Authorization: Bearer {{authToken}}
+
+### Get student by user ID
+GET {{baseUrl}}/students/user/userId
+Authorization: Bearer {{authToken}}
+
+### Update student
+PATCH {{baseUrl}}/students/studentId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Student Name"
+}
+
+### Delete student
+DELETE {{baseUrl}}/students/studentId
+Authorization: Bearer {{authToken}}
+
+### Professor Endpoints ###
+
+### Get all professors
+GET {{baseUrl}}/professors
+Authorization: Bearer {{authToken}}
+
+### Get professor by ID
+GET {{baseUrl}}/professors/professorId
+Authorization: Bearer {{authToken}}
+
+### Get professor by user ID
+GET {{baseUrl}}/professors/user/userId
+Authorization: Bearer {{authToken}}
+
+### Update professor
+PATCH {{baseUrl}}/professors/professorId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "department": "Mathematics"
+}
+
+### Delete professor
+DELETE {{baseUrl}}/professors/professorId
+Authorization: Bearer {{authToken}}
+
+### Refresh Token
+POST {{baseUrl}}/auth/refresh
+Authorization: Bearer {{authToken}} 
