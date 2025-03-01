@@ -128,152 +128,48 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginDto) {
-    const { username, password } = loginDto;
+  async validateUser(username: string, password: string): Promise<any> {
+    try {
+      const user = await this.userService.findByUsername(username);
 
-    const user = await this.userService.findByUsername(username);
+      if (user && (await bcrypt.compare(password, user.password))) {
+        // Create a new object without the password
+        const { password, ...result } = JSON.parse(JSON.stringify(user));
+        return result;
+      }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new BadRequestException('Invalid credentials');
+      return null;
+    } catch (error) {
+      return null;
     }
+  }
 
-    // Generate tokens
-    const { accessToken, refreshToken, expiresIn, refreshExpiresIn } =
-      await this.generateTokens(user);
+  async login(user: any) {
+    const payload = {
+      username: user.username,
+      sub: user._id,
+      role: user.role || 'user',
+    };
 
     return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      expires_in: expiresIn,
-      refresh_expires_in: refreshExpiresIn,
+      access_token: this.jwtService.sign(payload),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
       user: {
-        _id: user._id,
+        id: user._id,
         username: user.username,
-        email: user.email,
         role: user.role,
       },
     };
   }
 
-  async refreshToken(refreshToken: string) {
+  async refresh(token: string) {
     try {
-      // Find the token in the database
-      const tokenDoc = await this.authTokenModel
-        .findOne({ refreshToken })
-        .exec();
+      const decoded = this.jwtService.verify(token);
+      const user = await this.userService.findOne(decoded.sub);
 
-      if (!tokenDoc) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      // Check if refresh token is expired
-      if (new Date() > tokenDoc.refreshExpiresAt) {
-        await this.authTokenModel.deleteOne({ refreshToken });
-        throw new UnauthorizedException('Refresh token expired');
-      }
-
-      // Get the user
-      const user = await this.userService.findOne(tokenDoc.userId.toString());
-
-      // Generate new tokens
-      const {
-        accessToken,
-        refreshToken: newRefreshToken,
-        expiresIn,
-        refreshExpiresIn,
-      } = await this.generateTokens(user);
-
-      // Delete the old token
-      await this.authTokenModel.deleteOne({ refreshToken });
-
-      return {
-        access_token: accessToken,
-        refresh_token: newRefreshToken,
-        expires_in: expiresIn,
-        refresh_expires_in: refreshExpiresIn,
-        user: {
-          _id: user._id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-        },
-      };
+      return this.login(user);
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
       throw new UnauthorizedException('Invalid refresh token');
-    }
-  }
-
-  private async generateTokens(user: User) {
-    // Create payload for JWT
-    const payload = { sub: user._id, username: user.username, role: user.role };
-
-    // Get token expiration times from config or use defaults
-    const accessTokenExpiration =
-      this.configService.get<string>('JWT_EXPIRATION') || '1h';
-    const refreshTokenExpiration =
-      this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d';
-
-    // Calculate expiration dates
-    const expiresAt = this.calculateExpirationDate(accessTokenExpiration);
-    const refreshExpiresAt = this.calculateExpirationDate(
-      refreshTokenExpiration,
-    );
-
-    // Generate tokens
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: accessTokenExpiration,
-    });
-    const refreshToken = this.jwtService.sign(
-      { ...payload, type: 'refresh' },
-      { expiresIn: refreshTokenExpiration },
-    );
-
-    // Store tokens in database
-    await this.authTokenModel.create({
-      token: accessToken,
-      refreshToken,
-      userId: user._id,
-      expiresAt,
-      refreshExpiresAt,
-    });
-
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn: this.getExpirationSeconds(accessTokenExpiration),
-      refreshExpiresIn: this.getExpirationSeconds(refreshTokenExpiration),
-    };
-  }
-
-  private calculateExpirationDate(expiration: string): Date {
-    const seconds = this.getExpirationSeconds(expiration);
-    const expiresAt = new Date();
-    expiresAt.setSeconds(expiresAt.getSeconds() + seconds);
-    return expiresAt;
-  }
-
-  private getExpirationSeconds(expiration: string): number {
-    const match = expiration.match(/^(\d+)([smhd])$/);
-    if (!match) return 3600; // Default to 1 hour
-
-    const value = parseInt(match[1]);
-    const unit = match[2];
-
-    switch (unit) {
-      case 's':
-        return value;
-      case 'm':
-        return value * 60;
-      case 'h':
-        return value * 60 * 60;
-      case 'd':
-        return value * 24 * 60 * 60;
-      default:
-        return 3600;
     }
   }
 

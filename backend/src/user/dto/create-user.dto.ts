@@ -9,6 +9,7 @@ import {
   ValidateIf,
   IsDate,
   IsMongoId,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -51,8 +52,9 @@ export class CreateUserDto {
   password: string;
 
   @IsOptional()
-  @IsString()
-  @IsIn(['student', 'professor'])
+  @IsEnum(['admin', 'student', 'professor', 'user'], {
+    message: 'Role must be one of: admin, student, professor, user',
+  })
   role?: string;
 
   @ValidateIf((o) => o.role === 'student')

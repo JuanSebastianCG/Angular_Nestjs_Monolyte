@@ -7,6 +7,7 @@ import {
   Request,
   Headers,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterUserDto } from './dto/auth.dto';
@@ -22,31 +23,46 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto) {
+    // First validate credentials
+    const user = await this.authService.validateUser(
+      loginDto.username,
+      loginDto.password,
+    );
+
+    if (!user) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    // Then login and get tokens
+    return this.authService.login(user);
+  }
+
+  @Post('refresh')
+  async refresh(@Request() req) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new BadRequestException('Refresh token is required');
+    }
+
+    const refreshToken = authHeader.split(' ')[1];
+
+    // Changed from refreshToken to refresh to match the new method name
+    return this.authService.refresh(refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  logout(@Headers('authorization') authHeader: string) {
-    const token = authHeader.split(' ')[1];
+  async logout(@Request() req) {
+    const token = req.headers.authorization.split(' ')[1];
     return this.authService.logout(token);
-  }
-
-  @Post('refresh')
-  async refresh(@Headers('authorization') authHeader: string) {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Invalid token format');
-    }
-
-    const refreshToken = authHeader.split(' ')[1];
-    return this.authService.refreshToken(refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@Request() req) {
-    return this.authService.getProfile(req.user.sub);
+    return this.authService.getProfile(req.user.userId);
   }
 
   @Post('validate-token')

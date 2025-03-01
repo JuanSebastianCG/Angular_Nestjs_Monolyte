@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -11,10 +11,12 @@ import { ProfessorsModule } from '../professors/professors.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthToken, AuthTokenSchema } from './schemas/auth-token.schema';
 import { DepartmentsModule } from '../departments/departments.module';
+import { RolesGuard } from './guards/roles.guard';
+import { OwnerGuard } from './guards/owner.guard';
 
 @Module({
   imports: [
-    UserModule,
+    forwardRef(() => UserModule),
     StudentsModule,
     ProfessorsModule,
     PassportModule,
@@ -24,15 +26,17 @@ import { DepartmentsModule } from '../departments/departments.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'your-secret-key',
-        signOptions: { expiresIn: '1h' },
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '1h'),
+        },
       }),
     }),
     DepartmentsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, RolesGuard, OwnerGuard],
+  exports: [AuthService, JwtModule, RolesGuard, OwnerGuard],
 })
 export class AuthModule {}

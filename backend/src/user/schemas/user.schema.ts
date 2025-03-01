@@ -3,7 +3,15 @@ import { Document, Schema as MongooseSchema } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: {
+    transform: (_, ret) => {
+      delete ret.password;
+      return ret;
+    },
+  },
+})
 export class User {
   _id?: MongooseSchema.Types.ObjectId;
 
@@ -20,9 +28,9 @@ export class User {
   email: string;
 
   @Prop({ required: true })
-  password: string;
+  password?: string;
 
-  @Prop({ default: 'user' })
+  @Prop({ enum: ['admin', 'student', 'professor', 'user'], default: 'user' })
   role: string;
 }
 

@@ -16,6 +16,7 @@ import { ProfessorsService } from '../professors/professors.service';
 import { EnhancedUser } from './interfaces/enhanced-user.interface';
 import { DepartmentsService } from '../departments/departments.service';
 import mongoose from 'mongoose';
+import { UserResponse } from './interfaces/user-response.interface';
 
 interface StudentWithId {
   _id: mongoose.Types.ObjectId | string;
@@ -124,7 +125,14 @@ export class UserService {
         }
       }
 
-      return savedUser;
+      // Before returning savedUser, remove the password
+      if (savedUser) {
+        const result = savedUser.toObject();
+        delete result.password;
+        return result as User;
+      }
+
+      throw new Error('Failed to create user');
     } catch (error) {
       // If any error happens after user creation but before function returns
       if (savedUser && savedUser._id) {
@@ -336,5 +344,44 @@ export class UserService {
     }
 
     return user;
+  }
+
+  /**
+   * Creates an administrator user with full system access
+   * This is a special method intended for creating system administrators
+   */
+  async createAdmin(createUserDto: CreateUserDto): Promise<User> {
+    // Check if username or email already exists
+    const existingUser = await this.userModel.findOne({
+      $or: [
+        { username: createUserDto.username },
+        { email: createUserDto.email },
+      ],
+    });
+
+    if (existingUser) {
+      throw new ConflictException(
+        `User with username ${createUserDto.username} or email ${createUserDto.email} already exists`,
+      );
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    // Force admin role regardless of what was passed
+    const adminUserData = {
+      ...createUserDto,
+      password: hashedPassword,
+      role: 'admin',
+    };
+
+    // Create and save the new admin user
+    const newUser = new this.userModel(adminUserData);
+    const savedUser = await newUser.save();
+
+    // Return user without password
+    const result = savedUser.toObject();
+    delete result.password;
+    return result as User;
   }
 }
