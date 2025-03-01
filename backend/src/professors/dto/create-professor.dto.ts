@@ -12,16 +12,12 @@ export class CreateProfessorDto {
   @IsMongoId()
   userId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @Type(() => Date)
   @IsDate()
-  hiringDate: Date;
+  hiringDate?: Date;
 
   @IsNotEmpty()
-  @IsString()
-  department: string;
-
-  @IsOptional()
   @IsMongoId()
-  departmentId?: string;
+  departmentId: string;
 }

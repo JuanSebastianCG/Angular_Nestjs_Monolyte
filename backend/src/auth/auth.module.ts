@@ -10,6 +10,7 @@ import { StudentsModule } from '../students/students.module';
 import { ProfessorsModule } from '../professors/professors.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthToken, AuthTokenSchema } from './schemas/auth-token.schema';
+import { DepartmentsModule } from '../departments/departments.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AuthToken, AuthTokenSchema } from './schemas/auth-token.schema';
         signOptions: { expiresIn: '1h' },
       }),
     }),
+    DepartmentsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

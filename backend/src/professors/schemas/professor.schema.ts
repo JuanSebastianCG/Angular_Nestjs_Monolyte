@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { User } from '../../user/schemas/user.schema';
+import { Department } from '../../departments/schemas/department.schema';
 
 export type ProfessorDocument = Professor & Document;
 
@@ -9,10 +10,11 @@ export class Professor {
   @Prop({ required: true, type: Date })
   hiringDate: Date;
 
-  @Prop({ required: true })
-  department: string;
-
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Department' })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Department',
+    required: true,
+  })
   departmentId: MongooseSchema.Types.ObjectId;
 
   @Prop({

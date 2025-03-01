@@ -4,12 +4,14 @@ import {
   ConflictException,
   Inject,
   forwardRef,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Professor, ProfessorDocument } from './schemas/professor.schema';
 import { CreateProfessorDto } from './dto/create-professor.dto';
 import { UserService } from '../user/user.service';
+import { DepartmentsService } from '../departments/departments.service';
 
 @Injectable()
 export class ProfessorsService {
@@ -18,6 +20,7 @@ export class ProfessorsService {
     private professorModel: Model<ProfessorDocument>,
     @Inject(forwardRef(() => UserService))
     private userService: UserService,
+    private departmentsService: DepartmentsService,
   ) {}
 
   async create(createProfessorDto: CreateProfessorDto): Promise<Professor> {
@@ -39,19 +42,38 @@ export class ProfessorsService {
       });
     }
 
-    // Create new professor
+    // Validate departmentId is provided
+    if (!createProfessorDto.departmentId) {
+      throw new BadRequestException('Department ID is required for professors');
+    }
+
+    // Verify department exists
+    try {
+      await this.departmentsService.findOne(createProfessorDto.departmentId);
+    } catch (error) {
+      throw new BadRequestException(
+        `Department with ID ${createProfessorDto.departmentId} not found. Please use an existing department ID.`,
+      );
+    }
+
+    // Create professor
     const newProfessor = new this.professorModel(createProfessorDto);
     return newProfessor.save();
   }
 
   async findAll(): Promise<Professor[]> {
-    return this.professorModel.find().populate('userId', '-password').exec();
+    return this.professorModel
+      .find()
+      .populate('userId', '-password')
+      .populate('departmentId')
+      .exec();
   }
 
   async findOne(id: string): Promise<Professor> {
     const professor = await this.professorModel
       .findById(id)
       .populate('userId', '-password')
+      .populate('departmentId')
       .exec();
 
     if (!professor) {

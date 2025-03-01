@@ -5,12 +5,14 @@ import { UserService } from './user.service';
 import { User, UserSchema } from './schemas/user.schema';
 import { StudentsModule } from '../students/students.module';
 import { ProfessorsModule } from '../professors/professors.module';
+import { DepartmentsModule } from '../departments/departments.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     forwardRef(() => StudentsModule),
     forwardRef(() => ProfessorsModule),
+    DepartmentsModule,
   ],
   controllers: [UserController],
   providers: [UserService],

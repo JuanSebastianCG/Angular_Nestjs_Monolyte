@@ -10,8 +10,8 @@ Content-Type: application/json
 {
   "name": "Student Name",
   "birthDate": "2000-01-01",
-  "username": "studentuse2r",
-  "email": "student2@example.com",
+  "username": "studentuser",
+  "email": "student@example.com",
   "password": "password123",
   "role": "student",
   "studentInfo": {}
@@ -25,12 +25,13 @@ Content-Type: application/json
 {
   "name": "Professor Name",
   "birthDate": "1980-01-01",
-  "username": "professoruser",
-  "email": "professor@example.com",
+  "username": "professoruse3",
+  "email": "professor3@example.com",
   "password": "password123",
   "role": "professor",
   "professorInfo": {
-    "department": "Computer Science"
+    "departmentId": "{{departmentId}}",
+    "hiringDate": "2023-01-15"
   }
 }
 
@@ -117,7 +118,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "department": "Mathematics"
+  "departmentId": "{{departmentId}}"
 }
 
 ### Delete professor
@@ -126,4 +127,272 @@ Authorization: Bearer {{authToken}}
 
 ### Logout
 POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{authToken}}
+
+### Departments Endpoints ###
+
+### Create department first
+# @name createDepartment
+POST {{baseUrl}}/departments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Computer Science",
+  "description": "Department of Computer Science and Engineering"
+}
+
+### Save department ID
+@departmentId = {{createDepartment.response.body.id}}
+
+### Then create professor with department reference
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Professor Name",
+  "birthDate": "1980-01-01",
+  "username": "professoruser5",
+  "email": "professor5@example.com",
+  "password": "password123",
+  "role": "professor",
+  "professorInfo": {
+    "departmentId": "{{departmentId}}",
+    "hiringDate": "2023-01-15"
+  }
+}
+
+### Get all departments
+GET {{baseUrl}}/departments
+
+### Get department by ID
+GET {{baseUrl}}/departments/departmentId
+
+### Update department
+PATCH {{baseUrl}}/departments/departmentId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated description for Computer Science department"
+}
+
+### Delete department
+DELETE {{baseUrl}}/departments/departmentId
+Authorization: Bearer {{authToken}}
+
+### Schedules Endpoints ###
+
+### Create schedule
+POST {{baseUrl}}/schedules
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "startDate": "2023-08-01",
+  "endDate": "2023-12-15",
+  "daysWeek": "MWF",
+  "startHour": "09:00",
+  "endHour": "10:30"
+}
+
+### Get all schedules
+GET {{baseUrl}}/schedules
+
+### Get schedule by ID
+GET {{baseUrl}}/schedules/scheduleId
+
+### Update schedule
+PATCH {{baseUrl}}/schedules/scheduleId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "startHour": "09:30",
+  "endHour": "11:00"
+}
+
+### Delete schedule
+DELETE {{baseUrl}}/schedules/scheduleId
+Authorization: Bearer {{authToken}}
+
+### Courses Endpoints ###
+
+### Create course
+POST {{baseUrl}}/courses
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Introduction to Computer Science",
+  "description": "Fundamentals of computer science and programming",
+  "professorId": "professorId",
+  "scheduleId": "scheduleId"
+}
+
+### Get all courses
+GET {{baseUrl}}/courses
+
+### Get course by ID
+GET {{baseUrl}}/courses/courseId
+
+### Update course
+PATCH {{baseUrl}}/courses/courseId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated course description"
+}
+
+### Delete course
+DELETE {{baseUrl}}/courses/courseId
+Authorization: Bearer {{authToken}}
+
+### Prerequisites Endpoints ###
+
+### Create prerequisite
+POST {{baseUrl}}/prerequisites
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "courseId": "courseId",
+  "prerequisiteCourseId": "prerequisiteCourseId"
+}
+
+### Get all prerequisites
+GET {{baseUrl}}/prerequisites
+
+### Get prerequisites for course
+GET {{baseUrl}}/prerequisites/course/courseId
+
+### Delete prerequisite
+DELETE {{baseUrl}}/prerequisites/courseId/prerequisiteCourseId
+Authorization: Bearer {{authToken}}
+
+### Enrollments Endpoints ###
+
+### Create enrollment
+POST {{baseUrl}}/enrollments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "studentId": "studentId",
+  "courseId": "courseId",
+  "enrollmentStartDate": "2023-08-15"
+}
+
+### Get all enrollments
+GET {{baseUrl}}/enrollments
+Authorization: Bearer {{authToken}}
+
+### Get enrollments by student
+GET {{baseUrl}}/enrollments/student/studentId
+Authorization: Bearer {{authToken}}
+
+### Get enrollments by course
+GET {{baseUrl}}/enrollments/course/courseId
+Authorization: Bearer {{authToken}}
+
+### Get specific enrollment
+GET {{baseUrl}}/enrollments/studentId/courseId
+Authorization: Bearer {{authToken}}
+
+### Update enrollment
+PATCH {{baseUrl}}/enrollments/studentId/courseId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "finalGrade": 85
+}
+
+### Delete enrollment
+DELETE {{baseUrl}}/enrollments/studentId/courseId
+Authorization: Bearer {{authToken}}
+
+### Evaluations Endpoints ###
+
+### Create evaluation
+POST {{baseUrl}}/evaluations
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Midterm Exam",
+  "description": "Comprehensive midterm exam",
+  "evaluationDate": "2023-10-15",
+  "maxScore": 100,
+  "courseId": "courseId"
+}
+
+### Get all evaluations
+GET {{baseUrl}}/evaluations
+Authorization: Bearer {{authToken}}
+
+### Get evaluations by course
+GET {{baseUrl}}/evaluations/course/courseId
+Authorization: Bearer {{authToken}}
+
+### Get evaluation by ID
+GET {{baseUrl}}/evaluations/evaluationId
+Authorization: Bearer {{authToken}}
+
+### Update evaluation
+PATCH {{baseUrl}}/evaluations/evaluationId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated exam description"
+}
+
+### Delete evaluation
+DELETE {{baseUrl}}/evaluations/evaluationId
+Authorization: Bearer {{authToken}}
+
+### Student Grades Endpoints ###
+
+### Create student grade
+POST {{baseUrl}}/student-grades
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "evaluationId": "evaluationId",
+  "studentId": "studentId",
+  "grade": 85,
+  "comments": "Good work"
+}
+
+### Get all student grades
+GET {{baseUrl}}/student-grades
+Authorization: Bearer {{authToken}}
+
+### Get grades by student
+GET {{baseUrl}}/student-grades/student/studentId
+Authorization: Bearer {{authToken}}
+
+### Get grades by evaluation
+GET {{baseUrl}}/student-grades/evaluation/evaluationId
+Authorization: Bearer {{authToken}}
+
+### Get specific grade
+GET {{baseUrl}}/student-grades/evaluationId/studentId
+Authorization: Bearer {{authToken}}
+
+### Update student grade
+PATCH {{baseUrl}}/student-grades/evaluationId/studentId
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "grade": 90,
+  "comments": "Excellent performance"
+}
+
+### Delete student grade
+DELETE {{baseUrl}}/student-grades/evaluationId/studentId
 Authorization: Bearer {{authToken}} 

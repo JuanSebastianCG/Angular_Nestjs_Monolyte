@@ -8,6 +8,7 @@ import {
   IsIn,
   ValidateIf,
   IsDate,
+  IsMongoId,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -15,13 +16,15 @@ class StudentInfoDto {
   // No properties needed now that birthDate is moved to User
 }
 
-class ProfessorInfoDto {
-  @IsNotEmpty()
-  @IsString()
-  department: string;
+export class ProfessorInfoDto {
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  hiringDate?: Date;
 
   @IsNotEmpty()
-  hiringDate: Date;
+  @IsMongoId()
+  departmentId: string;
 }
 
 export class CreateUserDto {

@@ -16,6 +16,7 @@ import { StudentsService } from '../students/students.service';
 import { ProfessorsService } from '../professors/professors.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ConfigService } from '@nestjs/config';
+import { DepartmentsService } from '../departments/departments.service';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +28,7 @@ export class AuthService {
     private studentsService: StudentsService,
     private professorsService: ProfessorsService,
     private configService: ConfigService,
+    private departmentsService: DepartmentsService,
   ) {}
 
   async register(registerUserDto: RegisterUserDto) {
@@ -54,40 +56,76 @@ export class AuthService {
       );
     }
 
-    // Create the user
-    const user = await this.userService.create({
-      username,
-      email,
-      password,
-      name,
-      birthDate,
-      role,
-    });
-
-    // Create the role-specific record
-    if (role === 'student') {
-      await this.studentsService.create({
-        userId: user._id?.toString() || '',
-      });
-    } else if (role === 'professor' && professorInfo) {
-      await this.professorsService.create({
-        userId: user._id?.toString() || '',
-        hiringDate: new Date(),
-        department: professorInfo.department,
-      });
+    // For professors, verify department exists before user creation
+    if (role === 'professor' && professorInfo) {
+      try {
+        // Verify department exists (will throw if not found)
+        await this.departmentsService.findOne(professorInfo.departmentId);
+      } catch (error) {
+        throw new BadRequestException(
+          `Department with ID ${professorInfo.departmentId} not found. Please use an existing department ID.`,
+        );
+      }
     }
 
-    return {
-      message: 'User registered successfully',
-      user: {
-        _id: user._id,
-        name: user.name,
-        birthDate: user.birthDate,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
-    };
+    let user;
+    try {
+      // Create the user
+      user = await this.userService.create({
+        username,
+        email,
+        password,
+        name,
+        birthDate,
+        role,
+      });
+
+      // Create the role-specific record
+      if (role === 'student') {
+        await this.studentsService.create({
+          userId: user._id?.toString() || '',
+        });
+      } else if (role === 'professor' && professorInfo) {
+        try {
+          await this.professorsService.create({
+            userId: user._id?.toString() || '',
+            hiringDate: professorInfo.hiringDate || new Date(),
+            departmentId: professorInfo.departmentId,
+          });
+        } catch (error) {
+          // If professor creation fails, delete the user and rethrow
+          await this.userService.remove(user._id?.toString());
+          throw error;
+        }
+      }
+
+      return {
+        message: 'User registered successfully',
+        user: {
+          _id: user._id,
+          name: user.name,
+          birthDate: user.birthDate,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
+      };
+    } catch (error) {
+      // If any error occurs after user creation but before completing registration
+      if (user && user._id) {
+        try {
+          await this.userService.remove(user._id.toString());
+        } catch (cleanupError) {
+          console.error(
+            'Failed to clean up user after registration error:',
+            cleanupError,
+          );
+        }
+      }
+
+      // Rethrow the original error
+      throw error;
+    }
   }
 
   async login(loginDto: LoginDto) {

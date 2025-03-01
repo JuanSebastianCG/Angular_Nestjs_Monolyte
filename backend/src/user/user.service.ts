@@ -4,6 +4,7 @@ import {
   NotFoundException,
   Inject,
   forwardRef,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -13,6 +14,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { StudentsService } from '../students/students.service';
 import { ProfessorsService } from '../professors/professors.service';
 import { EnhancedUser } from './interfaces/enhanced-user.interface';
+import { DepartmentsService } from '../departments/departments.service';
 
 @Injectable()
 export class UserService {
@@ -22,6 +24,7 @@ export class UserService {
     private studentsService: StudentsService,
     @Inject(forwardRef(() => ProfessorsService))
     private professorsService: ProfessorsService,
+    private departmentsService: DepartmentsService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -52,6 +55,18 @@ export class UserService {
       );
     }
 
+    // For professors, verify department exists before user creation
+    if (role === 'professor' && professorInfo) {
+      try {
+        // Verify department exists (will throw if not found)
+        await this.departmentsService.findOne(professorInfo.departmentId);
+      } catch (error) {
+        throw new BadRequestException(
+          `Department with ID ${professorInfo.departmentId} not found. Please use an existing department ID.`,
+        );
+      }
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -65,26 +80,54 @@ export class UserService {
       role: role || 'user',
     });
 
-    const savedUser = await newUser.save();
+    let savedUser;
+    try {
+      savedUser = await newUser.save();
 
-    // Create role-specific record if needed
-    if (role === 'student' && this.studentsService) {
-      await this.studentsService.create({
-        userId: savedUser._id.toString(),
-      });
-    } else if (
-      role === 'professor' &&
-      professorInfo &&
-      this.professorsService
-    ) {
-      await this.professorsService.create({
-        userId: savedUser._id.toString(),
-        hiringDate: new Date(),
-        department: professorInfo.department,
-      });
+      // Create role-specific record if needed
+      if (role === 'student' && this.studentsService) {
+        try {
+          await this.studentsService.create({
+            userId: savedUser._id.toString(),
+          });
+        } catch (error) {
+          // Clean up user if student creation fails
+          await this.userModel.findByIdAndDelete(savedUser._id);
+          throw error;
+        }
+      } else if (
+        role === 'professor' &&
+        professorInfo &&
+        this.professorsService
+      ) {
+        try {
+          await this.professorsService.create({
+            userId: savedUser._id.toString(),
+            hiringDate: professorInfo.hiringDate || new Date(),
+            departmentId: professorInfo.departmentId,
+          });
+        } catch (error) {
+          // Clean up user if professor creation fails
+          await this.userModel.findByIdAndDelete(savedUser._id);
+          throw error;
+        }
+      }
+
+      return savedUser;
+    } catch (error) {
+      // If any error happens after user creation but before function returns
+      if (savedUser && savedUser._id) {
+        try {
+          await this.userModel.findByIdAndDelete(savedUser._id);
+        } catch (cleanupError) {
+          console.error(
+            'Error cleaning up user after role creation failure:',
+            cleanupError,
+          );
+        }
+      }
+      throw error;
     }
-
-    return savedUser;
   }
 
   async findAll(): Promise<EnhancedUser[]> {

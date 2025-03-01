@@ -5,6 +5,13 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { StudentsModule } from './students/students.module';
 import { ProfessorsModule } from './professors/professors.module';
+import { DepartmentsModule } from './departments/departments.module';
+import { SchedulesModule } from './schedules/schedules.module';
+import { CoursesModule } from './courses/courses.module';
+import { PrerequisitesModule } from './prerequisites/prerequisites.module';
+import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { EvaluationsModule } from './evaluations/evaluations.module';
+import { StudentGradesModule } from './student-grades/student-grades.module';
 
 @Module({
   imports: [
@@ -24,6 +31,13 @@ import { ProfessorsModule } from './professors/professors.module';
     AuthModule,
     StudentsModule,
     ProfessorsModule,
+    DepartmentsModule,
+    SchedulesModule,
+    CoursesModule,
+    PrerequisitesModule,
+    EnrollmentsModule,
+    EvaluationsModule,
+    StudentGradesModule,
   ],
 })
 export class AppModule {}
