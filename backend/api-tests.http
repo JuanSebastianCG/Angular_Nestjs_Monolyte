@@ -1,5 +1,6 @@
 @baseUrl = http://localhost:3000/api
 @authToken = {{login.response.body.access_token}}
+@refreshToken = {{login.response.body.refresh_token}}
 
 ### Register a new user as a student
 # @name registerStudent
@@ -43,6 +44,11 @@ Content-Type: application/json
   "password": "password123"
 }
 
+### Refresh Token
+# @name refreshToken
+POST {{baseUrl}}/auth/refresh
+Authorization: Bearer {{refreshToken}}
+
 ### Get all users (with role-specific info)
 GET {{baseUrl}}/users
 Authorization: Bearer {{authToken}}
@@ -57,8 +63,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "email": "updated@example.com",
-  "birthDate": "2001-01-01"
+  "name": "Updated Name"
 }
 
 ### Delete user
@@ -119,6 +124,6 @@ Content-Type: application/json
 DELETE {{baseUrl}}/professors/professorId
 Authorization: Bearer {{authToken}}
 
-### Refresh Token
-POST {{baseUrl}}/auth/refresh
+### Logout
+POST {{baseUrl}}/auth/logout
 Authorization: Bearer {{authToken}} 
