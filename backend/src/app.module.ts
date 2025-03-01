@@ -1,23 +1,29 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { ConfigModule } from './config/config.module';
-import { DatabaseModule } from './database/database.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
-import { ProfessorsModule } from './professors/professors.module';
-import { StudentsModule } from './students/students.module';
 import { AuthModule } from './auth/auth.module';
+import { StudentsModule } from './students/students.module';
+import { ProfessorsModule } from './professors/professors.module';
 
 @Module({
   imports: [
-    ConfigModule,
-    DatabaseModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        uri:
+          configService.get<string>('MONGODB_URI') ||
+          'mongodb://localhost:27017/university',
+      }),
+    }),
     UserModule,
-    ProfessorsModule,
-    StudentsModule,
     AuthModule,
+    StudentsModule,
+    ProfessorsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

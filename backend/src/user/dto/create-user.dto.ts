@@ -7,28 +7,33 @@ import {
   IsObject,
   IsIn,
   ValidateIf,
+  IsDate,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 class StudentInfoDto {
-  @IsNotEmpty()
-  @IsString()
-  name: string;
-
-  @IsNotEmpty()
-  birthDate: Date;
+  // No properties needed now that birthDate is moved to User
 }
 
 class ProfessorInfoDto {
   @IsNotEmpty()
   @IsString()
-  name: string;
+  department: string;
 
   @IsNotEmpty()
-  @IsString()
-  department: string;
+  hiringDate: Date;
 }
 
 export class CreateUserDto {
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  birthDate?: Date;
+
   @IsNotEmpty()
   @IsString()
   username: string;

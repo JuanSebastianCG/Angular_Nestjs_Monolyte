@@ -28,8 +28,16 @@ export class AuthService {
   ) {}
 
   async register(registerUserDto: RegisterUserDto) {
-    const { username, email, password, role, studentInfo, professorInfo } =
-      registerUserDto;
+    const {
+      username,
+      email,
+      password,
+      role,
+      name,
+      birthDate,
+      studentInfo,
+      professorInfo,
+    } = registerUserDto;
 
     // Validate role-specific info
     if (role === 'student' && !studentInfo) {
@@ -49,20 +57,19 @@ export class AuthService {
       username,
       email,
       password,
+      name,
+      birthDate,
       role,
     });
 
     // Create the role-specific record
-    if (role === 'student' && studentInfo) {
+    if (role === 'student') {
       await this.studentsService.create({
         userId: user._id?.toString() || '',
-        name: studentInfo.name,
-        birthDate: new Date(studentInfo.birthDate),
       });
     } else if (role === 'professor' && professorInfo) {
       await this.professorsService.create({
         userId: user._id?.toString() || '',
-        name: professorInfo.name,
         hiringDate: new Date(),
         department: professorInfo.department,
       });
@@ -72,6 +79,8 @@ export class AuthService {
       message: 'User registered successfully',
       user: {
         _id: user._id,
+        name: user.name,
+        birthDate: user.birthDate,
         username: user.username,
         email: user.email,
         role: user.role,
@@ -133,27 +142,14 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.userService.findOne(userId);
 
-    let roleInfo: any = null;
-    if (user.role === 'student') {
-      try {
-        roleInfo = await this.studentsService.findByUserId(userId);
-      } catch (error) {
-        // Student info not found, but that's ok
-      }
-    } else if (user.role === 'professor') {
-      try {
-        roleInfo = await this.professorsService.findByUserId(userId);
-      } catch (error) {
-        // Professor info not found, but that's ok
-      }
-    }
-
     return {
       _id: user._id,
+      name: user.name,
+      birthDate: user.birthDate,
       username: user.username,
       email: user.email,
       role: user.role,
-      roleInfo,
+      roleInfo: user.role === 'student' ? user.studentInfo : user.professorInfo,
     };
   }
 }

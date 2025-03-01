@@ -6,9 +6,6 @@ export type ProfessorDocument = Professor & Document;
 
 @Schema({ timestamps: true })
 export class Professor {
-  @Prop({ required: true })
-  name: string;
-
   @Prop({ required: true, type: Date })
   hiringDate: Date;
 
@@ -25,6 +22,9 @@ export class Professor {
     unique: true,
   })
   userId: MongooseSchema.Types.ObjectId;
+
+  // Add a method to convert to plain object
+  toObject?(): Record<string, any>;
 }
 
 export const ProfessorSchema = SchemaFactory.createForClass(Professor);

@@ -13,10 +13,6 @@ export class CreateProfessorDto {
   userId: string;
 
   @IsNotEmpty()
-  @IsString()
-  name: string;
-
-  @IsNotEmpty()
   @Type(() => Date)
   @IsDate()
   hiringDate: Date;

@@ -2,6 +2,8 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -10,19 +12,29 @@ import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { StudentsService } from '../students/students.service';
 import { ProfessorsService } from '../professors/professors.service';
-import { EnhancedUserData } from './interfaces/enhanced-user.interface';
+import { EnhancedUser } from './interfaces/enhanced-user.interface';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private studentsService?: StudentsService,
-    private professorsService?: ProfessorsService,
+    @Inject(forwardRef(() => StudentsService))
+    private studentsService: StudentsService,
+    @Inject(forwardRef(() => ProfessorsService))
+    private professorsService: ProfessorsService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username, email, password, role, studentInfo, professorInfo } =
-      createUserDto;
+    const {
+      username,
+      email,
+      password,
+      role,
+      name,
+      birthDate,
+      studentInfo,
+      professorInfo,
+    } = createUserDto;
 
     // Check if user already exists
     const existingUser = await this.userModel.findOne({
@@ -47,6 +59,8 @@ export class UserService {
     const newUser = new this.userModel({
       username,
       email,
+      name,
+      birthDate,
       password: hashedPassword,
       role: role || 'user',
     });
@@ -54,11 +68,9 @@ export class UserService {
     const savedUser = await newUser.save();
 
     // Create role-specific record if needed
-    if (role === 'student' && studentInfo && this.studentsService) {
+    if (role === 'student' && this.studentsService) {
       await this.studentsService.create({
         userId: savedUser._id.toString(),
-        name: studentInfo.name,
-        birthDate: new Date(studentInfo.birthDate),
       });
     } else if (
       role === 'professor' &&
@@ -67,7 +79,6 @@ export class UserService {
     ) {
       await this.professorsService.create({
         userId: savedUser._id.toString(),
-        name: professorInfo.name,
         hiringDate: new Date(),
         department: professorInfo.department,
       });
@@ -76,27 +87,54 @@ export class UserService {
     return savedUser;
   }
 
-  async findAll(): Promise<EnhancedUserData[]> {
+  async findAll(): Promise<EnhancedUser[]> {
     const users = await this.userModel.find().exec();
 
     // If we have role-specific services, enhance the user data
     if (this.studentsService || this.professorsService) {
       const enhancedUsers = await Promise.all(
         users.map(async (user) => {
-          const userData = user.toObject() as EnhancedUserData;
+          const userData = user.toObject() as EnhancedUser;
 
           if (user.role === 'student' && this.studentsService) {
             try {
-              userData.studentInfo = await this.studentsService.findByUserId(
+              const studentInfo = await this.studentsService.findByUserId(
                 user._id.toString(),
               );
+              // Remove the nested userId object to prevent duplication
+              if (studentInfo && studentInfo.userId) {
+                // Handle the case when toObject might not be available
+                const studentObj =
+                  typeof studentInfo.toObject === 'function'
+                    ? studentInfo.toObject()
+                    : this.convertToPlainObject(studentInfo);
+
+                const { userId, ...studentInfoWithoutUserId } = studentObj;
+                userData.studentInfo = studentInfoWithoutUserId;
+              } else {
+                userData.studentInfo = studentInfo;
+              }
             } catch (error) {
               // No student info found
             }
           } else if (user.role === 'professor' && this.professorsService) {
             try {
-              userData.professorInfo =
-                await this.professorsService.findByUserId(user._id.toString());
+              const professorInfo = await this.professorsService.findByUserId(
+                user._id.toString(),
+              );
+              // Remove the nested userId object to prevent duplication
+              if (professorInfo && professorInfo.userId) {
+                // Handle the case when toObject might not be available
+                const professorObj =
+                  typeof professorInfo.toObject === 'function'
+                    ? professorInfo.toObject()
+                    : this.convertToPlainObject(professorInfo);
+
+                const { userId, ...professorInfoWithoutUserId } = professorObj;
+                userData.professorInfo = professorInfoWithoutUserId;
+              } else {
+                userData.professorInfo = professorInfo;
+              }
             } catch (error) {
               // No professor info found
             }
@@ -109,33 +147,64 @@ export class UserService {
       return enhancedUsers;
     }
 
-    return users.map((user) => user.toObject() as EnhancedUserData);
+    return users;
   }
 
-  async findOne(id: string): Promise<EnhancedUserData> {
+  async findOne(id: string): Promise<EnhancedUser> {
     const user = await this.userModel.findById(id).exec();
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    const userData = user.toObject() as EnhancedUserData;
+    const userData = user.toObject() as EnhancedUser;
 
     // If we have role-specific services, enhance the user data
     if (user.role === 'student' && this.studentsService) {
       try {
-        userData.studentInfo = await this.studentsService.findByUserId(id);
+        const studentInfo = await this.studentsService.findByUserId(id);
+        // Remove the nested userId object to prevent duplication
+        if (studentInfo && studentInfo.userId) {
+          // Handle the case when toObject might not be available
+          const studentObj =
+            typeof studentInfo.toObject === 'function'
+              ? studentInfo.toObject()
+              : this.convertToPlainObject(studentInfo);
+
+          const { userId, ...studentInfoWithoutUserId } = studentObj;
+          userData.studentInfo = studentInfoWithoutUserId;
+        } else {
+          userData.studentInfo = studentInfo;
+        }
       } catch (error) {
         // No student info found
       }
     } else if (user.role === 'professor' && this.professorsService) {
       try {
-        userData.professorInfo = await this.professorsService.findByUserId(id);
+        const professorInfo = await this.professorsService.findByUserId(id);
+        // Remove the nested userId object to prevent duplication
+        if (professorInfo && professorInfo.userId) {
+          // Handle the case when toObject might not be available
+          const professorObj =
+            typeof professorInfo.toObject === 'function'
+              ? professorInfo.toObject()
+              : this.convertToPlainObject(professorInfo);
+
+          const { userId, ...professorInfoWithoutUserId } = professorObj;
+          userData.professorInfo = professorInfoWithoutUserId;
+        } else {
+          userData.professorInfo = professorInfo;
+        }
       } catch (error) {
         // No professor info found
       }
     }
 
     return userData;
+  }
+
+  // Helper method to convert any object to a plain JavaScript object
+  private convertToPlainObject(obj: any): Record<string, any> {
+    return JSON.parse(JSON.stringify(obj));
   }
 
   async findByUsername(username: string): Promise<User> {

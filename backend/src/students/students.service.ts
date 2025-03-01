@@ -15,7 +15,8 @@ import { UserService } from '../user/user.service';
 export class StudentsService {
   constructor(
     @InjectModel(Student.name) private studentModel: Model<StudentDocument>,
-    @Inject(forwardRef(() => UserService)) private userService: UserService,
+    @Inject(forwardRef(() => UserService))
+    private userService: UserService,
   ) {}
 
   async create(createStudentDto: CreateStudentDto): Promise<Student> {
@@ -43,13 +44,13 @@ export class StudentsService {
   }
 
   async findAll(): Promise<Student[]> {
-    return this.studentModel.find().populate('userId').exec();
+    return this.studentModel.find().populate('userId', '-password').exec();
   }
 
   async findOne(id: string): Promise<Student> {
     const student = await this.studentModel
       .findById(id)
-      .populate('userId')
+      .populate('userId', '-password')
       .exec();
 
     if (!student) {
@@ -59,11 +60,9 @@ export class StudentsService {
     return student;
   }
 
-  async findByUserId(userId: string): Promise<Student> {
-    const student = await this.studentModel
-      .findOne({ userId })
-      .populate('userId')
-      .exec();
+  async findByUserId(userId: string): Promise<StudentDocument> {
+    // When called from UserService, don't populate to avoid circular references
+    const student = await this.studentModel.findOne({ userId }).exec();
 
     if (!student) {
       throw new NotFoundException(`Student with User ID ${userId} not found`);
