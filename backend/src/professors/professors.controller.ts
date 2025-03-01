@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
@@ -11,6 +10,10 @@ import {
 import { ProfessorsService } from './professors.service';
 import { CreateProfessorDto } from './dto/create-professor.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  MongoIdParam,
+  UserIdParam,
+} from '../common/validation/mongo-id-validation';
 
 @Controller('professors')
 export class ProfessorsController {
@@ -30,28 +33,19 @@ export class ProfessorsController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.professorsService.findOne(id);
+  findOne(@Param() params: MongoIdParam) {
+    return this.professorsService.findOne(params.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
-  findByUserId(@Param('userId') userId: string) {
-    return this.professorsService.findByUserId(userId);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateProfessorDto: Partial<CreateProfessorDto>,
-  ) {
-    return this.professorsService.update(id, updateProfessorDto);
+  findByUserId(@Param() params: UserIdParam) {
+    return this.professorsService.findByUserId(params.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.professorsService.remove(id);
+  remove(@Param() params: MongoIdParam) {
+    return this.professorsService.remove(params.id);
   }
 }

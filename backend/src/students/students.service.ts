@@ -4,15 +4,21 @@ import {
   ConflictException,
   Inject,
   forwardRef,
+  BadRequestException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Student, StudentDocument } from './schemas/student.schema';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UserService } from '../user/user.service';
+import * as mongoose from 'mongoose';
 
 @Injectable()
 export class StudentsService {
+  private readonly logger = new Logger(StudentsService.name);
+
   constructor(
     @InjectModel(Student.name) private studentModel: Model<StudentDocument>,
     @Inject(forwardRef(() => UserService))
@@ -119,5 +125,48 @@ export class StudentsService {
     }
 
     return student;
+  }
+
+  async updateByUserId(
+    userId: string,
+    updateStudentDto: Partial<CreateStudentDto>,
+  ): Promise<Student> {
+    try {
+      // Find the student by user ID
+      const student = await this.studentModel.findOne({ userId }).exec();
+
+      if (!student) {
+        throw new NotFoundException(`Student with User ID ${userId} not found`);
+      }
+
+      // Update the student
+      const updatedStudent = await this.studentModel
+        .findByIdAndUpdate(student._id, updateStudentDto, { new: true })
+        .populate('userId')
+        .exec();
+
+      if (!updatedStudent) {
+        throw new NotFoundException(
+          `Student with ID ${student._id} not found after update`,
+        );
+      }
+
+      return updatedStudent;
+    } catch (error) {
+      // Handle errors
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      if (error instanceof mongoose.Error.CastError) {
+        throw new BadRequestException(`Invalid user ID format: '${userId}'`);
+      }
+
+      this.logger.error(
+        `Error updating student by user ID: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Error updating student');
+    }
   }
 }

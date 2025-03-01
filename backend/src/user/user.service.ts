@@ -15,6 +15,17 @@ import { StudentsService } from '../students/students.service';
 import { ProfessorsService } from '../professors/professors.service';
 import { EnhancedUser } from './interfaces/enhanced-user.interface';
 import { DepartmentsService } from '../departments/departments.service';
+import mongoose from 'mongoose';
+
+interface StudentWithId {
+  _id: mongoose.Types.ObjectId | string;
+  // other properties...
+}
+
+interface ProfessorWithId {
+  _id: mongoose.Types.ObjectId | string;
+  // other properties...
+}
 
 @Injectable()
 export class UserService {
@@ -266,26 +277,55 @@ export class UserService {
     id: string,
     updateUserDto: Partial<CreateUserDto>,
   ): Promise<User> {
-    const user = await this.userModel.findById(id).exec();
+    // First, find the user
+    const user = await this.findOne(id);
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
+    // Extract role-specific data
+    const { studentInfo, professorInfo, ...basicUserInfo } = updateUserDto;
 
-    // If updating password, hash it
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
+    // Handle basic user data update
+    const basicUpdates = { ...basicUserInfo };
 
+    // Update the user's basic information
     const updatedUser = await this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
+      .findByIdAndUpdate(id, basicUpdates, { new: true })
       .exec();
 
     if (!updatedUser) {
       throw new NotFoundException(`User with ID ${id} not found after update`);
     }
 
-    return updatedUser;
+    // Handle role-specific updates if provided
+    if (user.role === 'student' && studentInfo && this.studentsService) {
+      try {
+        const student = await this.studentsService.findByUserId(id);
+        // Use the updateByUserId method directly instead of update
+        if (student) {
+          await this.studentsService.updateByUserId(id, studentInfo);
+        }
+      } catch (error) {
+        // Log but don't fail the whole operation
+        console.error(`Failed to update student info: ${error.message}`);
+      }
+    } else if (
+      user.role === 'professor' &&
+      professorInfo &&
+      this.professorsService
+    ) {
+      try {
+        const professor = await this.professorsService.findByUserId(id);
+        // Use the updateByUserId method directly instead of update
+        if (professor) {
+          await this.professorsService.updateByUserId(id, professorInfo);
+        }
+      } catch (error) {
+        // Log but don't fail the whole operation
+        console.error(`Failed to update professor info: ${error.message}`);
+      }
+    }
+
+    // Return the updated user with full role info
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<User> {

@@ -11,6 +11,7 @@ import {
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { MongoIdParam } from '../common/validation/mongo-id-validation';
 
 @Controller('courses')
 export class CoursesController {
@@ -28,22 +29,22 @@ export class CoursesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.coursesService.findOne(id);
+  findOne(@Param() params: MongoIdParam) {
+    return this.coursesService.findOne(params.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param() params: MongoIdParam,
     @Body() updateCourseDto: Partial<CreateCourseDto>,
   ) {
-    return this.coursesService.update(id, updateCourseDto);
+    return this.coursesService.update(params.id, updateCourseDto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.coursesService.remove(id);
+  remove(@Param() params: MongoIdParam) {
+    return this.coursesService.remove(params.id);
   }
 }

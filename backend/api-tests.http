@@ -58,13 +58,29 @@ Authorization: Bearer {{authToken}}
 GET {{baseUrl}}/users/userId
 Authorization: Bearer {{authToken}}
 
-### Update user
-PATCH {{baseUrl}}/users/userId
+### Update user (with role-specific info)
+PATCH {{baseUrl}}/users/{{userId}}
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "name": "Updated Name"
+  "name": "Updated Name",
+  "studentInfo": {
+    "enrollmentDate": "2023-09-01"
+  }
+}
+
+### Update user who is a professor
+PATCH {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Professor Name",
+  "professorInfo": {
+    "departmentId": "{{departmentId}}",
+    "hiringDate": "2023-06-15"
+  }
 }
 
 ### Delete user
@@ -86,12 +102,12 @@ GET {{baseUrl}}/students/user/userId
 Authorization: Bearer {{authToken}}
 
 ### Update student
-PATCH {{baseUrl}}/students/studentId
+PATCH {{baseUrl}}/students/userId
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "userId": "newUserId"
+  "name": "newName"
 }
 
 ### Delete student
@@ -118,7 +134,8 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "departmentId": "{{departmentId}}"
+  "departmentId": "{{departmentId}}",
+  "hiringDate": "2023-05-15"
 }
 
 ### Delete professor
@@ -395,4 +412,23 @@ Content-Type: application/json
 
 ### Delete student grade
 DELETE {{baseUrl}}/student-grades/evaluationId/studentId
-Authorization: Bearer {{authToken}} 
+Authorization: Bearer {{authToken}}
+
+### Update a professor by user ID
+PATCH {{baseUrl}}/professors/user/{{userId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "departmentId": "{{departmentId}}",
+  "hiringDate": "2023-05-15"
+}
+
+### Update a student by user ID
+PATCH {{baseUrl}}/students/user/{{userId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "enrollmentDate": "2023-09-01"
+} 

@@ -11,6 +11,7 @@ import {
 import { DepartmentsService } from './departments.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { MongoIdParam } from '../common/validation/mongo-id-validation';
 
 @Controller('departments')
 export class DepartmentsController {
@@ -28,22 +29,22 @@ export class DepartmentsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.departmentsService.findOne(id);
+  findOne(@Param() params: MongoIdParam) {
+    return this.departmentsService.findOne(params.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param() params: MongoIdParam,
     @Body() updateDepartmentDto: Partial<CreateDepartmentDto>,
   ) {
-    return this.departmentsService.update(id, updateDepartmentDto);
+    return this.departmentsService.update(params.id, updateDepartmentDto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.departmentsService.remove(id);
+  remove(@Param() params: MongoIdParam) {
+    return this.departmentsService.remove(params.id);
   }
 }

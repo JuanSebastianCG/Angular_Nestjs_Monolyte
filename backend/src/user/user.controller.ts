@@ -11,6 +11,7 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { MongoIdParam } from '../common/validation/mongo-id-validation';
 
 @Controller('users')
 export class UserController {
@@ -36,10 +37,10 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param() params: MongoIdParam,
     @Body() updateUserDto: Partial<CreateUserDto>,
   ) {
-    return this.userService.update(id, updateUserDto);
+    return this.userService.update(params.id, updateUserDto);
   }
 
   @UseGuards(JwtAuthGuard)

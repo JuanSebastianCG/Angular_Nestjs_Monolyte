@@ -11,6 +11,10 @@ import {
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  MongoIdParam,
+  UserIdParam,
+} from '../common/validation/mongo-id-validation';
 
 @Controller('students')
 export class StudentsController {
@@ -30,28 +34,19 @@ export class StudentsController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.studentsService.findOne(id);
+  findOne(@Param() params: MongoIdParam) {
+    return this.studentsService.findOne(params.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
-  findByUserId(@Param('userId') userId: string) {
-    return this.studentsService.findByUserId(userId);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateStudentDto: Partial<CreateStudentDto>,
-  ) {
-    return this.studentsService.update(id, updateStudentDto);
+  findByUserId(@Param() params: UserIdParam) {
+    return this.studentsService.findByUserId(params.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.studentsService.remove(id);
+  remove(@Param() params: MongoIdParam) {
+    return this.studentsService.remove(params.id);
   }
 }

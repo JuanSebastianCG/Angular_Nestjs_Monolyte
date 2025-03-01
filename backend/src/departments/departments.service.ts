@@ -2,14 +2,20 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as mongoose from 'mongoose';
 import { Department, DepartmentDocument } from './schemas/department.schema';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 
 @Injectable()
 export class DepartmentsService {
+  private readonly logger = new Logger(DepartmentsService.name);
+
   constructor(
     @InjectModel(Department.name)
     private departmentModel: Model<DepartmentDocument>,
@@ -37,13 +43,39 @@ export class DepartmentsService {
   }
 
   async findOne(id: string): Promise<Department> {
-    const department = await this.departmentModel.findById(id).exec();
+    try {
+      // Check if the ID is a valid ObjectId format
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new BadRequestException(`Invalid department ID format: '${id}'`);
+      }
 
-    if (!department) {
-      throw new NotFoundException(`Department with ID ${id} not found`);
+      const department = await this.departmentModel.findById(id).exec();
+
+      if (!department) {
+        throw new NotFoundException(`Department with ID ${id} not found`);
+      }
+
+      return department;
+    } catch (error) {
+      // Rethrow NestJS exceptions
+      if (error instanceof mongoose.Error.CastError) {
+        throw new BadRequestException(`Invalid department ID format: '${id}'`);
+      }
+
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      // Log and rethrow other errors
+      this.logger.error(
+        `Error finding department: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Error retrieving department');
     }
-
-    return department;
   }
 
   async findByName(name: string): Promise<Department> {

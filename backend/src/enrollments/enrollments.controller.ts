@@ -11,6 +11,11 @@ import {
 import { EnrollmentsService } from './enrollments.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  StudentIdParam,
+  CourseIdParam,
+  CourseStudentParams,
+} from '../common/validation/mongo-id-validation';
 
 @Controller('enrollments')
 export class EnrollmentsController {
@@ -30,45 +35,38 @@ export class EnrollmentsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('student/:studentId')
-  findAllByStudent(@Param('studentId') studentId: string) {
-    return this.enrollmentsService.findAllByStudent(studentId);
+  findAllByStudent(@Param() params: StudentIdParam) {
+    return this.enrollmentsService.findAllByStudent(params.studentId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('course/:courseId')
-  findAllByCourse(@Param('courseId') courseId: string) {
-    return this.enrollmentsService.findAllByCourse(courseId);
+  findAllByCourse(@Param() params: CourseIdParam) {
+    return this.enrollmentsService.findAllByCourse(params.courseId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':studentId/:courseId')
-  findOne(
-    @Param('studentId') studentId: string,
-    @Param('courseId') courseId: string,
-  ) {
-    return this.enrollmentsService.findOne(studentId, courseId);
+  findOne(@Param() params: CourseStudentParams) {
+    return this.enrollmentsService.findOne(params.studentId, params.courseId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':studentId/:courseId')
   update(
-    @Param('studentId') studentId: string,
-    @Param('courseId') courseId: string,
+    @Param() params: CourseStudentParams,
     @Body() updateEnrollmentDto: Partial<CreateEnrollmentDto>,
   ) {
     return this.enrollmentsService.update(
-      studentId,
-      courseId,
+      params.studentId,
+      params.courseId,
       updateEnrollmentDto,
     );
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':studentId/:courseId')
-  remove(
-    @Param('studentId') studentId: string,
-    @Param('courseId') courseId: string,
-  ) {
-    return this.enrollmentsService.remove(studentId, courseId);
+  remove(@Param() params: CourseStudentParams) {
+    return this.enrollmentsService.remove(params.studentId, params.courseId);
   }
 }
