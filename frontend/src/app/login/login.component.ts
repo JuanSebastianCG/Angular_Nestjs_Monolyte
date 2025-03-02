@@ -58,13 +58,22 @@ export class LoginComponent implements OnInit {
     this.isSubmitting = true;
     this.errorMessage = '';
 
-    this.authService.login(this.loginForm.value).subscribe({
+    // Get credentials from form
+    const credentials = {
+      username: this.loginForm.get('username')?.value,
+      password: this.loginForm.get('password')?.value,
+    };
+
+    console.log('Login credentials:', credentials);
+
+    this.authService.login(credentials).subscribe({
       next: () => {
         this.notificationService.success('Login successful!');
         this.router.navigate(['/dashboard']);
       },
       error: (error) => {
         this.isSubmitting = false;
+        console.error('Login error:', error);
         this.errorMessage =
           error.error?.message ||
           'Login failed. Please check your credentials.';

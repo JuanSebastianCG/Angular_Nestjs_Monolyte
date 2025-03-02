@@ -26,7 +26,7 @@ interface SelectOption {
 }
 
 interface StudentInfo {
-  enrollmentDate: string;
+  // Student-specific fields can be added here if needed
 }
 
 interface ProfessorInfo {
@@ -35,10 +35,12 @@ interface ProfessorInfo {
 }
 
 interface UserData {
-  username: string;
-  password: string;
-  role: string;
+  name: string; // Full name
+  username: string; // Login username
+  email: string; // Email address
   birthDate: string;
+  password: string;
+  role: string; // "student" or "professor" (lowercase)
   studentInfo?: StudentInfo;
   professorInfo?: ProfessorInfo;
 }
@@ -128,7 +130,9 @@ export class RegisterComponent implements OnInit {
   initForm(): void {
     this.registerForm = this.fb.group(
       {
-        username: ['', [Validators.required, Validators.minLength(3)]],
+        name: ['', [Validators.required, Validators.minLength(3)]], // Full name
+        username: ['', [Validators.required, Validators.minLength(3)]], // Login username
+        email: ['', [Validators.required, Validators.email]], // Email address
         password: ['', [Validators.required, Validators.minLength(8)]],
         confirmPassword: ['', Validators.required],
         role: ['Estudiante', Validators.required],
@@ -179,19 +183,26 @@ export class RegisterComponent implements OnInit {
 
     // Create a clean copy of the form values
     const formValues = this.registerForm.value;
+
+    // Map role value to lowercase as expected by the API
+    const roleMapping: { [key: string]: string } = {
+      Estudiante: 'student',
+      Profesor: 'professor',
+    };
+
     const userData: UserData = {
+      name: formValues.name,
       username: formValues.username,
+      email: formValues.email,
       password: formValues.password,
-      role: formValues.role,
+      role: roleMapping[formValues.role], // Convert to lowercase as expected by API
       birthDate: formValues.birthDate,
     };
 
     // Add appropriate info based on the role
-    if (userData.role === 'Estudiante') {
-      userData.studentInfo = {
-        enrollmentDate: new Date().toISOString().split('T')[0], // Today's date
-      };
-    } else if (userData.role === 'Profesor') {
+    if (userData.role === 'student') {
+      userData.studentInfo = {};
+    } else if (userData.role === 'professor') {
       userData.professorInfo = {
         departmentId: formValues.departmentId,
         hiringDate: new Date().toISOString().split('T')[0], // Today's date

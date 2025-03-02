@@ -32,6 +32,16 @@
         (ngSubmit)="onSubmit()"
         class="space-y-6"
       >
+        <!-- Full Name -->
+        <div class="mb-4">
+          <app-form-field
+            [control]="getControl('name')"
+            label="Nombre Completo"
+            placeholder="Ingrese su nombre completo"
+            inputId="name"
+          ></app-form-field>
+        </div>
+
         <!-- Username -->
         <div class="mb-4">
           <app-form-field
@@ -39,6 +49,16 @@
             label="Usuario"
             placeholder="usuario"
             inputId="username"
+          ></app-form-field>
+        </div>
+
+        <!-- Email -->
+        <div class="mb-4">
+          <app-form-field
+            [control]="getControl('email')"
+            label="Correo Electrónico"
+            placeholder="ejemplo@correo.com"
+            inputId="email"
           ></app-form-field>
         </div>
 
