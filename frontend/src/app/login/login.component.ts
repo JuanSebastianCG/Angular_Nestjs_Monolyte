@@ -67,9 +67,29 @@ export class LoginComponent implements OnInit {
     console.log('Login credentials:', credentials);
 
     this.authService.login(credentials).subscribe({
-      next: () => {
+      next: (response) => {
         this.notificationService.success('Login successful!');
-        this.router.navigate(['/dashboard']);
+
+        // Redirect based on user role
+        const userRole = response?.user?.role?.toLowerCase();
+        if (userRole) {
+          switch (userRole) {
+            case 'student':
+              this.router.navigate(['/student']);
+              break;
+            case 'professor':
+              this.router.navigate(['/professor']);
+              break;
+            case 'admin':
+              this.router.navigate(['/admin']);
+              break;
+            default:
+              this.router.navigate(['/login']);
+          }
+        } else {
+          // If no role found, default to login
+          this.router.navigate(['/login']);
+        }
       },
       error: (error) => {
         this.isSubmitting = false;

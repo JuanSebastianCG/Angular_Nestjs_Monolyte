@@ -1,87 +1,100 @@
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
-import { ApiService } from './api.service';
+import { environment } from '../../environments/environment';
+
+export interface User {
+  id: string;
+  name: string;
+  username: string;
+  role: string;
+  token?: string;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private tokenKey = 'auth_token';
-  private userKey = 'user_data';
-  private currentUserSubject = new BehaviorSubject<any>(null);
+  private currentUserSubject: BehaviorSubject<User | null>;
+  public currentUser: Observable<User | null>;
+  private apiUrl = environment.apiUrl;
 
   constructor(
-    private apiService: ApiService,
+    private http: HttpClient,
     private router: Router,
   ) {
-    this.loadStoredUser();
+    // Initialize current user from localStorage
+    const storedUser = localStorage.getItem('currentUser');
+    this.currentUserSubject = new BehaviorSubject<User | null>(
+      storedUser ? JSON.parse(storedUser) : null,
+    );
+    this.currentUser = this.currentUserSubject.asObservable();
   }
 
-  // Load user from localStorage on service initialization
-  private loadStoredUser() {
-    const token = localStorage.getItem(this.tokenKey);
-    const userData = localStorage.getItem(this.userKey);
-
-    if (token && userData) {
-      this.currentUserSubject.next(JSON.parse(userData));
-    }
-  }
-
-  // Get current user as observable
-  get currentUser$(): Observable<any> {
-    return this.currentUserSubject.asObservable();
-  }
-
-  // Get current user value
-  get currentUserValue(): any {
+  public get currentUserValue(): User | null {
     return this.currentUserSubject.value;
   }
 
-  // Login user
+  public isLoggedIn(): boolean {
+    return !!this.currentUserValue;
+  }
+
   login(credentials: { username: string; password: string }): Observable<any> {
-    return this.apiService.post<any>('auth/login', credentials).pipe(
-      tap((response) => {
-        if (response && response.access_token) {
-          localStorage.setItem(this.tokenKey, response.access_token);
-          localStorage.setItem(this.userKey, JSON.stringify(response.user));
-          this.currentUserSubject.next(response.user);
-        }
+    return this.http.post<any>(`${this.apiUrl}/auth/login`, credentials).pipe(
+      map((response) => {
+        console.log('Login response:', response);
+        // Store user details and jwt token in local storage to keep user logged in
+        const user: User = {
+          id: response.user.id,
+          name: response.user.name,
+          username: response.user.username,
+          role: response.user.role,
+          token: response.access_token,
+        };
+
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+
+        // Navigate to the appropriate home page based on role
+        this.navigateByRole(user.role);
+
+        return user;
       }),
       catchError((error) => {
+        console.error('Login error:', error);
         return throwError(() => error);
       }),
     );
   }
 
-  // Register user
-  register(user: any): Observable<any> {
-    return this.apiService.post<any>('users', user).pipe(
+  register(userData: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/users`, userData).pipe(
       catchError((error) => {
+        console.error('Registration error:', error);
         return throwError(() => error);
       }),
     );
   }
 
-  // Logout user
   logout(): void {
-    // You could also call the logout endpoint if the API has one
-    // this.apiService.post('auth/logout', {}).subscribe();
-
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.userKey);
+    // Remove user from local storage and reset the subject
+    localStorage.removeItem('currentUser');
     this.currentUserSubject.next(null);
     this.router.navigate(['/login']);
   }
 
-  // Check if user is logged in
-  isLoggedIn(): boolean {
-    return !!localStorage.getItem(this.tokenKey);
+  // Helper method to navigate based on user role
+  private navigateByRole(role: string): void {
+    const normalizedRole = role.toLowerCase();
+
+    // All users go to cursos page, which will adapt to their role
+    this.router.navigate(['/cursos']);
   }
 
-  // Get auth token
-  getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+  getToken(): string {
+    const currentUser = this.currentUserValue;
+    return currentUser && currentUser.token ? currentUser.token : '';
   }
 }

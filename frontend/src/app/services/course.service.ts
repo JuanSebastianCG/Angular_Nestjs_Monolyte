@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { ApiService } from './api.service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
-interface Schedule {
+export interface Schedule {
   days: string[];
   startTime: string;
   endTime: string;
@@ -11,72 +14,119 @@ interface Schedule {
   endDate: string;
 }
 
-interface Course {
+export interface Course {
   _id: string;
   name: string;
   description: string;
   professorId: string;
-  schedule: Schedule;
+  professor?: string;
+  department?: string;
+  departmentId?: string;
+  schedule?: Schedule;
+  enrolledStudents?: any[];
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class CourseService {
-  private endpoint = 'courses';
+  private apiUrl = `${environment.apiUrl}/api/courses`;
 
-  constructor(private apiService: ApiService) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+  ) {}
 
   // Get all courses
-  getAllCourses(includePrerequisites: boolean = false): Observable<Course[]> {
-    return this.apiService.get<Course[]>(this.endpoint, {
-      includePrerequisites,
-    });
+  getAllCourses(): Observable<Course[]> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<Course[]>(this.apiUrl, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Get courses by department ID
+  getCoursesByDepartment(departmentId: string): Observable<Course[]> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<Course[]>(`${this.apiUrl}/department/${departmentId}`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Get courses by professor ID
+  getCoursesByProfessor(professorId: string): Observable<Course[]> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<Course[]>(`${this.apiUrl}/professor/${professorId}`, { headers })
+      .pipe(catchError(this.handleError));
   }
 
   // Get course by ID
   getCourseById(id: string): Observable<Course> {
-    return this.apiService.get<Course>(`${this.endpoint}/${id}`);
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<Course>(`${this.apiUrl}/${id}`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Get multiple courses by IDs
+  getCoursesById(ids: string[]): Observable<Course[]> {
+    if (!ids || ids.length === 0) {
+      return of([]);
+    }
+
+    const headers = this.getAuthHeaders();
+    // Join the ids with commas for a query parameter
+    const idsParam = ids.join(',');
+    return this.http
+      .get<Course[]>(`${this.apiUrl}/byIds?ids=${idsParam}`, { headers })
+      .pipe(catchError(this.handleError));
   }
 
   // Create a new course
-  createCourse(course: Omit<Course, '_id'>): Observable<Course> {
-    return this.apiService.post<Course>(this.endpoint, course);
+  createCourse(course: Partial<Course>): Observable<Course> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .post<Course>(this.apiUrl, course, { headers })
+      .pipe(catchError(this.handleError));
   }
 
-  // Update course
+  // Update a course
   updateCourse(id: string, course: Partial<Course>): Observable<Course> {
-    return this.apiService.patch<Course>(`${this.endpoint}/${id}`, course);
+    const headers = this.getAuthHeaders();
+    return this.http
+      .put<Course>(`${this.apiUrl}/${id}`, course, { headers })
+      .pipe(catchError(this.handleError));
   }
 
-  // Delete course
+  // Delete a course
   deleteCourse(id: string): Observable<any> {
-    return this.apiService.delete<any>(`${this.endpoint}/${id}`);
+    const headers = this.getAuthHeaders();
+    return this.http
+      .delete<any>(`${this.apiUrl}/${id}`, { headers })
+      .pipe(catchError(this.handleError));
   }
 
-  // Create a prerequisite relationship
-  createPrerequisite(
-    courseId: string,
-    prerequisiteCourseId: string,
-  ): Observable<any> {
-    return this.apiService.post<any>('prerequisites', {
-      courseId,
-      prerequisiteCourseId,
+  // Get enrolled students for a course
+  getEnrolledStudents(courseId: string): Observable<any[]> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<any[]>(`${this.apiUrl}/${courseId}/students`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Get auth headers
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
     });
   }
 
-  // Get prerequisites for a course
-  getPrerequisites(courseId: string): Observable<Course[]> {
-    return this.apiService.get<Course[]>(`prerequisites/course/${courseId}`);
-  }
-
-  // Delete a prerequisite relationship
-  deletePrerequisite(
-    courseId: string,
-    prerequisiteCourseId: string,
-  ): Observable<any> {
-    return this.apiService.delete<any>(
-      `prerequisites/${courseId}/${prerequisiteCourseId}`,
-    );
+  // Error handler
+  private handleError(error: any) {
+    console.error('An error occurred in CourseService', error);
+    return throwError(() => error);
   }
 }

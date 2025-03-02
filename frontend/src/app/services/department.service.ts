@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { ApiService } from './api.service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
-interface Department {
+export interface Department {
   _id: string;
   name: string;
   description: string;
@@ -12,47 +15,78 @@ interface Department {
   providedIn: 'root',
 })
 export class DepartmentService {
-  private endpoint = 'departments';
+  private apiUrl = `${environment.apiUrl}/api/departments`;
 
-  constructor(private apiService: ApiService) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+  ) {}
 
   // Get all departments
   getAllDepartments(): Observable<Department[]> {
-    return this.apiService.get<Department[]>(this.endpoint);
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<Department[]>(this.apiUrl, { headers })
+      .pipe(catchError(this.handleError));
   }
 
   // Get department by ID
   getDepartmentById(id: string): Observable<Department> {
-    return this.apiService.get<Department>(`${this.endpoint}/${id}`);
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<Department>(`${this.apiUrl}/${id}`, { headers })
+      .pipe(catchError(this.handleError));
   }
 
   // Create a new department
   createDepartment(
     department: Omit<Department, '_id'>,
   ): Observable<Department> {
-    return this.apiService.post<Department>(this.endpoint, department);
+    const headers = this.getAuthHeaders();
+    return this.http
+      .post<Department>(this.apiUrl, department, { headers })
+      .pipe(catchError(this.handleError));
   }
 
-  // Update department
+  // Update a department
   updateDepartment(
     id: string,
     department: Partial<Department>,
   ): Observable<Department> {
-    return this.apiService.patch<Department>(
-      `${this.endpoint}/${id}`,
-      department,
-    );
+    const headers = this.getAuthHeaders();
+    return this.http
+      .put<Department>(`${this.apiUrl}/${id}`, department, { headers })
+      .pipe(catchError(this.handleError));
   }
 
-  // Delete department
+  // Delete a department
   deleteDepartment(id: string): Observable<any> {
-    return this.apiService.delete<any>(`${this.endpoint}/${id}`);
+    const headers = this.getAuthHeaders();
+    return this.http
+      .delete<any>(`${this.apiUrl}/${id}`, { headers })
+      .pipe(catchError(this.handleError));
   }
 
   // Search departments by name
   searchDepartments(name: string): Observable<Department[]> {
-    return this.apiService.get<Department[]>(`${this.endpoint}/search`, {
-      name,
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<Department[]>(`${this.apiUrl}/search`, { headers, params: { name } })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Get auth headers
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
     });
+  }
+
+  // Error handler
+  private handleError(error: any) {
+    console.error('An error occurred in DepartmentService', error);
+    return throwError(() => error);
   }
 }

@@ -25,9 +25,9 @@
       </div>
 
       <!-- Login Form -->
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-12">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
         <!-- Username -->
-        <div class="mb-8">
+        <div class="mb-5">
           <app-form-field
             [control]="getControl('username')"
             label="Usuario"
