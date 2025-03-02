@@ -7,6 +7,7 @@ import { StudentsModule } from '../students/students.module';
 import { CoursesModule } from '../courses/courses.module';
 import { UserModule } from '../user/user.module';
 import { PrerequisitesModule } from '../prerequisites/prerequisites.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PrerequisitesModule } from '../prerequisites/prerequisites.module';
     CoursesModule,
     UserModule,
     PrerequisitesModule,
+    AuthModule,
   ],
   controllers: [EnrollmentsController],
   providers: [EnrollmentsService],

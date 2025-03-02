@@ -6,8 +6,10 @@ import {
   IsNumber,
   Min,
   Max,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { wEnrollmentStatus } from '../schemas/enrollment.schema';
 
 export class CreateEnrollmentDto {
   @IsNotEmpty()
@@ -27,6 +29,10 @@ export class CreateEnrollmentDto {
   @Type(() => Date)
   @IsDate()
   enrollmentEndDate?: Date;
+
+  @IsOptional()
+  @IsEnum(wEnrollmentStatus)
+  status?: string;
 
   @IsOptional()
   @IsNumber()

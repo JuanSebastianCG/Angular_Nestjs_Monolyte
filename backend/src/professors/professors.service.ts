@@ -62,8 +62,14 @@ export class ProfessorsService {
       );
     }
 
+    // Set hiring date to current date if not provided
+    const professorData = {
+      ...createProfessorDto,
+      hiringDate: createProfessorDto.hiringDate || new Date(),
+    };
+
     // Create professor
-    const newProfessor = new this.professorModel(createProfessorDto);
+    const newProfessor = new this.professorModel(professorData);
     return newProfessor.save();
   }
 

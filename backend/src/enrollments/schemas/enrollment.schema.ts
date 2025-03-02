@@ -5,6 +5,11 @@ import { Course } from '../../courses/schemas/course.schema';
 
 export type EnrollmentDocument = Enrollment & Document;
 
+export enum wEnrollmentStatus {
+  START = 'start',
+  FINISH = 'finish',
+}
+
 @Schema({ timestamps: true })
 export class Enrollment {
   @Prop({
@@ -25,7 +30,14 @@ export class Enrollment {
   enrollmentStartDate: Date;
 
   @Prop({ type: Date })
-  enrollmentEndDate: Date;
+  enrollmentEndDate?: Date;
+
+  @Prop({
+    type: String,
+    enum: Object.values(wEnrollmentStatus),
+    default: wEnrollmentStatus.START,
+  })
+  status: string;
 
   @Prop({ type: Number, min: 0, max: 100 })
   finalGrade: number;

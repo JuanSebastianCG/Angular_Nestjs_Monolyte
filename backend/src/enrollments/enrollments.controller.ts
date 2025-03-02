@@ -17,6 +17,8 @@ import {
   CourseIdParam,
   CourseStudentParams,
 } from '../common/validation/mongo-id-validation';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('enrollments')
 export class EnrollmentsController {
@@ -77,5 +79,12 @@ export class EnrollmentsController {
   @Delete(':studentId/:courseId')
   remove(@Param() params: CourseStudentParams) {
     return this.enrollmentsService.remove(params.studentId, params.courseId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'professor')
+  @Patch('student/:studentId/finish-all')
+  async finishAllForStudent(@Param() params: StudentIdParam) {
+    return this.enrollmentsService.finishAllForStudent(params.studentId);
   }
 }

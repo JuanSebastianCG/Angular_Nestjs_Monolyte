@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Enrollment, EnrollmentDocument } from './schemas/enrollment.schema';
+import {
+  Enrollment,
+  EnrollmentDocument,
+  wEnrollmentStatus,
+} from './schemas/enrollment.schema';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { StudentsService } from '../students/students.service';
 import { CoursesService } from '../courses/courses.service';
@@ -64,6 +68,7 @@ export class EnrollmentsService {
       enrollmentStartDate:
         createEnrollmentDto.enrollmentStartDate || new Date(),
       enrollmentEndDate: createEnrollmentDto.enrollmentEndDate,
+      status: wEnrollmentStatus.START,
     });
 
     return newEnrollment.save();
@@ -162,5 +167,21 @@ export class EnrollmentsService {
     }
 
     return enrollment;
+  }
+
+  async finishAllForStudent(studentId: string): Promise<{ updated: number }> {
+    // Verify user exists
+    await this.userService.findOne(studentId);
+
+    // Update all enrollments for this student to 'finish' status
+    const result = await this.enrollmentModel.updateMany(
+      { studentId: new Types.ObjectId(studentId) },
+      {
+        status: wEnrollmentStatus.FINISH,
+        enrollmentEndDate: new Date(), // Set end date to current date
+      },
+    );
+
+    return { updated: result.modifiedCount };
   }
 }
