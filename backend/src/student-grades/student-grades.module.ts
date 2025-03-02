@@ -9,6 +9,7 @@ import {
 import { StudentsModule } from '../students/students.module';
 import { EvaluationsModule } from '../evaluations/evaluations.module';
 import { EnrollmentsModule } from '../enrollments/enrollments.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { EnrollmentsModule } from '../enrollments/enrollments.module';
     StudentsModule,
     EvaluationsModule,
     EnrollmentsModule,
+    UserModule,
   ],
   controllers: [StudentGradesController],
   providers: [StudentGradesService],

@@ -306,6 +306,7 @@ Content-Type: application/json
   }
 }
 
+
 ### Set second course ID
 @course2Id = {{createCourse2.response.body._id}}
 
@@ -351,7 +352,7 @@ Authorization: Bearer {{studentToken}}
 Content-Type: application/json
 
 {
-  "studentId": "67c3a2cf804697d0b5c122cc",
+  "studentId": "{{studentId}}",
   "courseId": "{{courseId}}",
   "enrollmentStartDate": "2023-09-05",
   "enrollmentEndDate": "2023-12-15"
@@ -407,8 +408,7 @@ Content-Type: application/json
   "name": "Midterm Exam",
   "description": "Covers chapters 1-5",
   "maxScore": 100,
-  "date": "2023-10-15",
-
+  "evaluationDate": "2023-10-15"
 }
 
 ### Set evaluation ID from response
@@ -422,11 +422,10 @@ Content-Type: application/json
 
 {
   "courseId": "{{courseId}}",
-  "title": "Final Project",
+  "name": "Final Project",
   "description": "Implement a complete application",
-  "date": "2023-12-01",
-  "maxGrade": 100,
-  "weight": 40
+  "maxScore": 100,
+  "evaluationDate": "2023-12-01"
 }
 
 ### Set second evaluation ID
@@ -444,19 +443,15 @@ Authorization: Bearer {{studentToken}}
 GET {{baseUrl}}/evaluations/{{evaluationId}}
 Authorization: Bearer {{professorToken}}
 
-### Get upcoming evaluations
-GET {{baseUrl}}/evaluations/upcoming?days=30
-Authorization: Bearer {{studentToken}}
-
 ### Update evaluation
 PATCH {{baseUrl}}/evaluations/{{evaluationId}}
 Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
-  "title": "Updated Midterm Exam",
+  "name": "Updated Midterm Exam",
   "description": "Covers chapters 1-6",
-  "date": "2023-10-20"
+  "evaluationDate": "2023-10-20"
 }
 
 ### Delete evaluation
@@ -464,11 +459,14 @@ Content-Type: application/json
 # DELETE {{baseUrl}}/evaluations/{{evaluation2Id}}
 # Authorization: Bearer {{professorToken}}
 
+DELETE {{baseUrl}}/evaluations/{{evaluationId}}
+Authorization: Bearer {{professorToken}}
+
 ###############################################################################
 # STUDENT GRADES
 ###############################################################################
 
-### Create a student grade
+### Create a student grade (professor role)
 # @name createStudentGrade
 POST {{baseUrl}}/student-grades
 Authorization: Bearer {{professorToken}}
@@ -481,18 +479,6 @@ Content-Type: application/json
   "comments": "Good work!"
 }
 
-### Create a second student grade
-# @name createStudentGrade2
-POST {{baseUrl}}/student-grades
-Authorization: Bearer {{professorToken}}
-Content-Type: application/json
-
-{
-  "studentId": "{{student2Id}}",
-  "evaluationId": "{{evaluationId}}",
-  "grade": 92,
-  "comments": "Excellent work!"
-}
 
 ### Get all student grades
 GET {{baseUrl}}/student-grades
@@ -510,15 +496,7 @@ Authorization: Bearer {{professorToken}}
 GET {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
 Authorization: Bearer {{studentToken}}
 
-### Get course average for student
-GET {{baseUrl}}/student-grades/student/{{studentId}}/course/{{courseId}}/average
-Authorization: Bearer {{studentToken}}
-
-### Get evaluation statistics (min, max, avg)
-GET {{baseUrl}}/student-grades/evaluation/{{evaluationId}}/statistics
-Authorization: Bearer {{professorToken}}
-
-### Update student grade
+### Update student grade (professor role)
 PATCH {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
 Authorization: Bearer {{professorToken}}
 Content-Type: application/json
@@ -528,9 +506,9 @@ Content-Type: application/json
   "comments": "Excellent performance after review"
 }
 
-### Delete student grade
+### Delete student grade (professor role)
 # Note: Uncomment only when you want to test deletion
-# DELETE {{baseUrl}}/student-grades/{{evaluationId}}/{{student2Id}}
+# DELETE {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
 # Authorization: Bearer {{professorToken}}
 
 ###############################################################################

@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Enrollment, EnrollmentDocument } from './schemas/enrollment.schema';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { StudentsService } from '../students/students.service';
@@ -42,9 +42,11 @@ export class EnrollmentsService {
 
     // Create new enrollment
     const newEnrollment = new this.enrollmentModel({
-      ...createEnrollmentDto,
+      studentId: new Types.ObjectId(studentId),
+      courseId: new Types.ObjectId(courseId),
       enrollmentStartDate:
         createEnrollmentDto.enrollmentStartDate || new Date(),
+      enrollmentEndDate: createEnrollmentDto.enrollmentEndDate,
     });
 
     return newEnrollment.save();
@@ -63,7 +65,7 @@ export class EnrollmentsService {
     await this.userService.findOne(userId);
 
     return this.enrollmentModel
-      .find({ studentId: userId })
+      .find({ studentId: new Types.ObjectId(userId) })
       .populate('courseId')
       .exec();
   }
@@ -77,7 +79,10 @@ export class EnrollmentsService {
 
   async findOne(userId: string, courseId: string): Promise<Enrollment> {
     const enrollment = await this.enrollmentModel
-      .findOne({ studentId: userId, courseId })
+      .findOne({
+        studentId: new Types.ObjectId(userId),
+        courseId: new Types.ObjectId(courseId),
+      })
       .populate('studentId')
       .populate('courseId')
       .exec();
@@ -107,9 +112,14 @@ export class EnrollmentsService {
     } = updateEnrollmentDto;
 
     const updatedEnrollment = await this.enrollmentModel
-      .findOneAndUpdate({ studentId: userId, courseId }, updateFields, {
-        new: true,
-      })
+      .findOneAndUpdate(
+        {
+          studentId: new Types.ObjectId(userId),
+          courseId: new Types.ObjectId(courseId),
+        },
+        updateFields,
+        { new: true },
+      )
       .populate('studentId')
       .populate('courseId')
       .exec();

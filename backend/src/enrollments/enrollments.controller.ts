@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { EnrollmentsService } from './enrollments.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
@@ -23,7 +24,15 @@ export class EnrollmentsController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createEnrollmentDto: CreateEnrollmentDto) {
+  async create(
+    @Body() createEnrollmentDto: CreateEnrollmentDto,
+    @Request() req,
+  ) {
+    // For student role, ensure studentId matches logged-in user
+    if (req.user.role === 'student') {
+      createEnrollmentDto.studentId = req.user.userId;
+    }
+
     return this.enrollmentsService.create(createEnrollmentDto);
   }
 

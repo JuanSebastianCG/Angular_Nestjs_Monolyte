@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Student } from '../../students/schemas/student.schema';
 import { Evaluation } from '../../evaluations/schemas/evaluation.schema';
+import * as mongoose from 'mongoose';
 
 export type StudentGradeDocument = StudentGrade & Document;
 
@@ -15,11 +16,11 @@ export class StudentGrade {
   evaluationId: MongooseSchema.Types.ObjectId;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'Student',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
   })
-  studentId: MongooseSchema.Types.ObjectId;
+  studentId: mongoose.Schema.Types.ObjectId;
 
   @Prop({
     type: Number,

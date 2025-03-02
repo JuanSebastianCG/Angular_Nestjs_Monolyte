@@ -9,7 +9,7 @@ export type EnrollmentDocument = Enrollment & Document;
 export class Enrollment {
   @Prop({
     type: MongooseSchema.Types.ObjectId,
-    ref: 'Student',
+    ref: 'User',
     required: true,
   })
   studentId: MongooseSchema.Types.ObjectId;
