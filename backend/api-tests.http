@@ -29,7 +29,6 @@ Content-Type: application/json
   "password": "password123",
   "role": "student",
   "studentInfo": {
-    "enrollmentDate": "2023-09-01"
   }
 }
 
