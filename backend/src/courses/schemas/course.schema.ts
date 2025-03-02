@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document } from 'mongoose';
+import * as mongoose from 'mongoose';
 import { Professor } from '../../professors/schemas/professor.schema';
 import { Schedule } from '../../schedules/schemas/schedule.schema';
 
@@ -14,18 +15,18 @@ export class Course {
   description: string;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'Professor',
     required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Professor',
   })
-  professorId: MongooseSchema.Types.ObjectId;
+  professorId: mongoose.Schema.Types.ObjectId;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'Schedule',
     required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Schedule',
   })
-  scheduleId: MongooseSchema.Types.ObjectId;
+  scheduleId: mongoose.Schema.Types.ObjectId;
 
   // Add a method to convert to plain object
   toObject?(): Record<string, any>;

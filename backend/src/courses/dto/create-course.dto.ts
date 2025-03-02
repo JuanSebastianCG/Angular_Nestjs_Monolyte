@@ -1,4 +1,13 @@
-import { IsNotEmpty, IsString, IsMongoId, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsMongoId,
+  IsOptional,
+  IsObject,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateScheduleDto } from '../../schedules/dto/create-schedule.dto';
 
 export class CreateCourseDto {
   @IsNotEmpty()
@@ -13,7 +22,13 @@ export class CreateCourseDto {
   @IsMongoId()
   professorId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsMongoId()
-  scheduleId: string;
+  scheduleId?: string;
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CreateScheduleDto)
+  schedule?: CreateScheduleDto;
 }

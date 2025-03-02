@@ -13,6 +13,7 @@ import { AuthToken, AuthTokenSchema } from './schemas/auth-token.schema';
 import { DepartmentsModule } from '../departments/departments.module';
 import { RolesGuard } from './guards/roles.guard';
 import { OwnerGuard } from './guards/owner.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { OwnerGuard } from './guards/owner.guard';
     DepartmentsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RolesGuard, OwnerGuard],
-  exports: [AuthService, JwtModule, RolesGuard, OwnerGuard],
+  providers: [AuthService, JwtStrategy, RolesGuard, OwnerGuard, JwtAuthGuard],
+  exports: [AuthService, JwtModule, RolesGuard, OwnerGuard, JwtAuthGuard],
 })
 export class AuthModule {}

@@ -144,16 +144,47 @@ export class AuthService {
     }
   }
 
-  async login(user: any) {
+  async login(user: any, deviceId?: string) {
     const payload = {
       username: user.username,
       sub: user._id,
       role: user.role || 'user',
+      // Include device ID in payload if provided
+      ...(deviceId && { device: deviceId }),
     };
 
+    // If deviceId is provided, revoke only tokens for that device
+    if (deviceId) {
+      await this.authTokenModel.deleteMany({
+        userId: user._id,
+        deviceId: deviceId,
+      });
+    }
+
+    // Generate tokens
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    // Calculate expiration dates
+    const accessTokenExpiry = new Date();
+    accessTokenExpiry.setHours(accessTokenExpiry.getHours() + 1);
+
+    const refreshTokenExpiry = new Date();
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
+
+    // Save tokens to database
+    await this.authTokenModel.create({
+      userId: user._id,
+      token: accessToken,
+      refreshToken: refreshToken,
+      deviceId: deviceId, // Store device ID if provided
+      expiresAt: accessTokenExpiry,
+      refreshExpiresAt: refreshTokenExpiry,
+    });
+
     return {
-      access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      access_token: accessToken,
+      refresh_token: refreshToken,
       user: {
         id: user._id,
         username: user.username,
@@ -167,6 +198,10 @@ export class AuthService {
       const decoded = this.jwtService.verify(token);
       const user = await this.userService.findOne(decoded.sub);
 
+      // Find and delete the old refresh token
+      await this.authTokenModel.deleteOne({ refreshToken: token });
+
+      // Generate new tokens and save them
       return this.login(user);
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
@@ -174,31 +209,33 @@ export class AuthService {
   }
 
   async logout(token: string): Promise<{ success: boolean }> {
-    // Find the token document
-    const tokenDoc = await this.authTokenModel.findOne({ token }).exec();
+    try {
+      // Find and remove the token
+      const result = await this.authTokenModel.deleteOne({ token });
 
-    if (tokenDoc) {
-      // Remove token from database
-      await this.authTokenModel.deleteOne({ _id: tokenDoc._id });
+      return { success: result.deletedCount > 0 };
+    } catch (error) {
+      console.error('Error during logout:', error);
+      return { success: false };
     }
-
-    return { success: true };
   }
 
   async validateToken(token: string): Promise<boolean> {
     try {
-      // Verify token with JWT service
+      // First verify the token is structurally valid
       const decoded = this.jwtService.verify(token);
 
-      // Check if token exists and is not expired
+      // Then check if it exists in the database and is not expired
       const authToken = await this.authTokenModel.findOne({
         token,
         userId: decoded.sub,
         expiresAt: { $gt: new Date() },
       });
 
+      // Return true only if the token exists in the database
       return !!authToken;
     } catch (error) {
+      console.error('Token validation error:', error.message);
       return false;
     }
   }

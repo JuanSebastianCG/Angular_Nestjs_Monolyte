@@ -3,16 +3,17 @@
 # 
 # Setup Environment Variables:
 # - baseUrl: The base URL of the API
-# - authToken: Automatically set after login
-# - adminToken: Token with admin privileges, set after admin login
-# - userId: User ID to use in requests
-# - departmentId: Department ID to use in requests
+# - studentToken: Token with student privileges
+# - professorToken: Token with professor privileges
+# - adminToken: Token with admin privileges
+# - studentId, professorId: User IDs
+# - departmentId, courseId, evaluationId: Entity IDs
 ###############################################################################
 
 @baseUrl = http://localhost:3000/api
 
 ###############################################################################
-# AUTHENTICATION
+# AUTHENTICATION AND USER MANAGEMENT
 ###############################################################################
 
 ### Register a new student user
@@ -32,6 +33,10 @@ Content-Type: application/json
   }
 }
 
+### Set student ID from response
+@studentId = {{registerStudent.response.body._id}}
+
+
 ### Register a new professor user
 # @name registerProfessor
 POST {{baseUrl}}/users
@@ -50,8 +55,11 @@ Content-Type: application/json
   }
 }
 
+### Set second professor ID
+@professorId = {{registerProfessor.response.body._id}}
+
 ### Login as student user
-# @name login
+# @name loginStudent
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
@@ -60,15 +68,25 @@ Content-Type: application/json
   "password": "password123"
 }
 
-### Automatically set tokens after login
-@authToken = {{login.response.body.access_token}}
-@refreshToken = {{login.response.body.refresh_token}}
-@userId = {{login.response.body.user.id}}
+### Set student token and ID
+@studentToken = {{loginStudent.response.body.access_token}}
+@refreshTokenStudent = {{loginStudent.response.body.refresh_token}}
+@studentId = {{loginStudent.response.body.user.id}}
 
-### Refresh token
-# @name refreshToken
-POST {{baseUrl}}/auth/refresh
-Authorization: Bearer {{refreshToken}}
+### Login as professor
+# @name loginProfessor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "professoruser",
+  "password": "password123"
+}
+
+### Set professor token and ID
+@professorToken = {{loginProfessor.response.body.access_token}}
+@refreshTokenProfessor = {{loginProfessor.response.body.refresh_token}}
+@professorId = {{loginProfessor.response.body.user.id}}
 
 ### Register admin user (requires existing admin token)
 # @name registerAdmin
@@ -96,43 +114,62 @@ Content-Type: application/json
 
 ### Set admin token
 @adminToken = {{loginAdmin.response.body.access_token}}
+@refreshTokenAdmin = {{loginAdmin.response.body.refresh_token}}
 
-### Get user profile
+### Refresh student token
+# @name refreshStudentToken
+POST {{baseUrl}}/auth/refresh
+Authorization: Bearer {{refreshTokenStudent}}
+
+### Set new tokens from refresh
+@newStudentToken = {{refreshStudentToken.response.body.access_token}}
+@newRefreshTokenStudent = {{refreshStudentToken.response.body.refresh_token}}
+
+### Get user profile (user)
 GET {{baseUrl}}/auth/profile
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{studentToken}}
 
-### Logout
+### Logout user
 POST {{baseUrl}}/auth/logout
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{studentToken}}
 
 ###############################################################################
-# USER MANAGEMENT
+# USER MANAGEMENT (ADMIN OPERATIONS)
 ###############################################################################
 
 ### Get all users (admin only)
 # @name getAllUsers
 GET {{baseUrl}}/users
 Authorization: Bearer {{adminToken}}
+### Get user profesors 
+GET {{baseUrl}}/professors/
+Authorization: Bearer {{adminToken}}
+### Get user students
+GET {{baseUrl}}/students/
+Authorization: Bearer {{adminToken}}
+
 
 ### Get user by ID
-GET {{baseUrl}}/users/{{userId}}
-Authorization: Bearer {{authToken}}
+GET {{baseUrl}}/users/{{professorId}}
+Authorization: Bearer {{professorToken}}
+
+### Get user by username (admin only)
+GET {{baseUrl}}/users/username/studentuser
+Authorization: Bearer {{adminToken}}
 
 ### Update user with student info
-PATCH {{baseUrl}}/users/{{userId}}
-Authorization: Bearer {{authToken}}
+PATCH {{baseUrl}}/users/{{studentId}}
+Authorization: Bearer {{studentToken}}
 Content-Type: application/json
 
 {
-  "name": "Updated Student Name",
-  "studentInfo": {
-    "enrollmentDate": "2023-09-01"
-  }
+  "name": "Updated Student Name 2",
+  "email": "updated.student@example.com"
 }
 
 ### Update user with professor info
-PATCH {{baseUrl}}/users/{{userId}}
-Authorization: Bearer {{authToken}}
+PATCH {{baseUrl}}/users/{{professorId}}
+Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
@@ -144,17 +181,23 @@ Content-Type: application/json
 }
 
 ### Admin update any user
-# @name adminUpdateUser
-PATCH {{baseUrl}}/users/{{userId}}
+PATCH {{baseUrl}}/users/{{studentId}}
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "Updated by Admin"
+  "name": "Admin Updated Student Name",
+  "role": "student"
 }
 
+
 ### Delete user (admin only)
-DELETE {{baseUrl}}/users/{{userId}}
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/users/{{professorId}}
+# Authorization: Bearer {{adminToken}}
+
+
+DELETE {{baseUrl}}/users/{{studentId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
@@ -164,7 +207,7 @@ Authorization: Bearer {{adminToken}}
 ### Create a department
 # @name createDepartment
 POST {{baseUrl}}/departments
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
@@ -172,172 +215,168 @@ Content-Type: application/json
   "description": "Study of computers and computational systems"
 }
 
-# Set department ID from response
+### Set department ID from response
 @departmentId = {{createDepartment.response.body._id}}
+
+### Create a second department
+# @name createDepartment2
+POST {{baseUrl}}/departments
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "name": "Mathematics",
+  "description": "Study of numbers, quantities, and space"
+}
+
+### Set second department ID
+@department2Id = {{createDepartment2.response.body._id}}
 
 ### Get all departments
 GET {{baseUrl}}/departments
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
+
+### Search departments by name
+GET {{baseUrl}}/departments/search?name=comp
+Authorization: Bearer {{professorToken}}
 
 ### Get department by ID
 GET {{baseUrl}}/departments/{{departmentId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 
 ### Update department
 PATCH {{baseUrl}}/departments/{{departmentId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
   "name": "Updated Computer Science",
-  "description": "Updated description"
+  "description": "Advanced study of computational systems"
 }
 
-### Delete department
-DELETE {{baseUrl}}/departments/{{departmentId}}
-Authorization: Bearer {{authToken}}
+### Delete department (admin only)
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/departments/{{department2Id}}
+# Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-# STUDENTS
+# COURSES WITH INLINE SCHEDULE
 ###############################################################################
 
-### Create a student
-# @name createStudent
-POST {{baseUrl}}/students
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
-
-{
-  "userId": "{{userId}}",
-  "enrollmentDate": "2023-09-01"
-}
-
-# Set student ID from response
-@studentId = {{createStudent.response.body._id}}
-
-### Get all students
-GET {{baseUrl}}/students
-Authorization: Bearer {{authToken}}
-
-### Get student by ID
-GET {{baseUrl}}/students/{{studentId}}
-Authorization: Bearer {{authToken}}
-
-### Get student by user ID
-GET {{baseUrl}}/students/user/{{userId}}
-Authorization: Bearer {{authToken}}
-
-###############################################################################
-# PROFESSORS
-###############################################################################
-
-### Create a professor
-# @name createProfessor
-POST {{baseUrl}}/professors
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
-
-{
-  "userId": "{{userId}}",
-  "departmentId": "{{departmentId}}",
-  "hiringDate": "2023-01-15"
-}
-
-# Set professor ID from response
-@professorId = {{createProfessor.response.body._id}}
-
-### Get all professors
-GET {{baseUrl}}/professors
-Authorization: Bearer {{authToken}}
-
-### Get professor by ID
-GET {{baseUrl}}/professors/{{professorId}}
-Authorization: Bearer {{authToken}}
-
-### Get professor by user ID
-GET {{baseUrl}}/professors/user/{{userId}}
-Authorization: Bearer {{authToken}}
-
-###############################################################################
-# COURSES
-###############################################################################
-
-### Create a course
+### Create a course with inline schedule 
 # @name createCourse
 POST {{baseUrl}}/courses
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
   "name": "Introduction to Programming",
-  "code": "CS101",
-  "credits": 3,
   "description": "Basic programming concepts",
-  "departmentId": "{{departmentId}}",
-  "professorId": "{{professorId}}"
+  "professorId": "{{professorId}}",
+  "schedule": {
+    "days": ["Monday", "Wednesday"],
+    "startTime": "6:00",
+    "endTime": "3:30",
+    "room": "A-101",
+    "startDate": "2023-09-01",
+    "endDate": "2023-12-15"
+  }
 }
 
-# Set course ID from response
+### Set course ID from response
 @courseId = {{createCourse.response.body._id}}
 
-### Get all courses
-GET {{baseUrl}}/courses
-Authorization: Bearer {{authToken}}
-
-### Get course by ID
-GET {{baseUrl}}/courses/{{courseId}}
-Authorization: Bearer {{authToken}}
-
-### Update course
-PATCH {{baseUrl}}/courses/{{courseId}}
-Authorization: Bearer {{authToken}}
+### Create a second course
+# @name createCourse2
+POST {{baseUrl}}/courses
+Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
-  "name": "Updated Introduction to Programming",
-  "description": "Updated course description"
+  "name": "Advanced Data Structures",
+  "description": "In-depth study of data structures and algorithms",
+  "professorId": "{{professorId}}",
+  "schedule": {
+    "days": ["Tuesday", "Thursday"],
+    "startTime": "13:00",
+    "endTime": "14:30",
+    "room": "B-201",
+    "startDate": "2023-09-01",
+    "endDate": "2023-12-15"
+  }
+}
+
+### Set second course ID
+@course2Id = {{createCourse2.response.body._id}}
+
+### Get all courses
+GET {{baseUrl}}/courses
+Authorization: Bearer {{professorToken}}
+
+### Get course by ID
+GET {{baseUrl}}/courses/{{courseId}}
+Authorization: Bearer {{professorToken}}
+
+### Update course with inline schedule
+PATCH {{baseUrl}}/courses/{{courseId}}
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "name": "Introduction to Programming 2",
+  "schedule": {
+    "days": ["Tuesday", "Thursday"],
+    "startTime": "09:00",
+    "endTime": "10:30",
+    "room": "A-102",
+    "startDate": "2023-09-01",
+    "endDate": "2023-12-15"
+  }
 }
 
 ### Delete course
-DELETE {{baseUrl}}/courses/{{courseId}}
-Authorization: Bearer {{authToken}}
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/courses/{{course2Id}}
+# Authorization: Bearer {{professorToken}}
 
 ###############################################################################
 # ENROLLMENTS
 ###############################################################################
 
-### Create an enrollment
+
+### Create an enrollment 67c3a2cf804697d0b5c122cc
 # @name createEnrollment
 POST {{baseUrl}}/enrollments
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{studentToken}}
 Content-Type: application/json
 
 {
-  "studentId": "{{studentId}}",
+  "studentId": "67c3a2cf804697d0b5c122cc",
   "courseId": "{{courseId}}",
-  "enrollmentDate": "2023-09-05",
-  "status": "active"
+  "enrollmentStartDate": "2023-09-05",
+  "enrollmentEndDate": "2023-12-15"
 }
+
 
 ### Get all enrollments
 GET {{baseUrl}}/enrollments
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 
 ### Get enrollments by student
 GET {{baseUrl}}/enrollments/student/{{studentId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{studentToken}}
 
 ### Get enrollments by course
 GET {{baseUrl}}/enrollments/course/{{courseId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 
 ### Get specific enrollment
 GET {{baseUrl}}/enrollments/{{studentId}}/{{courseId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{studentToken}}
 
-### Update enrollment
+### Update enrollment status
 PATCH {{baseUrl}}/enrollments/{{studentId}}/{{courseId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
@@ -345,9 +384,13 @@ Content-Type: application/json
   "completionDate": "2023-12-15"
 }
 
-### Delete enrollment
+### Delete enrollment (admin or professor only)
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/enrollments/{{student2Id}}/{{courseId}}
+# Authorization: Bearer {{professorToken}}
+
 DELETE {{baseUrl}}/enrollments/{{studentId}}/{{courseId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 
 ###############################################################################
 # EVALUATIONS
@@ -356,46 +399,70 @@ Authorization: Bearer {{authToken}}
 ### Create an evaluation
 # @name createEvaluation
 POST {{baseUrl}}/evaluations
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
   "courseId": "{{courseId}}",
-  "title": "Midterm Exam",
+  "name": "Midterm Exam",
   "description": "Covers chapters 1-5",
+  "maxScore": 100,
   "date": "2023-10-15",
-  "maxGrade": 100,
-  "weight": 30
+
 }
 
-# Set evaluation ID from response
+### Set evaluation ID from response
 @evaluationId = {{createEvaluation.response.body._id}}
+
+### Create a second evaluation
+# @name createEvaluation2
+POST {{baseUrl}}/evaluations
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "courseId": "{{courseId}}",
+  "title": "Final Project",
+  "description": "Implement a complete application",
+  "date": "2023-12-01",
+  "maxGrade": 100,
+  "weight": 40
+}
+
+### Set second evaluation ID
+@evaluation2Id = {{createEvaluation2.response.body._id}}
 
 ### Get all evaluations
 GET {{baseUrl}}/evaluations
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 
 ### Get evaluations by course
 GET {{baseUrl}}/evaluations/course/{{courseId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{studentToken}}
 
 ### Get evaluation by ID
 GET {{baseUrl}}/evaluations/{{evaluationId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
+
+### Get upcoming evaluations
+GET {{baseUrl}}/evaluations/upcoming?days=30
+Authorization: Bearer {{studentToken}}
 
 ### Update evaluation
 PATCH {{baseUrl}}/evaluations/{{evaluationId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
   "title": "Updated Midterm Exam",
-  "description": "Updated description"
+  "description": "Covers chapters 1-6",
+  "date": "2023-10-20"
 }
 
 ### Delete evaluation
-DELETE {{baseUrl}}/evaluations/{{evaluationId}}
-Authorization: Bearer {{authToken}}
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/evaluations/{{evaluation2Id}}
+# Authorization: Bearer {{professorToken}}
 
 ###############################################################################
 # STUDENT GRADES
@@ -404,7 +471,7 @@ Authorization: Bearer {{authToken}}
 ### Create a student grade
 # @name createStudentGrade
 POST {{baseUrl}}/student-grades
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
@@ -414,32 +481,121 @@ Content-Type: application/json
   "comments": "Good work!"
 }
 
+### Create a second student grade
+# @name createStudentGrade2
+POST {{baseUrl}}/student-grades
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "studentId": "{{student2Id}}",
+  "evaluationId": "{{evaluationId}}",
+  "grade": 92,
+  "comments": "Excellent work!"
+}
+
 ### Get all student grades
 GET {{baseUrl}}/student-grades
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 
 ### Get grades by student
 GET {{baseUrl}}/student-grades/student/{{studentId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{studentToken}}
 
 ### Get grades by evaluation
 GET {{baseUrl}}/student-grades/evaluation/{{evaluationId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 
 ### Get specific grade
 GET {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{studentToken}}
+
+### Get course average for student
+GET {{baseUrl}}/student-grades/student/{{studentId}}/course/{{courseId}}/average
+Authorization: Bearer {{studentToken}}
+
+### Get evaluation statistics (min, max, avg)
+GET {{baseUrl}}/student-grades/evaluation/{{evaluationId}}/statistics
+Authorization: Bearer {{professorToken}}
 
 ### Update student grade
 PATCH {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
   "grade": 90,
-  "comments": "Excellent performance"
+  "comments": "Excellent performance after review"
 }
 
 ### Delete student grade
-DELETE {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
-Authorization: Bearer {{authToken}} 
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/student-grades/{{evaluationId}}/{{student2Id}}
+# Authorization: Bearer {{professorToken}}
+
+###############################################################################
+# SCHEDULES (Admin-only endpoints)
+###############################################################################
+
+### Create a schedule (Admin only)
+# @name createSchedule
+POST {{baseUrl}}/schedules
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "days": ["Friday"],
+  "startTime": "14:00",
+  "endTime": "16:00",
+  "room": "B-202",
+  "startDate": "2023-09-01",
+  "endDate": "2023-12-15"
+}
+
+### Set schedule ID from response
+@scheduleId = {{createSchedule.response.body._id}}
+
+### Get all schedules (Admin only)
+GET {{baseUrl}}/schedules
+Authorization: Bearer {{adminToken}}
+
+### Get schedule by ID (Admin only)
+GET {{baseUrl}}/schedules/{{scheduleId}}
+Authorization: Bearer {{adminToken}}
+
+### Get schedules by day (Admin only)
+GET {{baseUrl}}/schedules/day/Friday
+Authorization: Bearer {{adminToken}}
+
+### Get schedules by room (Admin only)
+GET {{baseUrl}}/schedules/room/B-202
+Authorization: Bearer {{adminToken}}
+
+### Check room availability (Admin only)
+POST {{baseUrl}}/schedules/available-rooms
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "days": ["Monday"],
+  "startTime": "09:00",
+  "endTime": "10:30",
+  "date": "2023-10-01"
+}
+
+### Update schedule (Admin only)
+PATCH {{baseUrl}}/schedules/{{scheduleId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "days": ["Friday", "Saturday"],
+  "startTime": "15:00",
+  "endTime": "17:00",
+  "room": "B-203"
+}
+
+### Delete schedule (Admin only)
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/schedules/{{scheduleId}}
+# Authorization: Bearer {{adminToken}} 

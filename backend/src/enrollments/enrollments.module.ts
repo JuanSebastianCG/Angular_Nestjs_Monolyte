@@ -5,6 +5,7 @@ import { EnrollmentsService } from './enrollments.service';
 import { Enrollment, EnrollmentSchema } from './schemas/enrollment.schema';
 import { StudentsModule } from '../students/students.module';
 import { CoursesModule } from '../courses/courses.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CoursesModule } from '../courses/courses.module';
     ]),
     StudentsModule,
     CoursesModule,
+    UserModule,
   ],
   controllers: [EnrollmentsController],
   providers: [EnrollmentsService],

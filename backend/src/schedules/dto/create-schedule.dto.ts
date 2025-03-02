@@ -1,32 +1,38 @@
-import { IsNotEmpty, IsString, IsDate, Matches } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsString,
+  IsArray,
+  IsOptional,
+  IsDate,
+  IsDateString,
+} from 'class-validator';
 
 export class CreateScheduleDto {
   @IsNotEmpty()
-  @Type(() => Date)
-  @IsDate()
-  startDate: Date;
-
-  @IsNotEmpty()
-  @Type(() => Date)
-  @IsDate()
-  endDate: Date;
+  @IsArray()
+  days: string[];
 
   @IsNotEmpty()
   @IsString()
-  daysWeek: string;
+  startTime: string;
 
   @IsNotEmpty()
   @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-    message: 'Start hour must be in format HH:MM (24-hour)',
-  })
-  startHour: string;
+  endTime: string;
 
   @IsNotEmpty()
   @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-    message: 'End hour must be in format HH:MM (24-hour)',
-  })
-  endHour: string;
+  room: string;
+
+  @IsNotEmpty()
+  @IsDateString()
+  startDate: string;
+
+  @IsNotEmpty()
+  @IsDateString()
+  endDate: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

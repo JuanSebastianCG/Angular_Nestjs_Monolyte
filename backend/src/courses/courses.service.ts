@@ -2,13 +2,16 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
 import { CreateCourseDto } from './dto/create-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
 import { ProfessorsService } from '../professors/professors.service';
 import { SchedulesService } from '../schedules/schedules.service';
+import { Schedule } from '../schedules/schemas/schedule.schema';
 
 @Injectable()
 export class CoursesService {
@@ -19,15 +22,33 @@ export class CoursesService {
   ) {}
 
   async create(createCourseDto: CreateCourseDto): Promise<Course> {
-    // Verify professor exists
-    await this.professorsService.findOne(createCourseDto.professorId);
+    let scheduleId = createCourseDto.scheduleId;
 
-    // Verify schedule exists
-    await this.schedulesService.findOne(createCourseDto.scheduleId);
+    // If schedule object is provided instead of scheduleId
+    if (!scheduleId && createCourseDto.schedule) {
+      // Create a new schedule
+      const newSchedule = await this.schedulesService.create(
+        createCourseDto.schedule,
+      );
+      // Use type assertion to access _id property
+      scheduleId = (newSchedule as any)._id.toString();
+    } else if (!scheduleId) {
+      throw new BadRequestException(
+        'Either scheduleId or schedule object must be provided',
+      );
+    }
 
-    // Create new course
-    const newCourse = new this.courseModel(createCourseDto);
-    return newCourse.save();
+    // Create the course with the schedule ID
+    const courseData = {
+      ...createCourseDto,
+      scheduleId, // Use the scheduleId we determined
+    };
+
+    // Remove the schedule object from the course data
+    delete courseData.schedule;
+
+    const course = new this.courseModel(courseData);
+    return course.save();
   }
 
   async findAll(): Promise<Course[]> {

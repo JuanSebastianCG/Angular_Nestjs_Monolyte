@@ -9,6 +9,7 @@ import { Enrollment, EnrollmentDocument } from './schemas/enrollment.schema';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { StudentsService } from '../students/students.service';
 import { CoursesService } from '../courses/courses.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class EnrollmentsService {
@@ -17,13 +18,14 @@ export class EnrollmentsService {
     private enrollmentModel: Model<EnrollmentDocument>,
     private studentsService: StudentsService,
     private coursesService: CoursesService,
+    private userService: UserService,
   ) {}
 
   async create(createEnrollmentDto: CreateEnrollmentDto): Promise<Enrollment> {
     const { studentId, courseId } = createEnrollmentDto;
 
-    // Verify student exists
-    await this.studentsService.findOne(studentId);
+    // Verify user exists
+    await this.userService.findOne(studentId);
 
     // Verify course exists
     await this.coursesService.findOne(courseId);
@@ -35,7 +37,7 @@ export class EnrollmentsService {
     });
 
     if (existingEnrollment) {
-      throw new ConflictException('Student is already enrolled in this course');
+      throw new ConflictException('User is already enrolled in this course');
     }
 
     // Create new enrollment
@@ -56,11 +58,14 @@ export class EnrollmentsService {
       .exec();
   }
 
-  async findAllByStudent(studentId: string): Promise<Enrollment[]> {
-    // Verify student exists
-    await this.studentsService.findOne(studentId);
+  async findAllByStudent(userId: string): Promise<Enrollment[]> {
+    // Verify user exists
+    await this.userService.findOne(userId);
 
-    return this.enrollmentModel.find({ studentId }).populate('courseId').exec();
+    return this.enrollmentModel
+      .find({ studentId: userId })
+      .populate('courseId')
+      .exec();
   }
 
   async findAllByCourse(courseId: string): Promise<Enrollment[]> {
@@ -70,16 +75,16 @@ export class EnrollmentsService {
     return this.enrollmentModel.find({ courseId }).populate('studentId').exec();
   }
 
-  async findOne(studentId: string, courseId: string): Promise<Enrollment> {
+  async findOne(userId: string, courseId: string): Promise<Enrollment> {
     const enrollment = await this.enrollmentModel
-      .findOne({ studentId, courseId })
+      .findOne({ studentId: userId, courseId })
       .populate('studentId')
       .populate('courseId')
       .exec();
 
     if (!enrollment) {
       throw new NotFoundException(
-        `Enrollment for student ${studentId} in course ${courseId} not found`,
+        `Enrollment for user ${userId} in course ${courseId} not found`,
       );
     }
 
@@ -87,12 +92,12 @@ export class EnrollmentsService {
   }
 
   async update(
-    studentId: string,
+    userId: string,
     courseId: string,
     updateEnrollmentDto: Partial<CreateEnrollmentDto>,
   ): Promise<Enrollment> {
     // Find the enrollment
-    await this.findOne(studentId, courseId);
+    await this.findOne(userId, courseId);
 
     // Update only fields that don't change the enrollment identity
     const {
@@ -102,28 +107,30 @@ export class EnrollmentsService {
     } = updateEnrollmentDto;
 
     const updatedEnrollment = await this.enrollmentModel
-      .findOneAndUpdate({ studentId, courseId }, updateFields, { new: true })
+      .findOneAndUpdate({ studentId: userId, courseId }, updateFields, {
+        new: true,
+      })
       .populate('studentId')
       .populate('courseId')
       .exec();
 
     if (!updatedEnrollment) {
       throw new NotFoundException(
-        `Enrollment for student ${studentId} in course ${courseId} not found after update`,
+        `Enrollment for user ${userId} in course ${courseId} not found after update`,
       );
     }
 
     return updatedEnrollment;
   }
 
-  async remove(studentId: string, courseId: string): Promise<Enrollment> {
+  async remove(userId: string, courseId: string): Promise<Enrollment> {
     const enrollment = await this.enrollmentModel
-      .findOneAndDelete({ studentId, courseId })
+      .findOneAndDelete({ studentId: userId, courseId })
       .exec();
 
     if (!enrollment) {
       throw new NotFoundException(
-        `Enrollment for student ${studentId} in course ${courseId} not found`,
+        `Enrollment for user ${userId} in course ${courseId} not found`,
       );
     }
 
