@@ -1,0 +1,96 @@
+<div class="form-field">
+  <div
+    class="relative border border-gray-300 rounded-md"
+    [ngClass]="{
+      'border-red-500': hasError,
+      'border-green-500': isValid && showSuccessIndicator,
+    }"
+  >
+    <label
+      [for]="inputId"
+      class="absolute -top-2.5 left-2 bg-white px-1 text-sm text-gray-600"
+    >
+      {{ label }}
+    </label>
+
+    <!-- Text or password input -->
+    <input
+      *ngIf="!isSelect && !isDate"
+      [type]="type"
+      [id]="inputId"
+      [formControl]="control"
+      class="block w-full py-3 px-3 border-none rounded-md focus:ring-0"
+      [placeholder]="placeholder"
+    />
+
+    <!-- Select input -->
+    <select
+      *ngIf="isSelect"
+      [id]="inputId"
+      [formControl]="control"
+      class="block w-full py-3 pl-3 pr-10 border-none rounded-md focus:ring-0 appearance-none bg-white"
+    >
+      <option value="">Seleccione una opción</option>
+      <option *ngFor="let option of options" [value]="option.value">
+        {{ option.label }}
+      </option>
+    </select>
+
+    <!-- Date input -->
+    <div *ngIf="isDate" class="flex">
+      <input
+        type="date"
+        [id]="inputId"
+        [formControl]="control"
+        class="block w-full py-3 px-3 border-none rounded-l-md focus:ring-0"
+        [placeholder]="placeholder"
+      />
+      <div class="bg-white py-3 px-4 border-l border-gray-300 rounded-r-md">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6 text-blue-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Custom icon for select -->
+    <div
+      *ngIf="isSelect"
+      class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+    >
+      <svg
+        class="h-5 w-5 text-blue-600"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </div>
+
+    <!-- Success indicator -->
+    <div
+      *ngIf="isValid && showSuccessIndicator && !isSelect && !isDate"
+      class="absolute inset-y-0 left-0 w-1 bg-blue-600"
+    ></div>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="hasError" class="mt-1 text-red-500 text-sm">
+    {{ errorMessage }}
+  </div>
+</div>

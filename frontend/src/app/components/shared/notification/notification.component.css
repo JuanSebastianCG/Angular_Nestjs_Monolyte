@@ -1,0 +1,9 @@
+.notification {
+  transition: all 0.3s ease;
+}
+
+.notification-container {
+  max-height: 100vh;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+}

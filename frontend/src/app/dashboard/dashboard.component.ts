@@ -9,8 +9,8 @@ import { AuthService } from '../services/auth.service';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="min-h-screen flex flex-col">
-      <header class="p-4 border-b">
-        <div class="container mx-auto flex items-center justify-between">
+      <header class="p-4">
+        <div class="container mx-auto flex justify-between items-center">
           <a
             routerLink="/"
             class="text-blue-600 hover:text-blue-800 font-medium border-b-2 border-blue-600 px-2 py-1"
@@ -22,19 +22,23 @@ import { AuthService } from '../services/auth.service';
         </div>
       </header>
       <main class="container mx-auto flex-grow p-4">
-        <h1 class="text-2xl font-bold mb-4">Dashboard</h1>
-        <p class="mb-4">Welcome to the University Management System</p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-white p-4 rounded shadow">
-            <h2 class="text-lg font-semibold mb-2">Courses</h2>
+        <h1 class="text-3xl font-bold text-blue-600 mb-6">Dashboard</h1>
+        <p class="mb-6">Welcome to the University Management System</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white p-4 rounded shadow-md border border-gray-100">
+            <h2 class="text-lg font-semibold mb-2 text-blue-600">Courses</h2>
             <p>Manage your courses</p>
           </div>
-          <div class="bg-white p-4 rounded shadow">
-            <h2 class="text-lg font-semibold mb-2">Enrollments</h2>
+          <div class="bg-white p-4 rounded shadow-md border border-gray-100">
+            <h2 class="text-lg font-semibold mb-2 text-blue-600">
+              Enrollments
+            </h2>
             <p>Manage student enrollments</p>
           </div>
-          <div class="bg-white p-4 rounded shadow">
-            <h2 class="text-lg font-semibold mb-2">Evaluations</h2>
+          <div class="bg-white p-4 rounded shadow-md border border-gray-100">
+            <h2 class="text-lg font-semibold mb-2 text-blue-600">
+              Evaluations
+            </h2>
             <p>Manage course evaluations</p>
           </div>
         </div>
