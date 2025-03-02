@@ -8,7 +8,7 @@ export type CourseDocument = Course & Document;
 
 @Schema({ timestamps: true })
 export class Course {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   name: string;
 
   @Prop()
@@ -33,3 +33,6 @@ export class Course {
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);
+
+// Create an index for unique course names
+CourseSchema.index({ name: 1 }, { unique: true });

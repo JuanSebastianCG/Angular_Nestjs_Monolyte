@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -10,6 +11,7 @@ import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { StudentsService } from '../students/students.service';
 import { CoursesService } from '../courses/courses.service';
 import { UserService } from '../user/user.service';
+import { PrerequisitesService } from '../prerequisites/prerequisites.service';
 
 @Injectable()
 export class EnrollmentsService {
@@ -19,6 +21,7 @@ export class EnrollmentsService {
     private studentsService: StudentsService,
     private coursesService: CoursesService,
     private userService: UserService,
+    private prerequisitesService: PrerequisitesService,
   ) {}
 
   async create(createEnrollmentDto: CreateEnrollmentDto): Promise<Enrollment> {
@@ -29,6 +32,20 @@ export class EnrollmentsService {
 
     // Verify course exists
     await this.coursesService.findOne(courseId);
+
+    // Check prerequisites
+    const prerequisitesCheck =
+      await this.prerequisitesService.checkPrerequisitesForEnrollment(
+        courseId,
+        studentId,
+        this,
+      );
+
+    if (!prerequisitesCheck.isValid) {
+      throw new BadRequestException(
+        `Cannot enroll in this course. Missing prerequisites: ${prerequisitesCheck.missingCourses.join(', ')}`,
+      );
+    }
 
     // Check if enrollment already exists
     const existingEnrollment = await this.enrollmentModel.findOne({

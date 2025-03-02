@@ -266,11 +266,11 @@ Content-Type: application/json
 ### Create a course with inline schedule 
 # @name createCourse
 POST {{baseUrl}}/courses
-Authorization: Bearer {{professorToken}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "Introduction to Programming",
+  "name": "Introduction to Programming 2",
   "description": "Basic programming concepts",
   "professorId": "{{professorId}}",
   "schedule": {
@@ -298,8 +298,8 @@ Content-Type: application/json
   "professorId": "{{professorId}}",
   "schedule": {
     "days": ["Tuesday", "Thursday"],
-    "startTime": "13:00",
-    "endTime": "14:30",
+    "startTime": "15:00",
+    "endTime": "19:30",
     "room": "B-201",
     "startDate": "2023-09-01",
     "endDate": "2023-12-15"
@@ -311,7 +311,7 @@ Content-Type: application/json
 @course2Id = {{createCourse2.response.body._id}}
 
 ### Get all courses
-GET {{baseUrl}}/courses
+GET {{baseUrl}}/courses?includePrerequisites=true
 Authorization: Bearer {{professorToken}}
 
 ### Get course by ID
@@ -337,8 +337,37 @@ Content-Type: application/json
 
 ### Delete course
 # Note: Uncomment only when you want to test deletion
-# DELETE {{baseUrl}}/courses/{{course2Id}}
-# Authorization: Bearer {{professorToken}}
+ DELETE {{baseUrl}}/courses/{{course2Id}}
+ Authorization: Bearer {{professorToken}}
+
+###############################################################################
+# PREREQUISITES
+###############################################################################
+
+### Create a prerequisite relationship (professor or admin role)
+# @name createPrerequisite
+POST {{baseUrl}}/prerequisites
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "courseId": "{{courseId}}",
+  "prerequisiteCourseId": "{{course2Id}}"
+}
+
+### Get all prerequisites
+GET {{baseUrl}}/prerequisites
+Authorization: Bearer {{professorToken}}
+
+### Get prerequisites for specific course
+GET {{baseUrl}}/prerequisites/course/{{course2Id}}
+Authorization: Bearer {{professorToken}}
+
+### Delete a prerequisite relationship
+DELETE {{baseUrl}}/prerequisites/{{courseId}}/{{course2Id}}
+Authorization: Bearer {{professorToken}}
+
+
 
 ###############################################################################
 # ENROLLMENTS
@@ -353,7 +382,7 @@ Content-Type: application/json
 
 {
   "studentId": "{{studentId}}",
-  "courseId": "{{courseId}}",
+  "courseId": "{{course2Id}}",
   "enrollmentStartDate": "2023-09-05",
   "enrollmentEndDate": "2023-12-15"
 }
@@ -421,7 +450,7 @@ Authorization: Bearer {{professorToken}}
 Content-Type: application/json
 
 {
-  "courseId": "{{courseId}}",
+  "courseId": "{{course2Id}}",
   "name": "Final Project",
   "description": "Implement a complete application",
   "maxScore": 100,
@@ -474,7 +503,7 @@ Content-Type: application/json
 
 {
   "studentId": "{{studentId}}",
-  "evaluationId": "{{evaluationId}}",
+  "evaluationId": "{{evaluation2Id}}",
   "grade": 85,
   "comments": "Good work!"
 }
@@ -576,4 +605,5 @@ Content-Type: application/json
 ### Delete schedule (Admin only)
 # Note: Uncomment only when you want to test deletion
 # DELETE {{baseUrl}}/schedules/{{scheduleId}}
-# Authorization: Bearer {{adminToken}} 
+# Authorization: Bearer {{adminToken}}
+

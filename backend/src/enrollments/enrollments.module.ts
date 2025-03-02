@@ -6,6 +6,7 @@ import { Enrollment, EnrollmentSchema } from './schemas/enrollment.schema';
 import { StudentsModule } from '../students/students.module';
 import { CoursesModule } from '../courses/courses.module';
 import { UserModule } from '../user/user.module';
+import { PrerequisitesModule } from '../prerequisites/prerequisites.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { UserModule } from '../user/user.module';
     StudentsModule,
     CoursesModule,
     UserModule,
+    PrerequisitesModule,
   ],
   controllers: [EnrollmentsController],
   providers: [EnrollmentsService],

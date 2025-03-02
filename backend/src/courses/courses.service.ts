@@ -3,15 +3,31 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Document } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { ProfessorsService } from '../professors/professors.service';
 import { SchedulesService } from '../schedules/schedules.service';
 import { Schedule } from '../schedules/schemas/schedule.schema';
+import { PrerequisitesService } from '../prerequisites/prerequisites.service';
+
+// Export this interface so it can be used by controllers
+export interface CourseWithPrerequisites extends Document {
+  _id: any;
+  name: string;
+  description: string;
+  professorId: any;
+  scheduleId: any;
+  prerequisites: any[];
+  createdAt?: Date;
+  updatedAt?: Date;
+  [key: string]: any;
+}
 
 @Injectable()
 export class CoursesService {
@@ -19,6 +35,8 @@ export class CoursesService {
     @InjectModel(Course.name) private courseModel: Model<CourseDocument>,
     private professorsService: ProfessorsService,
     private schedulesService: SchedulesService,
+    @Inject(forwardRef(() => PrerequisitesService))
+    private prerequisitesService: PrerequisitesService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto): Promise<Course> {
@@ -51,15 +69,51 @@ export class CoursesService {
     return course.save();
   }
 
-  async findAll(): Promise<Course[]> {
-    return this.courseModel
+  async findAll(
+    options: { includePrerequisites?: boolean } = {},
+  ): Promise<Course[]> {
+    const courses = await this.courseModel
       .find()
       .populate('professorId')
       .populate('scheduleId')
       .exec();
+
+    // If we don't want prerequisites or don't have the service, return as is
+    if (!options.includePrerequisites || !this.prerequisitesService) {
+      return courses;
+    }
+
+    // Add prerequisites to each course
+    const coursesWithPrerequisites = await Promise.all(
+      courses.map(async (course) => {
+        try {
+          // Use the existing findOne method with depth=0 to get first level prerequisites
+          const courseWithPrereqs = await this.findOne(
+            course._id?.toString() || '', // Handle potentially undefined _id
+            { skipPrerequisites: false, depth: 0 },
+          );
+          return courseWithPrereqs;
+        } catch (error) {
+          console.error(`Error fetching prerequisites for course:`, error);
+          // If there's an error, return the course without prerequisites
+          const plainCourse = course.toObject();
+          // Make sure the return object has all required fields
+          return {
+            ...plainCourse,
+            prerequisites: [],
+          };
+        }
+      }),
+    );
+
+    // TypeScript doesn't like this, but we know the structure is correct
+    return coursesWithPrerequisites as unknown as Course[];
   }
 
-  async findOne(id: string): Promise<Course> {
+  async findOne(
+    id: string,
+    options: { skipPrerequisites?: boolean; depth?: number } = {},
+  ): Promise<Course> {
     const course = await this.courseModel
       .findById(id)
       .populate('professorId')
@@ -68,6 +122,71 @@ export class CoursesService {
 
     if (!course) {
       throw new NotFoundException(`Course with ID ${id} not found`);
+    }
+
+    // Get prerequisites if prerequisitesService is available AND skipPrerequisites flag is false
+    if (this.prerequisitesService && !options.skipPrerequisites) {
+      const depth = options.depth !== undefined ? options.depth : 0;
+
+      if (depth < 5) {
+        const prerequisites =
+          await this.prerequisitesService.findAllByCourse(id);
+
+        const courseObj = course.toObject();
+
+        if (prerequisites.length > 0) {
+          const prerequisiteDetails = await Promise.all(
+            prerequisites.map(async (prereq) => {
+              try {
+                // Check if prerequisiteCourseId is a populated document or just an ID
+                const prereqId =
+                  typeof prereq.prerequisiteCourseId === 'object' &&
+                  prereq.prerequisiteCourseId !== null
+                    ? (prereq.prerequisiteCourseId as any)._id // Cast to any to bypass TypeScript checks
+                    : prereq.prerequisiteCourseId;
+
+                // Get full course details
+                const prereqCourse = await this.courseModel
+                  .findById(prereqId)
+                  .populate('professorId')
+                  .populate('scheduleId')
+                  .exec();
+
+                if (!prereqCourse) {
+                  throw new Error(`Prerequisite course not found: ${prereqId}`);
+                }
+
+                // Convert to plain object for proper JSON serialization
+                return prereqCourse.toObject();
+              } catch (error) {
+                console.error(`Error fetching prerequisite:`, error);
+                return {
+                  _id: prereq.prerequisiteCourseId.toString(),
+                  name: 'Unknown Course',
+                  description: 'Failed to load course details',
+                  error: error.message,
+                };
+              }
+            }),
+          );
+
+          // Add prerequisites to our course object
+          return {
+            ...courseObj,
+            prerequisites: prerequisiteDetails,
+          } as unknown as Course;
+        } else {
+          return {
+            ...courseObj,
+            prerequisites: [],
+          } as unknown as Course;
+        }
+      } else {
+        return {
+          ...course.toObject(),
+          prerequisites: [],
+        } as unknown as Course;
+      }
     }
 
     return course;

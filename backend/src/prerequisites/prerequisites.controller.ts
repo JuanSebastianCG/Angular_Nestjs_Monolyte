@@ -10,13 +10,16 @@ import {
 import { PrerequisitesService } from './prerequisites.service';
 import { CreatePrerequisiteDto } from './dto/create-prerequisite.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('prerequisites')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class PrerequisitesController {
   constructor(private readonly prerequisitesService: PrerequisitesService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
+  @Roles('admin', 'professor')
   create(@Body() createPrerequisiteDto: CreatePrerequisiteDto) {
     return this.prerequisitesService.create(createPrerequisiteDto);
   }
@@ -27,12 +30,12 @@ export class PrerequisitesController {
   }
 
   @Get('course/:courseId')
-  findAllForCourse(@Param('courseId') courseId: string) {
-    return this.prerequisitesService.findAllForCourse(courseId);
+  findAllByCourse(@Param('courseId') courseId: string) {
+    return this.prerequisitesService.findAllByCourse(courseId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete(':courseId/:prerequisiteCourseId')
+  @Roles('admin', 'professor')
   remove(
     @Param('courseId') courseId: string,
     @Param('prerequisiteCourseId') prerequisiteCourseId: string,
