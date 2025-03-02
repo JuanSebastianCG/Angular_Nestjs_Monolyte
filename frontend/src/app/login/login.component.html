@@ -1,0 +1,92 @@
+<div class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="p-4 border-b">
+    <div class="container mx-auto flex items-center">
+      <a
+        routerLink="/"
+        class="text-blue-600 hover:text-blue-800 font-medium border-b-2 border-blue-600 px-2 py-1"
+        >Home</a
+      >
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto flex-grow p-4 flex flex-col items-center">
+    <div class="w-full max-w-md mt-8">
+      <h1 class="text-2xl font-bold text-center text-blue-600 mb-8">Login</h1>
+
+      <!-- Error Alert -->
+      <div
+        *ngIf="errorMessage"
+        class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"
+        role="alert"
+      >
+        <p>{{ errorMessage }}</p>
+      </div>
+
+      <!-- Login Form -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
+        <!-- Username -->
+        <div
+          class="relative border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
+        >
+          <label
+            for="username"
+            class="absolute -top-2.5 left-2 bg-white px-1 text-sm text-gray-600"
+            >Usuario</label
+          >
+          <input
+            type="text"
+            id="username"
+            formControlName="username"
+            class="block w-full py-3 px-3 border-none rounded-md focus:ring-0"
+            placeholder="user"
+          />
+          <div
+            class="absolute inset-y-0 left-0 w-1 bg-blue-600"
+            *ngIf="
+              loginForm.get('username')?.touched &&
+              !loginForm.get('username')?.errors
+            "
+          ></div>
+        </div>
+
+        <!-- Password -->
+        <div
+          class="relative border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
+        >
+          <label
+            for="password"
+            class="absolute -top-2.5 left-2 bg-white px-1 text-sm text-gray-600"
+            >contraseña</label
+          >
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
+            class="block w-full py-3 px-3 border-none rounded-md focus:ring-0"
+            placeholder="********************"
+          />
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-between space-x-4 mt-8">
+          <button
+            type="submit"
+            [disabled]="loginForm.invalid || isSubmitting"
+            class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            (click)="navigateToRegister()"
+            class="border border-blue-600 text-blue-600 bg-white py-2 px-6 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full"
+          >
+            Registrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>

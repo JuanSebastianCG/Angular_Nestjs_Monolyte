@@ -1,78 +1,35 @@
-Gestor Academico
+The university needs to develop a system to manage the information of its departments, professors, students, courses, and enrollments. The system must allow the administration of course schedules, conducted evaluations, and the prerequisites that a student must meet before enrolling in certain courses.
+Each department has a unique code, a name, and is associated with multiple professors. A professor has a unique identifier, a name, a hiring date, and can be assigned to only one department. A professor can teach multiple courses, but each course can only be taught by a single professor.
+Each course has a unique code, a name, a description, and is associated with a single professor. Some courses may require students to have completed other courses before enrolling, so the system must manage this relationship between courses. Additionally, each course can have a scheduled timetable that must be stored in the system.
+Students have a unique identification number, a name, a date of birth, and can enroll in multiple courses. Student enrollments are recorded in an enrollment table, where the enrollment date and the final grade obtained in the course are stored.
+During the semester, courses may have multiple evaluations, such as exams or projects. Each evaluation has a unique identifier, a completion date, and is associated with a course. Students can take multiple evaluations within a course, and the system must allow the registration of the grade obtained in each one.
+The system must implement referential integrity policies to ensure data consistency.
 
-La universidad necesita desarrollar un sistema para gestionar la información de sus
-departamentos, profesores, estudiantes, cursos y matrículas. El sistema debe permitir administrar los horarios de los cursos, las evaluaciones realizadas y los prerrequisitos que un estudiante debe cumplir antes de inscribirse en ciertos cursos.Cada departamento tiene un código único, un nombre y está asociado con varios profesores. Un profesor tiene un identificador único, un nombre, una fecha de contratación, y puede estar asignado a un solo departamento. Un profesor puede impartir varios cursos, pero un curso solo puede ser impartido por un profesor. Cada curso tiene un código único, un nombre, una descripción, y está asociado con un único profesor. Algunos cursos pueden requerir que el estudiante haya completado otros cursos antes de inscribirse, por lo que es necesario gestionar esta relación entre los cursos. Asimismo, cada curso puede tener un horario programado que debe almacenarse en el sistema. Los estudiantes tienen un número de identificación único, un nombre, una fecha de nacimiento, y pueden inscribirse en varios cursos. La inscripción de los estudiantes se registra en una tabla de matrículas, donde se almacena la fecha de inscripción y la calificación final obtenida en el curso. Durante el semestre, los cursos pueden tener varias evaluaciones, como exámenes o proyectos. Cada evaluación tiene un identificador único, una fecha de realización y está asociada a un curso. Los estudiantes pueden realizar varias evaluaciones en un curso, y el sistema debe permitir registrar la calificación obtenida en cada una. El sistema debe implementar políticas de integridad referencial para garantizar la consistencia de los datos.
-
-Tablas y Relaciones de la Base de Datos
-1. Departamento
-PK (dept_id)
-name
-2. Profesor
-PK (professor_id)
-name
-FK (dept_id) → Referencia a Departamento
-hiring_date
-3. Curso
-PK (course_id)
-name
-FK (professor_id) → Referencia a Profesor
-description
-FK (schedule_id) → Referencia a Schedule
-4. Prerrequisito
-PK, FK (course_id) → Referencia a Curso
-PK, FK (prerequisite_course_id) → Referencia a otro Curso como prerrequisito
-5. Evaluación
-PK (evaluation_id)
-evaluation_date
-FK (course_id) → Referencia a Curso
-6. Evaluación_Estudiante
-PK, FK (evaluation_id) → Referencia a Evaluación
-PK, FK (student_id) → Referencia a Estudiante
-grade
-7. Inscripción
-PK, FK (student_id) → Referencia a Estudiante
-PK, FK (course_id) → Referencia a Curso
-enrollment_start_date
-enrollment_end_date
-final_grade
-8. Estudiante
-PK (student_id)
-PK (course_code) (¿Posible error? Parece otra clave primaria sin relación)
-birth_date
-9. Horario (Schedule)
-PK (schedule_id)
-start_date
-end_date
-days_week
-start_hour
-end_hour
-Relaciones Clave
-Departamento → Profesor (Uno a muchos)
-Un departamento tiene varios profesores.
-Un profesor pertenece a un solo departamento.
-Profesor → Curso (Uno a muchos)
-Un profesor imparte varios cursos.
-Un curso tiene un único profesor.
-Curso → Prerrequisito (Auto-relación)
-Un curso puede requerir otro curso como prerrequisito.
-Curso → Evaluación (Uno a muchos)
-Un curso tiene varias evaluaciones.
-Una evaluación pertenece a un solo curso.
-Evaluación → Evaluación_Estudiante (Uno a muchos)
-Una evaluación puede tener muchas notas de estudiantes.
-Cada entrada en Evaluación_Estudiante corresponde a una evaluación de un estudiante.
-Curso → Inscripción (Uno a muchos)
-Un curso puede tener muchos estudiantes inscritos.
-Un estudiante puede estar inscrito en muchos cursos.
-Estudiante → Evaluación_Estudiante (Uno a muchos)
-Un estudiante puede tener varias calificaciones de evaluaciones.
-Curso → Horario (Uno a uno)
-Cada curso tiene un horario específico.
-
-
-
-
-8. Estudiante
-PK (student_id)
-PK (course_code) (¿Posible error? Parece otra clave primaria sin relación)
-birth_date
+Generate a structured boilerplate for a full-stack academic management system using NestJS for the backend and Angular with TypeScript and Tailwind CSS for the frontend. The project should follow best practices but remain simple, focusing only on the environment setup and directory structure, not the internal logic.
+General Requirements:
+Backend: NestJS with TypeScript
+Frontend: Angular with TypeScript and Tailwind CSS
+Authentication: Token-based authentication (JWT)
+Code Quality: ESLint and Prettier configured for both frontend and backend
+Database: MongoDB
+Environment: Docker support with docker-compose for easy setup
+Monorepo structure using Nx (optional)
+Backend Structure (NestJS):
+src/ folder with modular organization (auth, users, departments, courses, etc.)
+Authentication module with JWT strategy
+Configuration module to handle environment variables (@nestjs/config)
+Database module with TypeORM configured
+Basic REST API structure with controllers and services
+Frontend Structure (Angular):
+src/app/ folder with modular organization (auth, students, courses, etc.)
+Angular Router configured for navigation
+Authentication service handling JWT tokens and guards
+Tailwind CSS configured for styling
+State management using Signals (or NgRx if necessary)
+Environment files for API configuration
+Development Tools & Configurations:
+ESLint and Prettier for linting and formatting
+Husky for pre-commit hooks
+Docker support with docker-compose.yml for PostgreSQL and application services
+README.md with setup instructions
+Generate the project with this structure, ensuring it is well-organized and follows best practices but does not include detailed business logic. The focus should be on setting up the environment, configuring essential tools, and structuring the project properly.
