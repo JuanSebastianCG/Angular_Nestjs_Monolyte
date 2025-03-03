@@ -18,7 +18,7 @@ export interface Grade {
   providedIn: 'root',
 })
 export class GradeService {
-  private apiUrl = `${environment.apiUrl}/api/grades`;
+  private apiUrl = `${environment.apiUrl}/grades`;
 
   constructor(
     private http: HttpClient,

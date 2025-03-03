@@ -19,7 +19,7 @@ export interface Enrollment {
   providedIn: 'root',
 })
 export class EnrollmentService {
-  private apiUrl = `${environment.apiUrl}/api/enrollments`;
+  private apiUrl = `${environment.apiUrl}/enrollments`;
 
   constructor(
     private http: HttpClient,

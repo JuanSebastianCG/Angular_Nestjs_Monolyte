@@ -89,8 +89,19 @@ export class AuthService {
   private navigateByRole(role: string): void {
     const normalizedRole = role.toLowerCase();
 
-    // All users go to cursos page, which will adapt to their role
-    this.router.navigate(['/cursos']);
+    switch (normalizedRole) {
+      case 'student':
+        this.router.navigate(['/cursos']);
+        break;
+      case 'professor':
+        this.router.navigate(['/cursos']);
+        break;
+      case 'admin':
+        this.router.navigate(['/departamentos']);
+        break;
+      default:
+        this.router.navigate(['/home']);
+    }
   }
 
   getToken(): string {

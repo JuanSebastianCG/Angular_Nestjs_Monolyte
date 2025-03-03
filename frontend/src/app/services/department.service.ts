@@ -15,7 +15,7 @@ export interface Department {
   providedIn: 'root',
 })
 export class DepartmentService {
-  private apiUrl = `${environment.apiUrl}/api/departments`;
+  private apiUrl = `${environment.apiUrl}/departments`;
 
   constructor(
     private http: HttpClient,

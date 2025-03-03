@@ -30,7 +30,7 @@ export interface Course {
   providedIn: 'root',
 })
 export class CourseService {
-  private apiUrl = `${environment.apiUrl}/api/courses`;
+  private apiUrl = `${environment.apiUrl}/courses`;
 
   constructor(
     private http: HttpClient,
