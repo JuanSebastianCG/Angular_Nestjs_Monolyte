@@ -358,7 +358,7 @@ GET {{baseUrl}}/prerequisites
 Authorization: Bearer {{professorToken}}
 
 ### Get prerequisites for specific course
-GET {{baseUrl}}/prerequisites/course/{{course2Id}}
+GET {{baseUrl}}/prerequisites/course/{{courseId}}
 Authorization: Bearer {{professorToken}}
 
 ### Delete a prerequisite relationship

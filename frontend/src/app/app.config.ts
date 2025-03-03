@@ -42,6 +42,11 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'cursos/:id',
+    loadComponent: () => import('./components/course-detail/course-detail.component').then(m => m.CourseDetailComponent),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'departamentos',
     component: DepartamentosComponent,
     canActivate: [AuthGuard, RoleGuard],

@@ -9,6 +9,7 @@ import { CursosComponent } from './cursos/cursos.component';
 import { DepartamentosComponent } from './departamentos/departamentos.component';
 import { InscribirComponent } from './inscribir/inscribir.component';
 import { NotasComponent } from './notas/notas.component';
+import { CourseDetailComponent } from './components/course-detail/course-detail.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -24,8 +25,7 @@ const routes: Routes = [
   },
   {
     path: 'cursos/:id',
-    // This would be a CourseDetailComponent to be created later
-    component: CursosComponent,
+    component: CourseDetailComponent,
     canActivate: [AuthGuard],
   },
 

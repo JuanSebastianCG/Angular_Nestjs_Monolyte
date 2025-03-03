@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { CourseService, Course as ApiCourse, Prerequisite } from '../services/course.service';
+import { CourseService } from '../services/course.service';
+import { Course as ApiCourse } from '../models/course.model';
+import { Prerequisite } from '../models/prerequisite.model';
 import { CourseCardComponent, Course as UiCourse } from '../components/shared/course-card/course-card.component';
 import { forkJoin, of } from 'rxjs';
 import { switchMap, catchError, map } from 'rxjs/operators';
@@ -272,72 +274,52 @@ export class CursosComponent implements OnInit {
     // Log para depuración
     console.log(`Procesando ${this.apiCourses.length} cursos para el usuario con rol ${this.userRole}`);
 
-    const observables = this.apiCourses.map(course => {
+    // Procesamos los cursos directamente sin llamadas adicionales para obtener prerrequisitos
+    this.uiCourses = this.apiCourses.map(course => {
       console.log(`Procesando curso: ${course.name} (${course._id})`);
       
-      // Para cada curso, obtener los prerrequisitos
-      return this.courseService.getCoursePrerequisites(course._id).pipe(
-        catchError(error => {
-          console.error(`Error loading prerequisites for course ${course._id}:`, error);
-          return of([] as Prerequisite[]);
-        }),
-        map(prerequisites => {
-          return {
-            course,
-            prerequisites
-          };
-        })
-      );
+      // Extraemos los prerrequisitos directamente del objeto curso
+      const prerequisites = course.prerequisites || [];
+      
+      // Para estudiantes, los cursos que vienen de getCoursesByStudent ya tienen información de inscripción
+      const isEnrolled = this.userRole === 'student' ? true : !!course.isEnrolled;
+      
+      // Obtenemos la información del horario
+      const schedule = course.schedule || { 
+        room: '',
+        startTime: '', 
+        endTime: '', 
+        days: [],
+        startDate: '',
+        endDate: ''
+      };
+      
+      // Convertimos a formato UI
+      const uiCourse: UiCourse = {
+        id: course._id,
+        title: course.name,
+        description: course.description,
+        room: schedule.room,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        days: schedule.days,
+        startDate: schedule.startDate,
+        endDate: schedule.endDate,
+        prerequisites: prerequisites,
+        professor: course.professor,
+        department: course.department,
+        enrolledStudents: course.enrolledStudents?.length,
+        isEnrolled: isEnrolled,
+        enrollmentStatus: course.enrollmentStatus || '',
+        enrollmentDate: course.enrollmentDate || ''
+      };
+      
+      return uiCourse;
     });
 
-    // Wait for all observables to complete
-    forkJoin(observables).subscribe({
-      next: (results) => {
-        this.uiCourses = results.map(({ course, prerequisites }) => {
-          // Convert API course to UI course format
-          const schedule = course.schedule || { 
-            room: '',
-            startTime: '', 
-            endTime: '', 
-            days: [],
-            startDate: '',
-            endDate: ''
-          };
-          
-          // Para estudiantes, los cursos que vienen de getCoursesByStudent ya tienen información de inscripción
-          const isEnrolled = this.userRole === 'student' ? true : !!course.isEnrolled;
-          
-          const uiCourse: UiCourse = {
-            id: course._id,
-            title: course.name,
-            description: course.description,
-            room: schedule.room,
-            startTime: schedule.startTime,
-            endTime: schedule.endTime,
-            days: schedule.days,
-            startDate: schedule.startDate,
-            endDate: schedule.endDate,
-            prerequisites: prerequisites,
-            professor: course.professor,
-            department: course.department,
-            enrolledStudents: course.enrolledStudents?.length,
-            isEnrolled: isEnrolled,
-            enrollmentStatus: course.enrollmentStatus || '',
-            enrollmentDate: course.enrollmentDate || ''
-          };
-          return uiCourse;
-        });
-
-        // Log para depuración
-        console.log(`Procesados ${this.uiCourses.length} cursos para mostrar en la UI`);
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error processing courses:', error);
-        this.errorMessage = 'Error al procesar la información de los cursos.';
-        this.isLoading = false;
-      }
-    });
+    // Log para depuración
+    console.log(`Procesados ${this.uiCourses.length} cursos para mostrar en la UI`);
+    this.isLoading = false;
   }
 
   getPageTitle(): string {
@@ -354,9 +336,18 @@ export class CursosComponent implements OnInit {
   }
 
   viewCourseDetails(courseId: string): void {
-    console.log('View course details:', courseId);
-    // Navigate to course details
-    this.router.navigate(['/cursos', courseId]);
+    console.log('Navegando a detalles del curso:', courseId);
+    
+    // Usar navigateByUrl para mayor simplicidad
+    const url = `/cursos/${courseId}`;
+    console.log('URL de navegación:', url);
+    
+    // Forzar navegación programática
+    setTimeout(() => {
+      this.router.navigateByUrl(url)
+        .then(() => console.log('Navegación exitosa'))
+        .catch(error => console.error('Error de navegación:', error));
+    }, 100);
   }
 
   createNewCourse(): void {
@@ -434,11 +425,24 @@ export class CursosComponent implements OnInit {
   }
 
   handleCourseAction(course: UiCourse): void {
+    // Registrar información detallada para depuración
+    console.log('---------------------------------------');
+    console.log('Course action triggered:', { 
+      id: course.id, 
+      title: course.title,
+      userRole: this.userRole,
+      isEnrolled: course.isEnrolled,
+      actionType: this.getActionButtonText(course)
+    });
+    
     if (this.userRole === 'admin') {
+      console.log('Admin - Editing course');
       this.editCourse(course.id);
     } else if (this.userRole === 'professor' || course.isEnrolled) {
+      console.log('Viewing course details as', this.userRole);
       this.viewCourseDetails(course.id);
     } else {
+      console.log('Student - Enrolling in course');
       this.enrollInCourse(course.id);
     }
   }

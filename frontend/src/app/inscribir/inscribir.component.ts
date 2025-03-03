@@ -11,9 +11,10 @@ interface Course {
   _id: string;
   name: string;
   description: string;
-  professorId: string;
+  professorId?: string;
   professor: string;
   isEnrolled?: boolean;
+  capacity?: number;
 }
 
 @Component({
@@ -263,6 +264,7 @@ export class InscribirComponent implements OnInit {
                 _id: course._id,
                 name: course.name,
                 description: course.description,
+                capacity: course.capacity || 0, // Agregar la propiedad capacity
                 professorId: course.professorId,
                 professor: course.professor || course.professorId, // Si existe el nombre del profesor, usarlo
                 isEnrolled: false // Ya sabemos que no está inscrito porque los filtramos

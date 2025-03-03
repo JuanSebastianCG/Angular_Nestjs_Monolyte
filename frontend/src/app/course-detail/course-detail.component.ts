@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
-import { CourseService, Course } from '../services/course.service';
+import { CourseService } from '../services/course.service';
+import { Course } from '../models/course.model';
 import { EnrollmentService } from '../services/enrollment.service';
 import { NotificationService } from '../components/notification/notification.service';
 

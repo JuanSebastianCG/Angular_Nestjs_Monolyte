@@ -1,0 +1,465 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <header class="bg-white p-4 border-b border-gray-200">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center">
+        <button
+          (click)="goBack($event)"
+          class="mr-4 text-gray-600 hover:text-gray-900"
+          aria-label="Volver a la lista de cursos"
+          title="Volver a la lista de cursos"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            ></path>
+          </svg>
+        </button>
+        <h1 class="text-xl font-semibold text-gray-800">
+          Detalles del Curso
+        </h1>
+      </div>
+      <div class="flex items-center">
+        <span class="text-gray-600 mr-4">{{ userName }}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto py-6 px-4">
+    <!-- Loading indicator -->
+    <div *ngIf="isLoading" class="text-center p-8">
+      <p class="text-gray-600">Cargando información del curso...</p>
+    </div>
+
+    <!-- Error message -->
+    <div 
+      *ngIf="!isLoading && errorMessage" 
+      class="bg-red-100 text-red-700 p-4 rounded-lg mb-6"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <!-- Course Details -->
+    <div *ngIf="!isLoading && course && hasAccess">
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Información del curso -->
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ course.name }}</h2>
+            <p class="text-gray-600 mb-4">{{ course.description }}</p>
+            
+            <!-- Detalles del profesor y departamento -->
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-500 font-medium">Profesor</p>
+                <p class="text-gray-800">{{ course.professor || 'No asignado' }}</p>
+              </div>
+     
+            </div>
+            
+            <!-- Prerrequisitos -->
+            <div class="mt-4" *ngIf="prerequisites && prerequisites.length > 0">
+              <p class="text-gray-500 font-medium">Prerrequisitos:</p>
+              <ul class="mt-2 space-y-1 text-sm text-gray-700">
+                <li *ngFor="let prerequisite of prerequisites" class="flex items-center">
+                  <svg class="h-4 w-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  {{ prerequisite?.name }}
+                </li>
+              </ul>
+            </div>
+            <div class="mt-4" *ngIf="!prerequisites || prerequisites.length === 0">
+              <p class="text-gray-500 font-medium">Prerrequisitos:</p>
+              <p class="text-sm text-gray-700">No hay prerrequisitos para este curso.</p>
+            </div>
+          </div>
+          
+          <!-- Información del horario -->
+          <div *ngIf="course.schedule">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Horario</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-500 font-medium">Días</p>
+                <p class="text-gray-800">{{ course.schedule.days?.join(', ') || 'No especificado' }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500 font-medium">Hora</p>
+                <p class="text-gray-800" *ngIf="course.schedule.startTime && course.schedule.endTime">
+                  {{ course.schedule.startTime }} - {{ course.schedule.endTime }}
+                </p>
+                <p class="text-gray-800" *ngIf="!course.schedule.startTime || !course.schedule.endTime">
+                  No especificado
+                </p>
+              </div>
+              <div>
+                <p class="text-gray-500 font-medium">Aula</p>
+                <p class="text-gray-800">{{ course.schedule.room || 'No asignada' }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500 font-medium">Periodo</p>
+                <p class="text-gray-800" *ngIf="course.schedule.startDate && course.schedule.endDate">
+                  {{ course.schedule.startDate }} a {{ course.schedule.endDate }}
+                </p>
+                <p class="text-gray-800" *ngIf="!course.schedule.startDate || !course.schedule.endDate">
+                  No especificado
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Pestañas: Estudiantes, Evaluaciones, Calificaciones -->
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <!-- Navegación de pestañas -->
+        <div class="border-b border-gray-200">
+          <nav class="flex -mb-px">
+            <ng-container *ngFor="let tab of tabs">
+              <button 
+                (click)="selectTab(tab.id)" 
+                class="py-4 px-6 font-medium text-sm border-b-2 focus:outline-none transition-colors duration-200"
+                [class.border-blue-500]="activeTab === tab.id"
+                [class.text-blue-600]="activeTab === tab.id"
+                [class.border-transparent]="activeTab !== tab.id"
+                [class.text-gray-500]="activeTab !== tab.id"
+                [class.hover:text-gray-700]="activeTab !== tab.id"
+                [class.hover:border-gray-300]="activeTab !== tab.id"
+                [attr.aria-selected]="activeTab === tab.id"
+              >
+                {{ tab.name }}
+              </button>
+            </ng-container>
+          </nav>
+        </div>
+        
+        <!-- Contenido de pestañas -->
+        <div class="p-6">
+          <!-- Contenido de la pestaña Estudiantes -->
+          <div *ngIf="activeTab === 'students'">
+            <!-- Buscador de estudiantes -->
+            <div class="mb-4">
+              <div class="relative">
+                <input 
+                  type="text" 
+                  [(ngModel)]="studentSearchTerm"
+                  (input)="filterStudents()"
+                  placeholder="Buscar estudiante..." 
+                  class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                >
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Loading indicator para estudiantes -->
+            <div *ngIf="isLoadingEnrollments" class="text-center py-4">
+              <p class="text-gray-600">Cargando estudiantes inscritos...</p>
+            </div>
+            
+            <!-- Lista de estudiantes -->
+            <div *ngIf="!isLoadingEnrollments">
+              <div *ngIf="filteredEnrollments.length === 0" class="text-center py-4">
+                <p class="text-gray-600">No hay estudiantes inscritos en este curso.</p>
+              </div>
+              
+              <div *ngIf="filteredEnrollments.length > 0" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de inscripción</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr *ngFor="let enrollment of filteredEnrollments">
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ enrollment.studentName }}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500">{{ enrollment.enrollmentDate }}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                              [ngClass]="{
+                                'bg-green-100 text-green-800': enrollment.status === 'active' || enrollment.status === 'start',
+                                'bg-yellow-100 text-yellow-800': enrollment.status === 'pending',
+                                'bg-red-100 text-red-800': enrollment.status === 'inactive' || enrollment.status === 'withdrawn'
+                              }">
+                          {{ enrollment.status === 'start' ? 'Activo' : 
+                             enrollment.status === 'active' ? 'Activo' : 
+                             enrollment.status === 'pending' ? 'Pendiente' : 
+                             enrollment.status === 'inactive' ? 'Inactivo' : 
+                             enrollment.status === 'withdrawn' ? 'Retirado' : enrollment.status }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Contenido de la pestaña Evaluaciones -->
+          <div *ngIf="activeTab === 'exams'">
+            <!-- Loading indicator para evaluaciones -->
+            <div *ngIf="isLoadingEvaluations" class="text-center py-4">
+              <p class="text-gray-600">Cargando evaluaciones...</p>
+            </div>
+            
+            <!-- Lista de evaluaciones -->
+            <div *ngIf="!isLoadingEvaluations">
+              <div *ngIf="evaluations.length === 0" class="text-center py-4">
+                <p class="text-gray-600">No hay evaluaciones programadas para este curso.</p>
+              </div>
+              
+              <!-- Botón para crear evaluación (solo para profesores y admins) -->
+              <div *ngIf="userRole === 'professor' || userRole === 'admin'" class="mb-4">
+                <button 
+                  (click)="createNewEvaluation()" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none"
+                >
+                  <span class="flex items-center">
+                    <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Nueva Evaluación
+                  </span>
+                </button>
+              </div>
+              
+              <!-- Tabla de evaluaciones -->
+              <div *ngIf="evaluations.length > 0" class="space-y-4">
+                <div *ngFor="let evaluation of evaluations" class="bg-white border border-gray-200 rounded-md hover:shadow-md transition-shadow">
+                  <div class="flex justify-between items-start p-4">
+                    <div>
+                      <h3 class="text-lg font-medium text-gray-900">{{ evaluation.name }}</h3>
+                      <p class="mt-1 text-sm text-gray-600">{{ evaluation.description }}</p>
+                      <div class="mt-2 flex items-center text-sm text-gray-500">
+                        <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Fecha: {{ evaluation.evaluationDate | date:'dd/MM/yyyy' }}</span>
+                      </div>
+                      <div class="mt-1 flex items-center text-sm text-gray-500">
+                        <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span>Puntuación máxima: {{ evaluation.maxScore }}</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Acciones (solo para profesores y admins) -->
+                    <div *ngIf="userRole === 'professor' || userRole === 'admin'" class="ml-4 flex flex-col space-y-2">
+                      <button 
+                        (click)="toggleEvaluationExpansion(evaluation)" 
+                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
+                      >
+                        <span *ngIf="!evaluation.expanded">Ver calificaciones</span>
+                        <span *ngIf="evaluation.expanded">Ocultar calificaciones</span>
+                      </button>
+
+                      <button 
+                        (click)="editEvaluation(evaluation._id)" 
+                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none"
+                      >
+                        Editar
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Sección expandible con las calificaciones por estudiante -->
+                  <div *ngIf="evaluation.expanded" class="border-t border-gray-200 p-4">
+                    <!-- Loading indicator mientras cargan las calificaciones -->
+                    <div *ngIf="isLoadingGrades" class="text-center py-4">
+                      <p class="text-gray-600">Cargando calificaciones de estudiantes...</p>
+                    </div>
+                    
+                    <!-- Mostrar calificaciones de estudiantes -->
+                    <div *ngIf="!isLoadingGrades">
+                      <h4 class="text-lg font-medium mb-3">Calificaciones de Estudiantes</h4>
+                      
+                      <!-- Sin calificaciones -->
+                      <div *ngIf="!evaluation.studentGrades || evaluation.studentGrades.length === 0" class="text-center py-4">
+                        <p class="text-gray-600">No hay calificaciones registradas para esta evaluación.</p>
+                      </div>
+                      
+                      <!-- Tabla de calificaciones -->
+                      <div *ngIf="evaluation.studentGrades && evaluation.studentGrades.length > 0" class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                          <thead class="bg-gray-50">
+                            <tr>
+                              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudiante</th>
+                              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calificación</th>
+                              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comentarios</th>
+                              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                            </tr>
+                          </thead>
+                          <tbody class="bg-white divide-y divide-gray-200">
+                            <tr *ngFor="let grade of evaluation.studentGrades">
+                              <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ grade.studentId.name }}</div>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium" [ngClass]="{'text-green-600': grade.grade >= 3.0, 'text-red-600': grade.grade < 3.0}">
+                                  {{ grade.grade.toFixed(1) }}
+                                </div>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-500">{{ grade.comments || 'Sin comentarios' }}</div>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ grade.date | date:'dd/MM/yyyy' }}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Contenido de la pestaña Calificaciones -->
+          <div *ngIf="activeTab === 'grades'">
+            <!-- Loading indicator para calificaciones -->
+            <div *ngIf="isLoadingGrades" class="text-center py-4">
+              <p class="text-gray-600">Cargando calificaciones...</p>
+            </div>
+            
+            <!-- Contenido para profesores/administradores: todas las calificaciones -->
+            <div *ngIf="!isLoadingGrades && (userRole === 'professor' || userRole === 'admin')">
+              <div *ngIf="grades.length === 0" class="text-center py-4">
+                <p class="text-gray-600">No hay calificaciones registradas para este curso.</p>
+              </div>
+              
+              <div *ngIf="grades.length > 0" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudiante</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Examen</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calificación</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr *ngFor="let grade of grades">
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ grade.studentName }}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ grade.examTitle }}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium" [ngClass]="{'text-green-600': grade.value >= 3.0, 'text-red-600': grade.value < 3.0}">
+                          {{ grade.value.toFixed(1) }}
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ grade.date | date:'dd/MM/yyyy' }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- Contenido para estudiantes: solo sus calificaciones -->
+            <div *ngIf="!isLoadingGrades && userRole === 'student'">
+              <div *ngIf="studentGrades.length === 0" class="text-center py-4">
+                <p class="text-gray-600">No tienes calificaciones registradas en este curso.</p>
+              </div>
+              
+              <div *ngIf="studentGrades.length > 0">
+                <!-- Mostrar promedio del estudiante -->
+                <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="text-lg font-medium text-gray-900">Promedio del curso</h3>
+                      <p class="text-xl font-bold" [ngClass]="{'text-green-600': studentAverage && studentAverage >= 3.0, 'text-red-600': studentAverage && studentAverage < 3.0}">
+                        {{ studentAverage?.toFixed(1) || 'N/A' }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Lista de calificaciones del estudiante -->
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Examen</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calificación</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      <tr *ngFor="let grade of studentGrades">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm font-medium text-gray-900">{{ grade.examTitle }}</div>
+                          <div class="text-xs text-gray-500">{{ grade.feedback || 'Sin comentarios' }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm font-medium" [ngClass]="{'text-green-600': grade.value >= 3.0, 'text-red-600': grade.value < 3.0}">
+                            {{ grade.value.toFixed(1) }}
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {{ grade.date | date:'dd/MM/yyyy' }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Access Denied Message -->
+    <div *ngIf="!isLoading && (!hasAccess || !course)" class="text-center py-8">
+      <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 max-w-2xl mx-auto">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-yellow-700">
+              {{ errorMessage || 'No tienes acceso a este curso o el curso no existe.' }}
+            </p>
+          </div>
+        </div>
+      </div>
+      <button 
+        (click)="goBack($event)" 
+        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        Volver a mis cursos
+      </button>
+    </div>
+  </main>
+</div> 

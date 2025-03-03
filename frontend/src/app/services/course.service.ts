@@ -5,44 +5,10 @@ import { catchError, map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { Enrollment } from './enrollment.service';
-
-export interface Schedule {
-  days: string[];
-  startTime: string;
-  endTime: string;
-  room: string;
-  startDate: string;
-  endDate: string;
-}
-
-export interface Prerequisite {
-  courseId: string;
-  name: string;
-}
-
-export interface Course {
-  _id: string;
-  name: string;
-  description: string;
-  professorId: string;
-  professor?: string;
-  department?: string;
-  departmentId?: string;
-  schedule?: Schedule;
-  enrolledStudents?: any[];
-  prerequisites?: Prerequisite[];
-  isEnrolled?: boolean;
-  enrollmentStatus?: string;
-  enrollmentDate?: string;
-}
-
-export interface Student {
-  _id: string;
-  name: string;
-  email: string;
-  enrollmentDate: string;
-  status: string;
-}
+import { Course } from '../models/course.model';
+import { Prerequisite } from '../models/prerequisite.model';
+import { Student } from '../models/student.model';
+import { Schedule } from '../models/schedule.model';
 
 @Injectable({
   providedIn: 'root',
@@ -111,6 +77,7 @@ export class CourseService {
                 _id: courseData._id,
                 name: courseData.name,
                 description: courseData.description,
+                capacity: courseData.capacity || 0,
                 professorId: courseData.professorId,
                 // Datos adicionales de inscripción
                 isEnrolled: true,
@@ -216,10 +183,22 @@ export class CourseService {
 
   // Get prerequisites for a course
   getCoursePrerequisites(courseId: string): Observable<Prerequisite[]> {
-    const headers = this.getAuthHeaders();
-    return this.http
-      .get<Prerequisite[]>(`${this.apiUrl}/${courseId}/prerequisites`, { headers })
-      .pipe(catchError(this.handleError));
+    // En lugar de hacer una llamada a un endpoint que devuelve 404, obtenemos los detalles del curso
+    // que ya incluyen sus prerrequisitos
+    return this.getCourseById(courseId).pipe(
+      map(course => {
+        // Si el curso tiene la propiedad prerequisites, la devolvemos
+        // sino devolvemos un array vacío
+        if (course && course.prerequisites) {
+          return course.prerequisites as Prerequisite[];
+        }
+        return [] as Prerequisite[];
+      }),
+      catchError(error => {
+        console.error(`Error obteniendo prerrequisitos del curso ${courseId}:`, error);
+        return of([] as Prerequisite[]);
+      })
+    );
   }
 
   // Enroll student in a course
