@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, of, throwError, forkJoin } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
+import { Enrollment } from './enrollment.service';
 
 export interface Schedule {
   days: string[];
@@ -12,6 +13,11 @@ export interface Schedule {
   room: string;
   startDate: string;
   endDate: string;
+}
+
+export interface Prerequisite {
+  courseId: string;
+  name: string;
 }
 
 export interface Course {
@@ -24,6 +30,18 @@ export interface Course {
   departmentId?: string;
   schedule?: Schedule;
   enrolledStudents?: any[];
+  prerequisites?: Prerequisite[];
+  isEnrolled?: boolean;
+  enrollmentStatus?: string;
+  enrollmentDate?: string;
+}
+
+export interface Student {
+  _id: string;
+  name: string;
+  email: string;
+  enrollmentDate: string;
+  status: string;
 }
 
 @Injectable({
@@ -61,6 +79,67 @@ export class CourseService {
       .pipe(catchError(this.handleError));
   }
 
+  // Get courses by student ID (enrolled courses)
+  getCoursesByStudent(studentId: string): Observable<Course[]> {
+    const headers = this.getAuthHeaders();
+    
+    console.log(`Fetching enrollments for student: ${studentId}`);
+    
+    // Obtener las inscripciones del estudiante desde el endpoint correcto
+    return this.http
+      .get<any[]>(`${environment.apiUrl}/enrollments/student/${studentId}`, { headers })
+      .pipe(
+        map(enrollments => {
+          // Si no hay inscripciones, devolver array vacío
+          if (!enrollments || enrollments.length === 0) {
+            console.log('No enrollments found for student:', studentId);
+            return [];
+          }
+          
+          console.log(`Found ${enrollments.length} enrollments for student: ${studentId}`);
+          
+          // Extraer y transformar los cursos directamente desde las inscripciones
+          // Según el formato que mostraste, el curso completo viene en el campo 'courseId'
+          return enrollments.map(enrollment => {
+            // Verificar si el curso está embebido en el objeto enrollment.courseId
+            const courseData = enrollment.courseId;
+            
+            // Si el curso es un objeto completo (no solo un ID)
+            if (courseData && typeof courseData === 'object' && courseData._id) {
+              // Construir un objeto Course con los datos embebidos
+              const course: Course = {
+                _id: courseData._id,
+                name: courseData.name,
+                description: courseData.description,
+                professorId: courseData.professorId,
+                // Datos adicionales de inscripción
+                isEnrolled: true,
+                enrollmentStatus: enrollment.status,
+                enrollmentDate: new Date(enrollment.enrollmentStartDate).toISOString().split('T')[0]
+              };
+              
+              return course;
+            } else {
+              // Si por alguna razón el curso no está embebido, usar el courseId como fallback
+              console.warn(`Enrollment ${enrollment._id} has courseId that is not an object:`, courseData);
+              return {
+                _id: typeof courseData === 'string' ? courseData : enrollment.courseId,
+                name: 'Curso desconocido',
+                description: 'No se pudieron obtener los detalles del curso',
+                professorId: '',
+                isEnrolled: true,
+                enrollmentStatus: enrollment.status
+              } as Course;
+            }
+          });
+        }),
+        catchError(error => {
+          console.error('Error fetching student enrollments:', error);
+          return of([]);
+        })
+      );
+  }
+
   // Get course by ID
   getCourseById(id: string): Observable<Course> {
     const headers = this.getAuthHeaders();
@@ -72,15 +151,38 @@ export class CourseService {
   // Get multiple courses by IDs
   getCoursesById(ids: string[]): Observable<Course[]> {
     if (!ids || ids.length === 0) {
+      console.log('No course IDs provided to getCoursesById');
       return of([]);
     }
 
+    console.log(`Fetching details for ${ids.length} courses with IDs:`, ids);
     const headers = this.getAuthHeaders();
+    
     // Join the ids with commas for a query parameter
     const idsParam = ids.join(',');
+    
     return this.http
       .get<Course[]>(`${this.apiUrl}/byIds?ids=${idsParam}`, { headers })
-      .pipe(catchError(this.handleError));
+      .pipe(
+        catchError(error => {
+          console.error('Error using /byIds endpoint:', error);
+          console.log('Falling back to fetching courses individually');
+          
+          // Si el endpoint /byIds falla, intentamos obtener los cursos uno por uno
+          const courseObservables = ids.map(id => 
+            this.getCourseById(id).pipe(
+              catchError(error => {
+                console.error(`Error fetching course ${id}:`, error);
+                return of(null);
+              })
+            )
+          );
+          
+          return forkJoin(courseObservables).pipe(
+            map(courses => courses.filter(course => course !== null) as Course[])
+          );
+        })
+      );
   }
 
   // Create a new course
@@ -107,11 +209,53 @@ export class CourseService {
       .pipe(catchError(this.handleError));
   }
 
-  // Get enrolled students for a course
-  getEnrolledStudents(courseId: string): Observable<any[]> {
+  // Get enrolled students in a course
+  getEnrolledStudents(courseId: string): Observable<Student[]> {
+    return this.http.get<Student[]>(`${this.apiUrl}/${courseId}/students`);
+  }
+
+  // Get prerequisites for a course
+  getCoursePrerequisites(courseId: string): Observable<Prerequisite[]> {
     const headers = this.getAuthHeaders();
     return this.http
-      .get<any[]>(`${this.apiUrl}/${courseId}/students`, { headers })
+      .get<Prerequisite[]>(`${this.apiUrl}/${courseId}/prerequisites`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Enroll student in a course
+  enrollStudentInCourse(courseId: string, studentId: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    const today = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 4); // 4 months from now
+
+    const enrollmentData: Enrollment = {
+      studentId: studentId,
+      courseId: courseId,
+      enrollmentStartDate: today.toISOString().split('T')[0],
+      enrollmentEndDate: endDate.toISOString().split('T')[0],
+      status: 'start'
+    };
+
+    // Use the enrollments endpoint instead of the course endpoint
+    return this.http
+      .post<any>(`${environment.apiUrl}/enrollments`, enrollmentData, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Unenroll student from a course
+  unenrollStudentFromCourse(courseId: string, studentId: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .delete<any>(`${this.apiUrl}/${courseId}/enroll/${studentId}`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Get enrollment status for a student in a course
+  getEnrollmentStatus(courseId: string, studentId: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<any>(`${this.apiUrl}/${courseId}/enrollment/${studentId}`, { headers })
       .pipe(catchError(this.handleError));
   }
 

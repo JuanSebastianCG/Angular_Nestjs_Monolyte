@@ -1,0 +1,607 @@
+###############################################################################
+# API Testing File for University Management System
+# 
+# Setup Environment Variables:
+# - baseUrl: The base URL of the API
+# - studentToken: Token with student privileges
+# - professorToken: Token with professor privileges
+# - adminToken: Token with admin privileges
+# - studentId, professorId: User IDs
+# - departmentId, courseId, evaluationId: Entity IDs
+###############################################################################
+
+@baseUrl = http://localhost:3000/api
+
+###############################################################################
+# AUTHENTICATION AND USER MANAGEMENT
+###############################################################################
+
+### Register a new student user
+# @name registerStudent
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Student Name",
+  "birthDate": "2000-01-01",
+  "username": "studentuser",
+  "email": "student@example.com",
+  "password": "password123",
+  "role": "student",
+  "studentInfo": {
+  }
+}
+
+### Set student ID from response
+@studentId = {{registerStudent.response.body._id}}
+
+
+### Register a new professor user
+# @name registerProfessor
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Professor Name",
+  "birthDate": "1980-01-01",
+  "username": "professoruser",
+  "email": "professor@example.com",
+  "password": "password123",
+  "role": "professor",
+  "professorInfo": {
+    "departmentId": "{{departmentId}}",
+    "hiringDate": "2023-01-15"
+  }
+}
+
+### Set second professor ID
+@professorId = {{registerProfessor.response.body._id}}
+
+### Login as student user
+# @name loginStudent
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "studentuser",
+  "password": "password123"
+}
+
+### Set student token and ID
+@studentToken = {{loginStudent.response.body.access_token}}
+@refreshTokenStudent = {{loginStudent.response.body.refresh_token}}
+@studentId = {{loginStudent.response.body.user.id}}
+
+### Login as professor
+# @name loginProfessor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "professoruser",
+  "password": "password123"
+}
+
+### Set professor token and ID
+@professorToken = {{loginProfessor.response.body.access_token}}
+@refreshTokenProfessor = {{loginProfessor.response.body.refresh_token}}
+@professorId = {{loginProfessor.response.body.user.id}}
+
+### Register admin user (requires existing admin token)
+# @name registerAdmin
+POST {{baseUrl}}/users/admin
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "birthDate": "1990-01-01",
+  "username": "adminuser",
+  "email": "admin@example.com",
+  "password": "password123"
+}
+
+### Login as admin
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "adminuser",
+  "password": "password123"
+}
+
+### Set admin token
+@adminToken = {{loginAdmin.response.body.access_token}}
+@refreshTokenAdmin = {{loginAdmin.response.body.refresh_token}}
+
+### Refresh student token
+# @name refreshStudentToken
+POST {{baseUrl}}/auth/refresh
+Authorization: Bearer {{refreshTokenStudent}}
+
+### Set new tokens from refresh
+@newStudentToken = {{refreshStudentToken.response.body.access_token}}
+@newRefreshTokenStudent = {{refreshStudentToken.response.body.refresh_token}}
+
+### Get user profile (user)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{studentToken}}
+
+### Logout user
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{studentToken}}
+
+###############################################################################
+# USER MANAGEMENT (ADMIN OPERATIONS)
+###############################################################################
+
+### Get all users (admin only)
+# @name getAllUsers
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+### Get user profesors 
+GET {{baseUrl}}/professors/
+Authorization: Bearer {{adminToken}}
+### Get user students
+GET {{baseUrl}}/students/
+Authorization: Bearer {{adminToken}}
+
+
+### Get user by ID
+GET {{baseUrl}}/users/{{professorId}}
+Authorization: Bearer {{professorToken}}
+
+### Get user by username (admin only)
+GET {{baseUrl}}/users/username/studentuser
+Authorization: Bearer {{adminToken}}
+
+### Update user with student info
+PATCH {{baseUrl}}/users/{{studentId}}
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Student Name 2",
+  "email": "updated.student@example.com"
+}
+
+### Update user with professor info
+PATCH {{baseUrl}}/users/{{professorId}}
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Professor Name",
+  "professorInfo": {
+    "departmentId": "{{departmentId}}",
+    "hiringDate": "2023-06-15"
+  }
+}
+
+### Admin update any user
+PATCH {{baseUrl}}/users/{{studentId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Admin Updated Student Name",
+  "role": "student"
+}
+
+
+### Delete user (admin only)
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/users/{{professorId}}
+# Authorization: Bearer {{adminToken}}
+
+
+DELETE {{baseUrl}}/users/{{studentId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+# DEPARTMENTS
+###############################################################################
+
+### Create a department
+# @name createDepartment
+POST {{baseUrl}}/departments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Computer Science",
+  "description": "Study of computers and computational systems"
+}
+
+### Set department ID from response
+@departmentId = {{createDepartment.response.body._id}}
+
+### Create a second department
+# @name createDepartment2
+POST {{baseUrl}}/departments
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "name": "Mathematics",
+  "description": "Study of numbers, quantities, and space"
+}
+
+### Set second department ID
+@department2Id = {{createDepartment2.response.body._id}}
+
+### Get all departments
+GET {{baseUrl}}/departments
+
+### Search departments by name
+GET {{baseUrl}}/departments/search?name=comp
+Authorization: Bearer {{professorToken}}
+
+### Get department by ID
+GET {{baseUrl}}/departments/{{departmentId}}
+Authorization: Bearer {{professorToken}}
+
+### Update department
+PATCH {{baseUrl}}/departments/{{departmentId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Computer Science",
+  "description": "Advanced study of computational systems"
+}
+
+### Delete department (admin only)
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/departments/{{department2Id}}
+# Authorization: Bearer {{adminToken}}
+
+###############################################################################
+# COURSES WITH INLINE SCHEDULE
+###############################################################################
+
+### Create a course with inline schedule 
+# @name createCourse
+POST {{baseUrl}}/courses
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Introduction to Programming 2",
+  "description": "Basic programming concepts",
+  "professorId": "{{professorId}}",
+  "schedule": {
+    "days": ["Monday", "Wednesday"],
+    "startTime": "6:00",
+    "endTime": "3:30",
+    "room": "A-101",
+    "startDate": "2023-09-01",
+    "endDate": "2023-12-15"
+  }
+}
+
+### Set course ID from response
+@courseId = {{createCourse.response.body._id}}
+
+### Create a second course
+# @name createCourse2
+POST {{baseUrl}}/courses
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "name": "Advanced Data Structures",
+  "description": "In-depth study of data structures and algorithms",
+  "professorId": "{{professorId}}",
+  "schedule": {
+    "days": ["Tuesday", "Thursday"],
+    "startTime": "15:00",
+    "endTime": "19:30",
+    "room": "B-201",
+    "startDate": "2023-09-01",
+    "endDate": "2023-12-15"
+  }
+}
+
+
+### Set second course ID
+@course2Id = {{createCourse2.response.body._id}}
+
+### Get all courses
+GET {{baseUrl}}/courses?includePrerequisites=true
+Authorization: Bearer {{professorToken}}
+
+### Get course by ID
+GET {{baseUrl}}/courses/{{courseId}}
+Authorization: Bearer {{professorToken}}
+
+### Update course with inline schedule
+PATCH {{baseUrl}}/courses/{{courseId}}
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "name": "Introduction to Programming 2",
+  "schedule": {
+    "days": ["Tuesday", "Thursday"],
+    "startTime": "09:00",
+    "endTime": "10:30",
+    "room": "A-102",
+    "startDate": "2023-09-01",
+    "endDate": "2023-12-15"
+  }
+}
+
+### Delete course
+# Note: Uncomment only when you want to test deletion
+ DELETE {{baseUrl}}/courses/{{course2Id}}
+ Authorization: Bearer {{professorToken}}
+
+###############################################################################
+# PREREQUISITES
+###############################################################################
+
+### Create a prerequisite relationship (professor or admin role)
+# @name createPrerequisite
+POST {{baseUrl}}/prerequisites
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "courseId": "{{courseId}}",
+  "prerequisiteCourseId": "{{course2Id}}"
+}
+
+### Get all prerequisites
+GET {{baseUrl}}/prerequisites
+Authorization: Bearer {{professorToken}}
+
+### Get prerequisites for specific course
+GET {{baseUrl}}/prerequisites/course/{{course2Id}}
+Authorization: Bearer {{professorToken}}
+
+### Delete a prerequisite relationship
+DELETE {{baseUrl}}/prerequisites/{{courseId}}/{{course2Id}}
+Authorization: Bearer {{professorToken}}
+
+
+
+###############################################################################
+# ENROLLMENTS
+###############################################################################
+
+
+### Create an enrollment 67c3a2cf804697d0b5c122cc
+# @name createEnrollment
+POST {{baseUrl}}/enrollments
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "studentId": "{{studentId}}",
+  "courseId": "{{course2Id}}",
+  "enrollmentStartDate": "2023-09-05",
+  "enrollmentEndDate": "2023-12-15"
+}
+
+
+### Get all enrollments
+GET {{baseUrl}}/enrollments
+Authorization: Bearer {{professorToken}}
+
+### Get enrollments by student
+GET {{baseUrl}}/enrollments/student/{{studentId}}
+Authorization: Bearer {{studentToken}}
+
+### Get enrollments by course
+GET {{baseUrl}}/enrollments/course/{{courseId}}
+Authorization: Bearer {{professorToken}}
+
+### Get specific enrollment
+GET {{baseUrl}}/enrollments/{{studentId}}/{{courseId}}
+Authorization: Bearer {{studentToken}}
+
+### Update enrollment status
+PATCH {{baseUrl}}/enrollments/{{studentId}}/{{courseId}}
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "status": "completed",
+  "completionDate": "2023-12-15"
+}
+
+### Delete enrollment (admin or professor only)
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/enrollments/{{student2Id}}/{{courseId}}
+# Authorization: Bearer {{professorToken}}
+
+DELETE {{baseUrl}}/enrollments/{{studentId}}/{{courseId}}
+Authorization: Bearer {{professorToken}}
+
+###############################################################################
+# EVALUATIONS
+###############################################################################
+
+### Create an evaluation
+# @name createEvaluation
+POST {{baseUrl}}/evaluations
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "courseId": "{{courseId}}",
+  "name": "Midterm Exam",
+  "description": "Covers chapters 1-5",
+  "maxScore": 100,
+  "evaluationDate": "2023-10-15"
+}
+
+### Set evaluation ID from response
+@evaluationId = {{createEvaluation.response.body._id}}
+
+### Create a second evaluation
+# @name createEvaluation2
+POST {{baseUrl}}/evaluations
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "courseId": "{{course2Id}}",
+  "name": "Final Project",
+  "description": "Implement a complete application",
+  "maxScore": 100,
+  "evaluationDate": "2023-12-01"
+}
+
+### Set second evaluation ID
+@evaluation2Id = {{createEvaluation2.response.body._id}}
+
+### Get all evaluations
+GET {{baseUrl}}/evaluations
+Authorization: Bearer {{professorToken}}
+
+### Get evaluations by course
+GET {{baseUrl}}/evaluations/course/{{courseId}}
+Authorization: Bearer {{studentToken}}
+
+### Get evaluation by ID
+GET {{baseUrl}}/evaluations/{{evaluationId}}
+Authorization: Bearer {{professorToken}}
+
+### Update evaluation
+PATCH {{baseUrl}}/evaluations/{{evaluationId}}
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Midterm Exam",
+  "description": "Covers chapters 1-6",
+  "evaluationDate": "2023-10-20"
+}
+
+### Delete evaluation
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/evaluations/{{evaluation2Id}}
+# Authorization: Bearer {{professorToken}}
+
+DELETE {{baseUrl}}/evaluations/{{evaluationId}}
+Authorization: Bearer {{professorToken}}
+
+###############################################################################
+# STUDENT GRADES
+###############################################################################
+
+### Create a student grade (professor role)
+# @name createStudentGrade
+POST {{baseUrl}}/student-grades
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "studentId": "{{studentId}}",
+  "evaluationId": "{{evaluation2Id}}",
+  "grade": 85,
+  "comments": "Good work!"
+}
+
+
+### Get all student grades
+GET {{baseUrl}}/student-grades
+Authorization: Bearer {{professorToken}}
+
+### Get grades by student
+GET {{baseUrl}}/student-grades/student/{{studentId}}
+Authorization: Bearer {{studentToken}}
+
+### Get grades by evaluation
+GET {{baseUrl}}/student-grades/evaluation/{{evaluationId}}
+Authorization: Bearer {{professorToken}}
+
+### Get specific grade
+GET {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
+Authorization: Bearer {{studentToken}}
+
+### Update student grade (professor role)
+PATCH {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
+Authorization: Bearer {{professorToken}}
+Content-Type: application/json
+
+{
+  "grade": 90,
+  "comments": "Excellent performance after review"
+}
+
+### Delete student grade (professor role)
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
+# Authorization: Bearer {{professorToken}}
+
+###############################################################################
+# SCHEDULES (Admin-only endpoints)
+###############################################################################
+
+### Create a schedule (Admin only)
+# @name createSchedule
+POST {{baseUrl}}/schedules
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "days": ["Friday"],
+  "startTime": "14:00",
+  "endTime": "16:00",
+  "room": "B-202",
+  "startDate": "2023-09-01",
+  "endDate": "2023-12-15"
+}
+
+### Set schedule ID from response
+@scheduleId = {{createSchedule.response.body._id}}
+
+### Get all schedules (Admin only)
+GET {{baseUrl}}/schedules
+Authorization: Bearer {{adminToken}}
+
+### Get schedule by ID (Admin only)
+GET {{baseUrl}}/schedules/{{scheduleId}}
+Authorization: Bearer {{adminToken}}
+
+### Get schedules by day (Admin only)
+GET {{baseUrl}}/schedules/day/Friday
+Authorization: Bearer {{adminToken}}
+
+### Get schedules by room (Admin only)
+GET {{baseUrl}}/schedules/room/B-202
+Authorization: Bearer {{adminToken}}
+
+### Check room availability (Admin only)
+POST {{baseUrl}}/schedules/available-rooms
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "days": ["Monday"],
+  "startTime": "09:00",
+  "endTime": "10:30",
+  "date": "2023-10-01"
+}
+
+### Update schedule (Admin only)
+PATCH {{baseUrl}}/schedules/{{scheduleId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "days": ["Friday", "Saturday"],
+  "startTime": "15:00",
+  "endTime": "17:00",
+  "room": "B-203"
+}
+
+### Delete schedule (Admin only)
+# Note: Uncomment only when you want to test deletion
+# DELETE {{baseUrl}}/schedules/{{scheduleId}}
+# Authorization: Bearer {{adminToken}}
+

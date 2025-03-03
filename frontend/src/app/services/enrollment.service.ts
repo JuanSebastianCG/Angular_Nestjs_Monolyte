@@ -5,14 +5,26 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
+export interface CourseRef {
+  _id: string;
+  name: string;
+  description: string;
+  professorId: string;
+  scheduleId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Enrollment {
   _id?: string;
   studentId: string;
-  courseId: string;
+  courseId: string | CourseRef; // Puede ser un string o un objeto con detalles del curso
   enrollmentStartDate: string;
   enrollmentEndDate: string;
-  status: 'active' | 'completed' | 'dropped' | 'pending';
+  status: 'start' | 'finish';
   grade?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 @Injectable({
@@ -61,6 +73,12 @@ export class EnrollmentService {
   // Create a new enrollment
   createEnrollment(enrollment: Enrollment): Observable<Enrollment> {
     const headers = this.getAuthHeaders();
+    console.log(enrollment);
+    console.log(headers);
+    console.log(this.apiUrl);
+    console.log(this.http);
+
+
     return this.http
       .post<Enrollment>(this.apiUrl, enrollment, { headers })
       .pipe(catchError(this.handleError));

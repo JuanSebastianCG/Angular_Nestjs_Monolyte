@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { CourseService } from '../services/course.service';
-import { EnrollmentService } from '../services/enrollment.service';
+import { EnrollmentService, Enrollment } from '../services/enrollment.service';
 import { NotificationService } from '../components/notification/notification.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
@@ -231,37 +231,58 @@ export class InscribirComponent implements OnInit {
   loadAvailableCourses(): void {
     this.isLoading = true;
     this.errorMessage = '';
+    console.log('Loading available courses for student ID:', this.userId);
 
     // Get all courses
     this.courseService.getAllCourses().subscribe({
       next: (courses) => {
+        console.log(`Retrieved ${courses.length} total courses from server`);
+        
         // Check user enrollments
         this.enrollmentService.getEnrollmentsByStudent(this.userId).subscribe({
           next: (enrollments) => {
-            // Mark courses as enrolled if they appear in the enrollments
-            const enrolledCourseIds = enrollments.map((e) => e.courseId);
+            console.log(`Retrieved ${enrollments.length} enrollments for student`);
+            
+            // Extraer IDs de cursos en los que el estudiante está inscrito
+            const enrolledCourseIds = enrollments.map((e) => {
+              // Manejar tanto si courseId es un string como si es un objeto
+              if (typeof e.courseId === 'string') {
+                return e.courseId;
+              } else if (e.courseId && e.courseId._id) {
+                return e.courseId._id;
+              }
+              return null;
+            }).filter(id => id !== null);
+            
+            console.log('Enrolled course IDs:', enrolledCourseIds);
 
-            this.availableCourses = courses.map((course) => ({
-              _id: course._id,
-              name: course.name,
-              description: course.description,
-              professorId: course.professorId,
-              professor: course.professorId, // Would be replaced by actual professor name
-              isEnrolled: enrolledCourseIds.includes(course._id),
-            }));
+            // Filtrar los cursos: solo mostrar aquellos en los que NO está inscrito
+            this.availableCourses = courses
+              .filter(course => !enrolledCourseIds.includes(course._id)) // Filtrar cursos ya inscritos
+              .map((course) => ({
+                _id: course._id,
+                name: course.name,
+                description: course.description,
+                professorId: course.professorId,
+                professor: course.professor || course.professorId, // Si existe el nombre del profesor, usarlo
+                isEnrolled: false // Ya sabemos que no está inscrito porque los filtramos
+              }));
 
+            console.log(`Displaying ${this.availableCourses.length} available courses for enrollment`);
             this.isLoading = false;
           },
           error: (error) => {
             console.error('Error loading enrollments:', error);
-            this.errorMessage = 'No se pudieron verificar tus inscripciones.';
+            this.errorMessage =
+              'Error al cargar las inscripciones. Por favor, inténtelo de nuevo.';
             this.isLoading = false;
           },
         });
       },
       error: (error) => {
         console.error('Error loading courses:', error);
-        this.errorMessage = 'No se pudieron cargar los cursos disponibles.';
+        this.errorMessage =
+          'Error al cargar los cursos. Por favor, inténtelo de nuevo.';
         this.isLoading = false;
       },
     });
@@ -280,12 +301,12 @@ export class InscribirComponent implements OnInit {
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + 4); // 4 months from now
 
-    const enrollment = {
+    const enrollment: Enrollment = {
       studentId: this.userId,
       courseId: courseId,
       enrollmentStartDate: today.toISOString().split('T')[0],
       enrollmentEndDate: endDate.toISOString().split('T')[0],
-      status: 'active' as 'active' | 'completed' | 'dropped' | 'pending',
+      status: 'start'
     };
 
     this.enrollmentService.createEnrollment(enrollment).subscribe({
@@ -299,12 +320,31 @@ export class InscribirComponent implements OnInit {
         }
 
         this.notificationService.success('Inscripción exitosa');
+        
+        // Recargar la lista de cursos para actualizar el estado
+        this.loadAvailableCourses();
       },
       error: (error) => {
         console.error('Error enrolling in course:', error);
-        this.notificationService.error(
-          'Error al inscribirse en el curso. Por favor, inténtelo de nuevo.',
-        );
+        
+        // Mostrar mensaje detallado del error al usuario
+        let errorMessage = 'Error al inscribirse en el curso. Por favor, inténtelo de nuevo.';
+        
+        // Verificar si el error es por falta de prerrequisitos
+        if (error.error && error.error.message) {
+          if (error.error.message.includes('prerequisite') || 
+              error.error.message.includes('prerrequisito')) {
+            errorMessage = 'No puedes inscribirte en este curso porque no cumples con los prerrequisitos necesarios.';
+          } else {
+            // Mostrar el mensaje exacto de la API para pruebas
+            errorMessage = `Error del servidor: ${error.error.message}`;
+          }
+        }
+        
+        // Mostrar detalles completos para depuración
+        console.log('Detalles del error:', JSON.stringify(error, null, 2));
+        
+        this.notificationService.error(errorMessage);
       },
     });
   }
