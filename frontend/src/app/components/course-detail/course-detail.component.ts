@@ -10,8 +10,16 @@ import { Student } from '../../models/student.model';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../components/notification/notification.service';
 import { ExamService, Exam } from '../../services/exam.service';
-import { GradeService, GradeWithDetails, Grade, StudentGrade } from '../../services/grade.service';
-import { EnrollmentService, Enrollment as ApiEnrollment } from '../../services/enrollment.service';
+import {
+  GradeService,
+  GradeWithDetails,
+  Grade,
+  StudentGrade,
+} from '../../services/grade.service';
+import {
+  EnrollmentService,
+  Enrollment as ApiEnrollment,
+} from '../../services/enrollment.service';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, finalize, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -53,7 +61,7 @@ interface Evaluation {
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule],
   templateUrl: './course-detail.component.html',
-  styles: []
+  styles: [],
 })
 export class CourseDetailComponent implements OnInit {
   courseId: string = '';
@@ -64,31 +72,31 @@ export class CourseDetailComponent implements OnInit {
   userId: string = '';
   userRole: 'student' | 'professor' | 'admin' = 'student';
   hasAccess: boolean = false;
-  
+
   // Tabs
   tabs = [
     { id: 'students', name: 'Estudiantes' },
     { id: 'exams', name: 'Evaluaciones' },
-    { id: 'grades', name: 'Calificaciones' }
+    { id: 'grades', name: 'Calificaciones' },
   ];
   activeTab: string = 'students';
-  
+
   // Student Enrollments
   enrollments: Enrollment[] = [];
   filteredEnrollments: Enrollment[] = [];
   studentSearchTerm: string = '';
   isLoadingEnrollments: boolean = false;
-  
+
   // Evaluations (antes Exams)
   evaluations: Evaluation[] = [];
   isLoadingEvaluations: boolean = false;
-  
+
   // Grades
   grades: GradeWithDetails[] = [];
   studentGrades: GradeWithDetails[] = [];
   studentAverage: number | null = null;
   isLoadingGrades: boolean = false;
-  
+
   // Prerequisites
   prerequisites: CoursePrerequisite[] = [];
 
@@ -101,17 +109,22 @@ export class CourseDetailComponent implements OnInit {
     private examService: ExamService,
     private gradeService: GradeService,
     private notificationService: NotificationService,
-    private enrollmentService: EnrollmentService
+    private enrollmentService: EnrollmentService,
   ) {}
 
   ngOnInit(): void {
     console.log('CourseDetailComponent - ngOnInit iniciado');
-    
+
     // Get user info
     const currentUser = this.authService.currentUserValue;
     this.userName = currentUser?.name || '';
     this.userId = currentUser?.id || '';
-    console.log('CourseDetailComponent - Usuario:', this.userName, 'ID:', this.userId);
+    console.log(
+      'CourseDetailComponent - Usuario:',
+      this.userName,
+      'ID:',
+      this.userId,
+    );
 
     // Set user role
     if (currentUser?.role) {
@@ -123,7 +136,7 @@ export class CourseDetailComponent implements OnInit {
     }
 
     // Get course ID from route
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.subscribe((params) => {
       console.log('CourseDetailComponent - Parámetros de ruta:', params);
       const id = params.get('id');
       if (id) {
@@ -131,7 +144,9 @@ export class CourseDetailComponent implements OnInit {
         this.courseId = id;
         this.loadCourseData();
       } else {
-        console.error('CourseDetailComponent - ID de curso no proporcionado en los parámetros');
+        console.error(
+          'CourseDetailComponent - ID de curso no proporcionado en los parámetros',
+        );
         this.errorMessage = 'ID de curso no proporcionado.';
       }
     });
@@ -150,69 +165,87 @@ export class CourseDetailComponent implements OnInit {
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course) => {
         console.log('✅ Datos del curso recibidos:', course);
-        
+
         if (!course) {
-          console.error('❌ El curso no existe o no se recibieron datos válidos');
-          this.errorMessage = 'El curso solicitado no existe o ha sido eliminado.';
+          console.error(
+            '❌ El curso no existe o no se recibieron datos válidos',
+          );
+          this.errorMessage =
+            'El curso solicitado no existe o ha sido eliminado.';
           this.isLoading = false;
           return;
         }
-        
+
         this.course = course;
-        
+
         // Extraer los prerrequisitos directamente de la respuesta del curso
         this.extractPrerequisites(course);
-        
+
         // Verificar acceso según el rol del usuario
         if (this.userRole === 'admin' || this.userRole === 'professor') {
           this.hasAccess = true;
           console.log('✅ Acceso concedido como:', this.userRole);
         } else if (this.userRole === 'student') {
-          console.log('🔍 Verificando inscripción del estudiante con ID:', this.userId);
+          console.log(
+            '🔍 Verificando inscripción del estudiante con ID:',
+            this.userId,
+          );
           // Para estudiantes, verificamos si está inscrito en el curso
           this.checkStudentEnrollment();
         } else {
           this.hasAccess = false;
-          console.error('❌ Acceso denegado para el rol de usuario:', this.userRole);
+          console.error(
+            '❌ Acceso denegado para el rol de usuario:',
+            this.userRole,
+          );
           this.errorMessage = 'No tienes permiso para ver este curso.';
         }
-        
+
         this.isLoading = false;
-        
+
         // Solo cargamos datos de pestaña si tiene acceso
         if (this.hasAccess) {
-          console.log('📊 Cargando datos adicionales para la pestaña:', this.activeTab);
+          console.log(
+            '📊 Cargando datos adicionales para la pestaña:',
+            this.activeTab,
+          );
           this.loadTabData(this.activeTab);
         }
       },
       error: (error) => {
         console.error('❌ Error al cargar detalles del curso:', error);
-        this.errorMessage = 'No se pudo cargar el curso. Por favor intente de nuevo.';
+        this.errorMessage =
+          'No se pudo cargar el curso. Por favor intente de nuevo.';
         this.isLoading = false;
-      }
+      },
     });
   }
 
   extractPrerequisites(course: any): void {
     // Verificar si el curso tiene prerrequisitos y procesarlos
     if (course && course.prerequisites && Array.isArray(course.prerequisites)) {
-      console.log('✅ Prerequisites found in course data:', course.prerequisites.length);
-      this.prerequisites = course.prerequisites.map((prerequisite: any) => {
-        if (!prerequisite) {
-          console.warn('⚠️ Se encontró un prerequisito nulo o indefinido');
-          return null;
-        }
-        
-        return {
-          _id: prerequisite._id || '',
-          name: prerequisite.name || 'Prerequisito sin nombre',
-          description: prerequisite.description || '',
-          professorId: prerequisite.professorId || null,
-          scheduleId: prerequisite.scheduleId || null,
-          createdAt: prerequisite.createdAt || '',
-          updatedAt: prerequisite.updatedAt || ''
-        };
-      }).filter((prereq: CoursePrerequisite | null) => prereq !== null); // Eliminar cualquier prerrequisito nulo
+      console.log(
+        '✅ Prerequisites found in course data:',
+        course.prerequisites.length,
+      );
+      this.prerequisites = course.prerequisites
+        .map((prerequisite: any) => {
+          if (!prerequisite) {
+            console.warn('⚠️ Se encontró un prerequisito nulo o indefinido');
+            return null;
+          }
+
+          return {
+            _id: prerequisite._id || '',
+            name: prerequisite.name || 'Prerequisito sin nombre',
+            description: prerequisite.description || '',
+            professorId: prerequisite.professorId || null,
+            scheduleId: prerequisite.scheduleId || null,
+            createdAt: prerequisite.createdAt || '',
+            updatedAt: prerequisite.updatedAt || '',
+          };
+        })
+        .filter((prereq: CoursePrerequisite | null) => prereq !== null); // Eliminar cualquier prerrequisito nulo
     } else {
       console.log('ℹ️ No prerequisites found in course data');
       this.prerequisites = [];
@@ -221,14 +254,21 @@ export class CourseDetailComponent implements OnInit {
 
   checkStudentEnrollment(): void {
     if (!this.userId) {
-      console.error('❌ ID de usuario no disponible para verificar inscripción');
+      console.error(
+        '❌ ID de usuario no disponible para verificar inscripción',
+      );
       this.hasAccess = false;
       this.errorMessage = 'No se pudo verificar tu información de usuario.';
       return;
     }
 
-    console.log('👨‍🎓 Verificando inscripción del estudiante ID:', this.userId, 'en curso ID:', this.courseId);
-    
+    console.log(
+      '👨‍🎓 Verificando inscripción del estudiante ID:',
+      this.userId,
+      'en curso ID:',
+      this.courseId,
+    );
+
     // Por defecto, no tiene acceso hasta que se verifique
     this.hasAccess = false;
 
@@ -236,37 +276,52 @@ export class CourseDetailComponent implements OnInit {
     this.courseService.getCoursesByStudent(this.userId).subscribe({
       next: (courses: Course[]) => {
         console.log('📚 Cursos recibidos:', courses.length, 'cursos');
-        
+
         if (!courses || courses.length === 0) {
           console.log('⚠️ Estudiante no tiene cursos inscritos');
           this.hasAccess = false;
           this.errorMessage = 'No estás inscrito en ningún curso.';
           return;
         }
-        
+
         // Verificar si el estudiante está inscrito en este curso
         const isEnrolled = courses.some((course: Course) => {
           const courseId = course._id;
-          console.log(`🔄 Comparando curso inscrito: ${courseId} con curso actual ${this.courseId}`);
+          console.log(
+            `🔄 Comparando curso inscrito: ${courseId} con curso actual ${this.courseId}`,
+          );
           return courseId === this.courseId;
         });
 
-        console.log('🎯 Resultado de verificación de inscripción:', isEnrolled ? 'INSCRITO' : 'NO INSCRITO');
-        
+        console.log(
+          '🎯 Resultado de verificación de inscripción:',
+          isEnrolled ? 'INSCRITO' : 'NO INSCRITO',
+        );
+
         this.hasAccess = isEnrolled;
-        
+
         if (!isEnrolled) {
-          console.log('⚠️ Estudiante no inscrito en este curso. hasAccess =', this.hasAccess);
+          console.log(
+            '⚠️ Estudiante no inscrito en este curso. hasAccess =',
+            this.hasAccess,
+          );
           this.errorMessage = 'No estás inscrito en este curso.';
         } else {
-          console.log('✅ Estudiante inscrito en este curso. hasAccess =', this.hasAccess);
+          console.log(
+            '✅ Estudiante inscrito en este curso. hasAccess =',
+            this.hasAccess,
+          );
         }
       },
       error: (error: any) => {
-        console.error('❌ Error al verificar inscripción del estudiante:', error);
+        console.error(
+          '❌ Error al verificar inscripción del estudiante:',
+          error,
+        );
         this.hasAccess = false;
-        this.errorMessage = 'No se pudo verificar tu inscripción en este curso.';
-      }
+        this.errorMessage =
+          'No se pudo verificar tu inscripción en este curso.';
+      },
     });
   }
 
@@ -275,8 +330,10 @@ export class CourseDetailComponent implements OnInit {
     // In a real app, you might want to use RxJS debounceTime/distinctUntilChanged
     setInterval(() => {
       if (this.enrollments && this.studentSearchTerm) {
-        this.filteredEnrollments = this.enrollments.filter(e => 
-          e.studentName.toLowerCase().includes(this.studentSearchTerm.toLowerCase())
+        this.filteredEnrollments = this.enrollments.filter((e) =>
+          e.studentName
+            .toLowerCase()
+            .includes(this.studentSearchTerm.toLowerCase()),
         );
       } else {
         this.filteredEnrollments = [...this.enrollments];
@@ -307,125 +364,201 @@ export class CourseDetailComponent implements OnInit {
     this.isLoadingEnrollments = true;
     this.enrollments = [];
     console.log('📚 Cargando inscripciones para el curso ID:', this.courseId);
-    
+
     // Usar el servicio de inscripciones para obtener las inscripciones por curso
     this.enrollmentService.getEnrollmentsByCourse(this.courseId).subscribe({
       next: (enrollments: ApiEnrollment[]) => {
         console.log('📊 Inscripciones recibidas:', enrollments.length);
-        
+
         // Transformar los datos de inscripción al formato que espera la UI
         this.enrollments = enrollments.map((enrollment: ApiEnrollment) => {
           // Verificar si studentId es un objeto y extraer los datos
           let studentName = 'Estudiante sin nombre';
           let studentId = '';
-          
-          if (enrollment.studentId && typeof enrollment.studentId === 'object') {
+
+          if (
+            enrollment.studentId &&
+            typeof enrollment.studentId === 'object'
+          ) {
             const student = enrollment.studentId as any;
             studentName = student.name || 'Estudiante sin nombre';
             studentId = student._id || '';
           } else {
             studentId = enrollment.studentId as string;
           }
-          
+
           return {
             _id: enrollment._id || '',
             studentId: studentId,
             studentName: studentName,
-            enrollmentDate: enrollment.enrollmentStartDate || new Date().toISOString().split('T')[0],
-            status: enrollment.status || 'start'
+            enrollmentDate:
+              enrollment.enrollmentStartDate ||
+              new Date().toISOString().split('T')[0],
+            status: enrollment.status || 'start',
           };
         });
-        
+
         this.filteredEnrollments = [...this.enrollments];
         this.isLoadingEnrollments = false;
       },
       error: (error: any) => {
         console.error('❌ Error al cargar inscripciones:', error);
         this.isLoadingEnrollments = false;
-        this.notificationService.error('No se pudieron cargar los estudiantes inscritos.');
-      }
+        this.notificationService.error(
+          'No se pudieron cargar los estudiantes inscritos.',
+        );
+      },
     });
   }
 
   loadEvaluations(): void {
     if (!this.courseId || !this.hasAccess) return;
-    
+
     this.isLoadingEvaluations = true;
     console.log('📝 Cargando evaluaciones para el curso ID:', this.courseId);
-    
+
     // Obtener el token para la autorización
     const token = this.authService.getToken();
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     });
-    
+
     // Llamar directamente al endpoint de evaluaciones
-    this.http.get<Evaluation[]>(`${environment.apiUrl}/evaluations/course/${this.courseId}`, { headers })
-      .subscribe({
-        next: (evaluations: Evaluation[]) => {
-          console.log(`✅ Cargadas ${evaluations.length} evaluaciones para el curso ${this.courseId}`);
-          this.evaluations = evaluations;
-          this.prepareEvaluationsWithGrades();
-          this.isLoadingEvaluations = false;
-        },
-        error: (error: any) => {
+    this.http
+      .get<Evaluation[]>(
+        `${environment.apiUrl}/evaluations/course/${this.courseId}`,
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
           console.error('❌ Error al cargar evaluaciones:', error);
-          this.notificationService.error('No se pudieron cargar las evaluaciones.');
+          this.notificationService.error(
+            'No se pudieron cargar las evaluaciones.',
+          );
+          return of([]);
+        }),
+        finalize(() => {
           this.isLoadingEvaluations = false;
+        }),
+      )
+      .subscribe((evaluations) => {
+        console.log(
+          `✅ Cargadas ${evaluations.length} evaluaciones para el curso ${this.courseId}`,
+        );
+
+        // Inicializar cada evaluación con un array vacío de calificaciones y expanded=false
+        this.evaluations = evaluations.map((evaluation) => ({
+          ...evaluation,
+          studentGrades: [],
+          expanded: false,
+        }));
+
+        // Si no hay evaluaciones, mostrar un mensaje informativo
+        if (this.evaluations.length === 0) {
+          console.log('ℹ️ No hay evaluaciones para este curso');
         }
       });
   }
 
   loadGrades(): void {
     if (!this.courseId || !this.hasAccess) return;
-    
+
     this.isLoadingGrades = true;
     console.log('📊 Cargando calificaciones para el curso ID:', this.courseId);
-    
-    // Call API to get course grades
-    this.gradeService.getGradesByCourse(this.courseId).subscribe({
-      next: (grades: GradeWithDetails[]) => {
-        console.log(`✅ Cargadas ${grades.length} calificaciones para el curso ${this.courseId}`);
-        
-        // Mapear las calificaciones para que usen evaluationId en lugar de examId cuando sea necesario
-        this.grades = grades.map(grade => {
-          // Si la calificación tiene un examId pero no evaluationId, usar el examId como evaluationId
-          if (grade.examId && !grade.evaluationId) {
-            return {
-              ...grade,
-              evaluationId: grade.examId
-            };
-          }
-          return grade;
+
+    // Obtener el token de autorización
+    const token = this.authService.getToken();
+    if (!token) {
+      this.notificationService.error('No hay sesión activa');
+      this.isLoadingGrades = false;
+      return;
+    }
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      }),
+    };
+
+    // Usamos directamente el endpoint correcto para evitar el error 404
+    this.http
+      .get<any[]>(`${environment.apiUrl}/student-grades`, httpOptions)
+      .pipe(
+        catchError((error) => {
+          console.error('❌ Error al cargar calificaciones:', error);
+          this.notificationService.error(
+            'No se pudieron cargar las calificaciones de los estudiantes',
+          );
+          return of([]);
+        }),
+        finalize(() => {
+          this.isLoadingGrades = false;
+        }),
+      )
+      .subscribe((allGrades) => {
+        console.log(`✅ Cargadas ${allGrades.length} calificaciones en total`);
+
+        // Filtrar las calificaciones para el curso actual
+        const courseGrades = allGrades.filter((grade) => {
+          // La API podría devolver courseId como string o como objeto con _id
+          const gradeCourseId =
+            typeof grade.courseId === 'object'
+              ? grade.courseId._id
+              : grade.courseId;
+          return gradeCourseId === this.courseId;
         });
-        
+
+        // Mapear las calificaciones al formato que espera la UI
+        this.grades = courseGrades.map((grade) => {
+          // Obtener información del estudiante
+          const studentInfo =
+            typeof grade.studentId === 'object'
+              ? grade.studentId
+              : { _id: grade.studentId };
+
+          return {
+            _id: grade._id,
+            courseId: this.courseId,
+            examId: grade.evaluationId,
+            evaluationId: grade.evaluationId,
+            studentId: studentInfo._id,
+            studentName: studentInfo.name || 'Estudiante',
+            examTitle: grade.evaluationName || 'Evaluación',
+            value: grade.grade || 0,
+            feedback: grade.comments || '',
+            date: grade.createdAt || new Date().toISOString(),
+          };
+        });
+
+        console.log(
+          `✅ Filtradas ${this.grades.length} calificaciones para el curso ${this.courseId}`,
+        );
+
         // If student, filter grades to show only their own
         if (this.userRole === 'student' && this.userId) {
-          this.studentGrades = this.grades.filter(g => g.studentId === this.userId);
-          
+          this.studentGrades = this.grades.filter(
+            (g) => g.studentId === this.userId,
+          );
+
           // Calculate average if there are grades
           if (this.studentGrades.length > 0) {
-            const sum = this.studentGrades.reduce((acc, grade) => acc + grade.value, 0);
+            const sum = this.studentGrades.reduce(
+              (acc, grade) => acc + grade.value,
+              0,
+            );
             this.studentAverage = sum / this.studentGrades.length;
             console.log(`📈 Promedio del estudiante: ${this.studentAverage}`);
           } else {
             this.studentAverage = null;
           }
         }
-        
-        this.isLoadingGrades = false;
-      },
-      error: (error: any) => {
-        console.error('❌ Error al cargar calificaciones:', error);
-        this.notificationService.error('No se pudieron cargar las calificaciones.');
-        this.isLoadingGrades = false;
-      }
-    });
+      });
   }
 
   getGradesByEvaluation(evaluationId: string): GradeWithDetails[] {
-    return this.grades.filter(g => g.evaluationId === evaluationId);
+    return this.grades.filter((g) => g.evaluationId === evaluationId);
   }
 
   viewStudentDetails(studentId: string): void {
@@ -467,10 +600,17 @@ export class CourseDetailComponent implements OnInit {
   goBack(event?: Event): void {
     if (event) {
       event.preventDefault();
-      console.log('🔙 Método goBack() llamado por un evento de usuario con prevención de comportamiento predeterminado');
-      console.log('🔍 Evento originado en:', (event.target as HTMLElement).tagName);
+      console.log(
+        '🔙 Método goBack() llamado por un evento de usuario con prevención de comportamiento predeterminado',
+      );
+      console.log(
+        '🔍 Evento originado en:',
+        (event.target as HTMLElement).tagName,
+      );
     } else {
-      console.log('⚠️ ATENCIÓN: Método goBack() llamado sin evento, posible redirección automática no deseada');
+      console.log(
+        '⚠️ ATENCIÓN: Método goBack() llamado sin evento, posible redirección automática no deseada',
+      );
       console.log('🔍 Stack trace:', new Error().stack);
     }
     console.log('🔙 Navegando de regreso a /cursos');
@@ -483,56 +623,67 @@ export class CourseDetailComponent implements OnInit {
     if (this.activeTab === tabId) {
       return; // Ya está activa, no hacemos nada
     }
-    
+
     this.activeTab = tabId;
     this.loadTabData(tabId);
   }
 
   // Filtrar estudiantes por nombre
   filterStudents(): void {
-    console.log(`🔍 Filtrando estudiantes con término: ${this.studentSearchTerm}`);
-    
+    console.log(
+      `🔍 Filtrando estudiantes con término: ${this.studentSearchTerm}`,
+    );
+
     if (!this.studentSearchTerm || this.studentSearchTerm.trim() === '') {
       this.filteredEnrollments = [...this.enrollments];
       return;
     }
-    
+
     const searchTerm = this.studentSearchTerm.toLowerCase().trim();
-    this.filteredEnrollments = this.enrollments.filter(enrollment => 
-      enrollment.studentName.toLowerCase().includes(searchTerm)
+    this.filteredEnrollments = this.enrollments.filter((enrollment) =>
+      enrollment.studentName.toLowerCase().includes(searchTerm),
     );
-    
-    console.log(`📋 Filtrado completado: ${this.filteredEnrollments.length} resultados`);
+
+    console.log(
+      `📋 Filtrado completado: ${this.filteredEnrollments.length} resultados`,
+    );
   }
 
   // Método para preparar las evaluaciones con calificaciones
   prepareEvaluationsWithGrades(): void {
     // Inicializar los campos expanded y studentGrades en cada evaluación
-    this.evaluations = this.evaluations.map(evaluation => ({
+    this.evaluations = this.evaluations.map((evaluation) => ({
       ...evaluation,
       studentGrades: [],
-      expanded: false
+      expanded: false,
     }));
   }
 
   // Método para cargar las calificaciones de una evaluación específica
   loadEvaluationGrades(evaluationId: string): void {
     if (this.userRole !== 'professor' && this.userRole !== 'admin') {
-      this.notificationService.error('Solo profesores y administradores pueden ver las calificaciones detalladas');
+      this.notificationService.error(
+        'Solo profesores y administradores pueden ver las calificaciones detalladas',
+      );
       return;
     }
 
     if (!this.courseId) {
-      this.notificationService.error('No se puede cargar las calificaciones sin un curso seleccionado');
+      this.notificationService.error(
+        'No se puede cargar las calificaciones sin un curso seleccionado',
+      );
       return;
     }
 
-    console.log(`Cargando calificaciones para la evaluación: ${evaluationId} del curso: ${this.courseId}`);
+    console.log(
+      `📝 Cargando calificaciones para la evaluación: ${evaluationId} del curso: ${this.courseId}`,
+    );
 
     this.isLoadingGrades = true;
 
     const apiUrl = `${environment.apiUrl}/student-grades/evaluation/${evaluationId}`;
-    
+    console.log(`🌐 URL de la API: ${apiUrl}`);
+
     // Obtener el token de autorización
     const token = this.authService.getToken();
     if (!token) {
@@ -544,49 +695,129 @@ export class CourseDetailComponent implements OnInit {
     const httpOptions = {
       headers: new HttpHeaders({
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      })
+        Authorization: `Bearer ${token}`,
+      }),
     };
 
-    this.http.get<StudentGrade[]>(apiUrl, httpOptions)
+    this.http
+      .get<any[]>(apiUrl, httpOptions)
       .pipe(
-        tap(grades => console.log('Calificaciones cargadas:', grades)),
-        catchError(error => {
-          console.error('Error al cargar las calificaciones:', error);
-          this.notificationService.error('No se pudieron cargar las calificaciones de los estudiantes');
+        tap((grades) => console.log('✅ Calificaciones cargadas:', grades)),
+        catchError((error) => {
+          console.error('❌ Error al cargar las calificaciones:', error);
+          this.notificationService.error(
+            'No se pudieron cargar las calificaciones de los estudiantes',
+          );
           return of([]);
         }),
         finalize(() => {
           this.isLoadingGrades = false;
-        })
+        }),
       )
-      .subscribe(grades => {
+      .subscribe((grades) => {
         // Buscamos la evaluación correspondiente
-        const evaluationIndex = this.evaluations.findIndex(e => e._id === evaluationId);
-        
+        const evaluationIndex = this.evaluations.findIndex(
+          (e) => e._id === evaluationId,
+        );
+        console.log(
+          `🔍 Índice de evaluación encontrado: ${evaluationIndex}, ID: ${evaluationId}`,
+        );
+
         if (evaluationIndex !== -1) {
+          // Procesamos las calificaciones para asegurarnos que tienen la estructura correcta
+          const processedGrades = grades.map((grade) => {
+            // La API devuelve studentId como un objeto con información del estudiante
+            // o como un ID dependiendo del endpoint y cómo está configurado
+            let studentInfo;
+
+            if (
+              typeof grade.studentId === 'object' &&
+              grade.studentId !== null
+            ) {
+              studentInfo = grade.studentId;
+            } else {
+              studentInfo = {
+                _id: grade.studentId || 'unknown',
+                name: 'Estudiante desconocido',
+              };
+            }
+
+            console.log(
+              `🧪 Procesando calificación para estudiante:`,
+              studentInfo,
+            );
+
+            // Asegurarse de que grade (nota) es un número
+            const numericGrade =
+              typeof grade.grade === 'number'
+                ? grade.grade
+                : parseFloat(grade.grade) || 0;
+
+            return {
+              _id:
+                grade._id ||
+                'temp-' + Math.random().toString(36).substring(2, 9),
+              studentId: studentInfo,
+              evaluationId: grade.evaluationId || evaluationId,
+              courseId: this.courseId,
+              grade: numericGrade,
+              comments: grade.comments || '',
+              date: grade.createdAt || new Date().toISOString(),
+            };
+          });
+
+          console.log(`✅ Grades procesados: ${processedGrades.length}`);
+          console.log(
+            'Ejemplo de grade procesado:',
+            processedGrades.length > 0 ? processedGrades[0] : 'No hay grades',
+          );
+
           // Actualizamos la evaluación con las calificaciones cargadas
           this.evaluations[evaluationIndex] = {
             ...this.evaluations[evaluationIndex],
-            studentGrades: grades,
-            expanded: true
+            studentGrades: processedGrades,
+            expanded: true,
           };
+
+          console.log(
+            `📈 Evaluación ${evaluationId} actualizada con ${processedGrades.length} calificaciones`,
+          );
         } else {
-          console.error(`No se encontró la evaluación con ID: ${evaluationId}`);
+          console.error(
+            `❌ No se encontró la evaluación con ID: ${evaluationId}`,
+          );
+
+          // Buscamos todas las evaluaciones para depuración
+          console.log(`🔍 Evaluaciones disponibles:`);
+          this.evaluations.forEach((e) =>
+            console.log(`- ID: ${e._id}, Nombre: ${e.name}`),
+          );
+
+          this.notificationService.error(
+            'No se pudo mostrar las calificaciones para esta evaluación',
+          );
         }
       });
   }
 
   // Método para expandir/colapsar una evaluación
   toggleEvaluationExpansion(evaluation: Evaluation): void {
+    console.log(
+      `🔍 Toggle expansion para evaluación: ${evaluation._id}, estado actual: ${evaluation.expanded}`,
+    );
+
     const expanded = !evaluation.expanded;
-    
+
     // Si está expandiendo y no tiene calificaciones cargadas, cargarlas
-    if (expanded && (!evaluation.studentGrades || evaluation.studentGrades.length === 0)) {
+    if (expanded) {
+      console.log(
+        `📊 Expandiendo evaluación ${evaluation._id}, cargando calificaciones...`,
+      );
       this.loadEvaluationGrades(evaluation._id);
     } else {
       // Solo cambiar el estado de expansión
+      console.log(`📊 Colapsando evaluación ${evaluation._id}`);
       evaluation.expanded = expanded;
     }
   }
-} 
+}

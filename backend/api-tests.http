@@ -220,7 +220,7 @@ Content-Type: application/json
 ### Create a second department
 # @name createDepartment2
 POST {{baseUrl}}/departments
-Authorization: Bearer {{professorToken}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
@@ -516,7 +516,7 @@ GET {{baseUrl}}/student-grades/student/{{studentId}}
 Authorization: Bearer {{studentToken}}
 
 ### Get grades by evaluation
-GET {{baseUrl}}/student-grades/evaluation/{{evaluationId}}
+GET {{baseUrl}}/student-grades/evaluation/{{evaluation2Id}}
 Authorization: Bearer {{professorToken}}
 
 ### Get specific grade
@@ -538,70 +538,5 @@ Content-Type: application/json
 # DELETE {{baseUrl}}/student-grades/{{evaluationId}}/{{studentId}}
 # Authorization: Bearer {{professorToken}}
 
-###############################################################################
-# SCHEDULES (Admin-only endpoints)
-###############################################################################
 
-### Create a schedule (Admin only)
-# @name createSchedule
-POST {{baseUrl}}/schedules
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "days": ["Friday"],
-  "startTime": "14:00",
-  "endTime": "16:00",
-  "room": "B-202",
-  "startDate": "2023-09-01",
-  "endDate": "2023-12-15"
-}
-
-### Set schedule ID from response
-@scheduleId = {{createSchedule.response.body._id}}
-
-### Get all schedules (Admin only)
-GET {{baseUrl}}/schedules
-Authorization: Bearer {{adminToken}}
-
-### Get schedule by ID (Admin only)
-GET {{baseUrl}}/schedules/{{scheduleId}}
-Authorization: Bearer {{adminToken}}
-
-### Get schedules by day (Admin only)
-GET {{baseUrl}}/schedules/day/Friday
-Authorization: Bearer {{adminToken}}
-
-### Get schedules by room (Admin only)
-GET {{baseUrl}}/schedules/room/B-202
-Authorization: Bearer {{adminToken}}
-
-### Check room availability (Admin only)
-POST {{baseUrl}}/schedules/available-rooms
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "days": ["Monday"],
-  "startTime": "09:00",
-  "endTime": "10:30",
-  "date": "2023-10-01"
-}
-
-### Update schedule (Admin only)
-PATCH {{baseUrl}}/schedules/{{scheduleId}}
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "days": ["Friday", "Saturday"],
-  "startTime": "15:00",
-  "endTime": "17:00",
-  "room": "B-203"
-}
-
-### Delete schedule (Admin only)
-# Note: Uncomment only when you want to test deletion
-# DELETE {{baseUrl}}/schedules/{{scheduleId}}
-# Authorization: Bearer {{adminToken}}
 
