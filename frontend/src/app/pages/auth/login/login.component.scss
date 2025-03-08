@@ -15,6 +15,12 @@
   gap: 1.5rem;
 }
 
+// Ajuste para formulario más ancho
+app-form-field {
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+}
+
 // Fix the double nesting issue where the card is inside a form container
 .login-content {
   .form-container {

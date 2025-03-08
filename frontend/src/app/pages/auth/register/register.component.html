@@ -3,7 +3,7 @@
     <app-form-card
       title="Registrar usuario"
       [showBackButton]="true"
-      backUrl="/"
+      (backButtonClick)="navigateToLogin()"
     >
       <!-- Error message -->
       <app-alert
@@ -18,15 +18,34 @@
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
         <div class="form-grid">
           <app-form-field
-            label="Usuer"
-            inputId="username"
-            [control]="registerForm.get('username')!"
-            placeholder="user"
+            label="Nombre completo"
+            inputId="name"
+            [control]="registerForm.get('name')!"
+            placeholder="Nombre completo"
             [showSuccessIndicator]="submitted"
           ></app-form-field>
 
           <app-form-field
-            label="Tipo"
+            label="Nombre de usuario"
+            inputId="username"
+            [control]="registerForm.get('username')!"
+            placeholder="Nombre de usuario"
+            [showSuccessIndicator]="submitted"
+          ></app-form-field>
+        </div>
+
+        <div class="form-grid">
+          <app-form-field
+            label="Correo electrónico"
+            inputId="email"
+            [control]="registerForm.get('email')!"
+            type="email"
+            placeholder="correo@ejemplo.com"
+            [showSuccessIndicator]="submitted"
+          ></app-form-field>
+
+          <app-form-field
+            label="Tipo de usuario"
             inputId="role"
             [control]="registerForm.get('role')!"
             type="select"
@@ -41,7 +60,7 @@
 
         <div class="form-grid">
           <app-form-field
-            label="contraseña"
+            label="Contraseña"
             inputId="password"
             [control]="registerForm.get('password')!"
             type="password"
@@ -50,7 +69,7 @@
           ></app-form-field>
 
           <app-form-field
-            label="contraseña"
+            label="Confirmar contraseña"
             inputId="confirmPassword"
             [control]="registerForm.get('confirmPassword')!"
             type="password"
@@ -76,21 +95,30 @@
           class="professor-container card mb-4"
         >
           <div class="card-header">
-            <h3 class="card-title">Profesor</h3>
+            <h3 class="card-title">Información de Profesor</h3>
           </div>
           <div class="card-body">
-            <app-form-field
-              label="Departamento"
-              inputId="departmentId"
-              [control]="registerForm.get('departmentId')!"
-              type="select"
-              [options]="[
-                { value: 'matematica', label: 'Matematica' },
-                { value: 'ciencias', label: 'Ciencias' },
-                { value: 'historia', label: 'Historia' },
-              ]"
-              [showSuccessIndicator]="submitted"
-            ></app-form-field>
+            <div class="form-grid">
+              <app-form-field
+                label="Departamento"
+                inputId="departmentId"
+                [control]="registerForm.get('departmentId')!"
+                type="select"
+                [options]="departmentOptions"
+                [showSuccessIndicator]="submitted"
+              ></app-form-field>
+
+              <app-form-field
+                label="Fecha de contratación"
+                inputId="hiringDate"
+                [control]="registerForm.get('hiringDate')!"
+                type="date"
+                [showSuccessIndicator]="submitted"
+              ></app-form-field>
+            </div>
+            <div *ngIf="loadingDepartments" class="loading-indicator">
+              Cargando departamentos...
+            </div>
           </div>
         </div>
 

@@ -108,20 +108,6 @@ export class AuthService {
   }
 
   /**
-   * Register a professor user
-   */
-  registerProfessor(userData: any): Observable<UserProfessor> {
-    return this.apiService.post<UserProfessor>('users', userData);
-  }
-
-  /**
-   * Register a student user
-   */
-  registerStudent(userData: any): Observable<UserStudent> {
-    return this.apiService.post<UserStudent>('users', userData);
-  }
-
-  /**
    * Register an admin user (admin only)
    */
   registerAdmin(userData: any): Observable<User> {

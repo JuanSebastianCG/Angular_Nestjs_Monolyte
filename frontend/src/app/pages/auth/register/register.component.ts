@@ -60,11 +60,14 @@ export class RegisterPageComponent implements OnInit {
     this.registerForm = this.formBuilder.group(
       {
         username: ['', Validators.required],
+        name: ['', Validators.required],
+        email: ['', [Validators.required, Validators.email]],
         role: ['profesor', Validators.required],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', Validators.required],
         birthDate: ['', Validators.required],
         departmentId: [''],
+        hiringDate: [''],
       },
       {
         validator: this.mustMatch('password', 'confirmPassword'),
@@ -112,15 +115,19 @@ export class RegisterPageComponent implements OnInit {
   }
 
   updateValidators() {
-    const departmentIdControl = this.registerForm.get('departmentId');
+    const departmentId = this.registerForm.get('departmentId');
+    const hiringDate = this.registerForm.get('hiringDate');
 
     if (this.selectedRole === 'profesor') {
-      departmentIdControl?.setValidators(Validators.required);
+      departmentId?.setValidators([Validators.required]);
+      hiringDate?.setValidators([Validators.required]);
     } else {
-      departmentIdControl?.clearValidators();
+      departmentId?.clearValidators();
+      hiringDate?.clearValidators();
     }
 
-    departmentIdControl?.updateValueAndValidity();
+    departmentId?.updateValueAndValidity();
+    hiringDate?.updateValueAndValidity();
   }
 
   mustMatch(controlName: string, matchingControlName: string) {
@@ -146,9 +153,16 @@ export class RegisterPageComponent implements OnInit {
     return this.registerForm.controls;
   }
 
+  get departmentOptions(): Array<{ value: string; label: string }> {
+    return this.departments.map((dept) => ({
+      value: dept._id,
+      label: dept.name,
+    }));
+  }
+
   onSubmit() {
     this.submitted = true;
-    this.error = '';
+    this.clearError();
 
     // stop here if form is invalid
     if (this.registerForm.invalid) {
@@ -157,49 +171,56 @@ export class RegisterPageComponent implements OnInit {
 
     this.loading = true;
 
+    // Preparar datos según formato API
     const userData = {
-      username: this.f['username'].value,
-      password: this.f['password'].value,
+      name: this.f['name'].value,
       birthDate: this.f['birthDate'].value,
-      role: this.f['role'].value,
+      username: this.f['username'].value,
+      email: this.f['email'].value,
+      password: this.f['password'].value,
+      role: this.selectedRole === 'profesor' ? 'professor' : 'student',
     };
 
     if (this.selectedRole === 'profesor') {
-      this.registerProfessor({
-        ...userData,
-        professorInfo: {
-          departmentId: this.f['departmentId'].value,
-        },
-      });
+      this.registerProfessor(userData);
     } else {
-      this.registerStudent({
-        ...userData,
-        studentInfo: {},
-      });
+      this.registerStudent(userData);
     }
   }
 
   registerProfessor(userData: any) {
-    this.authService.registerProfessor(userData).subscribe({
+    // Agregar información específica de profesor
+    userData.professorInfo = {
+      departmentId: this.f['departmentId'].value,
+      hiringDate:
+        this.f['hiringDate'].value || new Date().toISOString().split('T')[0],
+    };
+
+    this.authService.register(userData).subscribe({
       next: () => {
-        this.router.navigate(['/login'], { queryParams: { registered: true } });
+        this.router.navigate(['/login'], {
+          queryParams: { registered: true },
+        });
       },
       error: (error) => {
-        this.error =
-          error.error?.message || 'Registration failed. Please try again.';
+        this.error = error;
         this.loading = false;
       },
     });
   }
 
   registerStudent(userData: any) {
-    this.authService.registerStudent(userData).subscribe({
+    // Agregar información específica de estudiante
+    userData.studentInfo = {};
+
+    this.authService.register(userData).subscribe({
       next: () => {
-        this.router.navigate(['/login'], { queryParams: { registered: true } });
+        this.router.navigate(['/login'], {
+          queryParams: { registered: true },
+        });
       },
       error: (error) => {
-        this.error =
-          error.error?.message || 'Registration failed. Please try again.';
+        this.error = error;
         this.loading = false;
       },
     });

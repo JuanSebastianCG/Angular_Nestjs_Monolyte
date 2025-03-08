@@ -18,6 +18,7 @@ export class NavbarComponent implements OnInit {
   isMobileMenuOpen = false;
   isProfileDropdownOpen = false;
   isScrolled = false;
+  activeLink: string = '/';
 
   constructor(
     private authService: AuthService,
@@ -38,6 +39,69 @@ export class NavbarComponent implements OnInit {
       this.user = user;
       this.isAuthenticated = !!user;
     });
+
+    // Set active link based on current route
+    this.activeLink = this.router.url;
+  }
+
+  /**
+   * Navigate to a specific route
+   * @param path Path to navigate to
+   */
+  navigateTo(path: string) {
+    this.isMobileMenuOpen = false;
+    this.activeLink = path;
+    this.router.navigate([path]);
+  }
+
+  /**
+   * Navigate to login page
+   */
+  navigateToLogin() {
+    this.navigateTo('/login');
+  }
+
+  /**
+   * Navigate to register page
+   */
+  navigateToRegister() {
+    this.navigateTo('/register');
+  }
+
+  /**
+   * Navigate to profile page
+   */
+  navigateToProfile() {
+    this.navigateTo('/profile');
+  }
+
+  /**
+   * Navigate to student dashboard
+   */
+  navigateToStudentDashboard() {
+    this.navigateTo('/student/dashboard');
+  }
+
+  /**
+   * Navigate to professor courses
+   */
+  navigateToProfessorCourses() {
+    this.navigateTo('/professor/courses');
+  }
+
+  /**
+   * Navigate to admin dashboard
+   */
+  navigateToAdminDashboard() {
+    this.navigateTo('/admin/dashboard');
+  }
+
+  /**
+   * Check if a link is active
+   * @param path Path to check
+   */
+  isLinkActive(path: string): boolean {
+    return this.activeLink === path;
   }
 
   // Listen for scroll events to update navbar style

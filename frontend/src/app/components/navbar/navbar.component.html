@@ -2,7 +2,7 @@
   <div class="container">
     <div class="navbar-content">
       <!-- Logo -->
-      <a class="navbar-logo" routerLink="/">
+      <a class="navbar-logo" (click)="navigateTo('/')">
         <span class="logo-text">UniApp</span>
       </a>
 
@@ -26,10 +26,8 @@
           <li class="nav-item" *ngFor="let link of navLinks">
             <a
               class="nav-link"
-              [routerLink]="link.path"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: link.path === '/' }"
-              (click)="isMobileMenuOpen = false"
+              (click)="navigateTo(link.path)"
+              [ngClass]="{ active: isLinkActive(link.path) }"
             >
               <i class="fas" [ngClass]="link.icon"></i>
               <span>{{ link.label }}</span>
@@ -39,8 +37,8 @@
 
         <!-- Authentication Buttons -->
         <div class="auth-buttons" *ngIf="!isAuthenticated">
-          <a routerLink="/login" class="btn btn-outline">Sign In</a>
-          <a routerLink="/register" class="btn btn-solid">Sign Up</a>
+          <a (click)="navigateToLogin()" class="btn btn-outline">Sign In</a>
+          <a (click)="navigateToRegister()" class="btn btn-solid">Sign Up</a>
         </div>
 
         <!-- User Profile Dropdown -->
@@ -72,36 +70,9 @@
 
             <div class="dropdown-divider"></div>
 
-            <a class="dropdown-item" routerLink="/profile">
+            <a class="dropdown-item" (click)="navigateToProfile()">
               <i class="fas fa-user"></i>
               <span>My Profile</span>
-            </a>
-
-            <a
-              class="dropdown-item"
-              *ngIf="user?.role === 'student'"
-              routerLink="/student/dashboard"
-            >
-              <i class="fas fa-graduation-cap"></i>
-              <span>Student Dashboard</span>
-            </a>
-
-            <a
-              class="dropdown-item"
-              *ngIf="user?.role === 'professor'"
-              routerLink="/professor/courses"
-            >
-              <i class="fas fa-chalkboard-teacher"></i>
-              <span>Professor Dashboard</span>
-            </a>
-
-            <a
-              class="dropdown-item"
-              *ngIf="user?.role === 'admin'"
-              routerLink="/admin/dashboard"
-            >
-              <i class="fas fa-cog"></i>
-              <span>Admin Dashboard</span>
             </a>
 
             <div class="dropdown-divider"></div>

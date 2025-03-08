@@ -67,20 +67,4 @@ export class HomeComponent implements OnInit {
         return '/courses';
     }
   }
-
-  // Get role-specific dashboard name
-  get dashboardName(): string {
-    if (!this.user) return 'Login';
-
-    switch (this.user.role) {
-      case 'student':
-        return 'Student Dashboard';
-      case 'professor':
-        return 'Professor Dashboard';
-      case 'admin':
-        return 'Admin Dashboard';
-      default:
-        return 'Dashboard';
-    }
-  }
 }
