@@ -20,13 +20,12 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 // Import components for the routes
-import { HomeComponent } from './home/home.component';
-import { LoginComponent } from './login/login.component';
-import { RegisterComponent } from './register/register.component';
-import { CursosComponent } from './cursos/cursos.component';
-import { DepartamentosComponent } from './departamentos/departamentos.component';
-import { InscribirComponent } from './inscribir/inscribir.component';
-import { NotasComponent } from './notas/notas.component';
+import { HomeComponent } from './pages/home/home.component';
+import { LoginComponent } from './auth/login/login.component';
+import { RegisterComponent } from './auth/register/register.component';
+import { CursosComponent } from './pages/course/cursos.component';
+import { DepartamentosComponent } from './pages/departments/departments.component';
+import { InscribirComponent } from './pages/enrollment/enrollment.component';
 import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
 
@@ -43,7 +42,10 @@ const routes: Routes = [
   },
   {
     path: 'cursos/:id',
-    loadComponent: () => import('./components/course-detail/course-detail.component').then(m => m.CourseDetailComponent),
+    loadComponent: () =>
+      import('./pages/course-detail/course-detail.component').then(
+        (m) => m.CourseDetailComponent,
+      ),
     canActivate: [AuthGuard],
   },
   {
@@ -58,12 +60,38 @@ const routes: Routes = [
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['student'] },
   },
+  // Student-specific routes
   {
-    path: 'notas',
-    component: NotasComponent,
+    path: 'student',
+    children: [
+      { path: 'courses', component: CursosComponent },
+      { path: 'profile', component: HomeComponent }, // Placeholder until profile component is created
+    ],
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['student', 'professor'] },
+    data: { roles: ['student'] },
   },
+  // Professor-specific routes
+  {
+    path: 'professor',
+    children: [
+      { path: 'courses', component: CursosComponent },
+      { path: 'profile', component: HomeComponent }, // Placeholder until profile component is created
+    ],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['professor'] },
+  },
+  // Admin-specific routes
+  {
+    path: 'admin',
+    children: [
+      { path: 'dashboard', component: HomeComponent }, // Placeholder until dashboard component is created
+      { path: 'departments', component: DepartamentosComponent },
+      { path: 'users', component: HomeComponent }, // Placeholder until users component is created
+    ],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['admin'] },
+  },
+  // Fallback route
   { path: '**', redirectTo: '/home' },
 ];
 

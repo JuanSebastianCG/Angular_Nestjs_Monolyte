@@ -1,46 +1,29 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError, forkJoin, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
+import { NotificationService } from '../components/notification/notification.service';
+import { StudentGrade } from '../models/student-grade.model';
+import { Evaluation } from '../models/evaluation.model';
 
-export interface Grade {
-  _id: string;
-  courseId: string;
-  examId: string;
-  evaluationId?: string;
-  studentId: string;
-  value: number;
-  feedback?: string;
-  date: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface GradeWithDetails extends Grade {
-  examTitle?: string;
+export interface GradeWithDetails extends StudentGrade {
   evaluationName?: string;
   studentName?: string;
   courseName?: string;
-  studentGrades?: StudentGrade[];
-  expanded?: boolean;
 }
 
-export interface StudentGrade {
-  _id: string;
-  studentId: {
-    _id: string;
-    name: string;
-    username?: string;
-    email?: string;
-  };
+export interface CreateGradeDto {
+  studentId: string;
   evaluationId: string;
-  courseId: string;
   grade: number;
   comments?: string;
-  date: string;
-  createdAt?: string;
-  updatedAt?: string;
+}
+
+export interface UpdateGradeDto {
+  grade?: number;
+  comments?: string;
 }
 
 @Injectable({
@@ -48,187 +31,184 @@ export interface StudentGrade {
 })
 export class GradeService {
   private apiUrl = `${environment.apiUrl}/student-grades`;
+  private evaluationsUrl = `${environment.apiUrl}/evaluations`;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+    private notificationService: NotificationService,
+  ) {}
 
-  // Obtener calificaciones por curso
-  getGradesByCourse(courseId: string): Observable<GradeWithDetails[]> {
-    console.log(`Obteniendo calificaciones para el curso: ${courseId}`);
-    return this.http.get<any[]>(`${this.apiUrl}/course/${courseId}`).pipe(
-      map((grades) => {
-        console.log(
-          `Se encontraron ${grades.length} calificaciones para el curso ${courseId}`,
-        );
-        // Mapeamos para asegurar compatibilidad con la propiedad 'value'
-        const mappedGrades = grades.map((grade) => ({
-          ...grade,
-          value: grade.score || grade.value, // Usar score si existe, o value si ya existe
-        }));
-        return mappedGrades;
-      }),
-      catchError((error) => {
-        console.error('Error obteniendo calificaciones del curso:', error);
-        return throwError(
-          () =>
-            new Error(
-              'No se pudieron obtener las calificaciones. Por favor, inténtelo de nuevo.',
-            ),
-        );
-      }),
+  /**
+   * Get all grades
+   */
+  getAllGrades(): Observable<StudentGrade[]> {
+    const headers = this.getAuthHeaders();
+    return this.http.get<StudentGrade[]>(this.apiUrl, { headers }).pipe(
+      tap((grades) => console.log('Fetched all grades', grades)),
+      catchError(this.handleError('getAllGrades')),
     );
   }
 
-  // Obtener calificaciones por examen
-  getGradesByExam(examId: string): Observable<GradeWithDetails[]> {
-    console.log(`Obteniendo calificaciones para el examen: ${examId}`);
-    return this.http.get<any[]>(`${this.apiUrl}/exam/${examId}`).pipe(
-      map((grades) => {
-        console.log(
-          `Se encontraron ${grades.length} calificaciones para el examen ${examId}`,
-        );
-        // Mapeamos para asegurar compatibilidad con la propiedad 'value'
-        const mappedGrades = grades.map((grade) => ({
-          ...grade,
-          value: grade.score || grade.value,
-        }));
-        return mappedGrades;
-      }),
-      catchError((error) => {
-        console.error('Error obteniendo calificaciones del examen:', error);
-        return throwError(
-          () =>
-            new Error(
-              'No se pudieron obtener las calificaciones. Por favor, inténtelo de nuevo.',
-            ),
-        );
-      }),
-    );
-  }
-
-  // Obtener calificaciones por estudiante
+  /**
+   * Get grades for a specific student
+   */
   getGradesByStudent(studentId: string): Observable<GradeWithDetails[]> {
-    console.log(`Obteniendo calificaciones para el estudiante: ${studentId}`);
-    return this.http.get<any[]>(`${this.apiUrl}/student/${studentId}`).pipe(
-      map((grades) => {
-        console.log(
-          `Se encontraron ${grades.length} calificaciones para el estudiante ${studentId}`,
-        );
-        // Mapeamos para asegurar compatibilidad con la propiedad 'value'
-        const mappedGrades = grades.map((grade) => ({
-          ...grade,
-          value: grade.score || grade.value,
-        }));
-        return mappedGrades;
-      }),
-      catchError((error) => {
-        console.error('Error obteniendo calificaciones del estudiante:', error);
-        return throwError(
-          () =>
-            new Error(
-              'No se pudieron obtener las calificaciones. Por favor, inténtelo de nuevo.',
-            ),
-        );
-      }),
-    );
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<StudentGrade[]>(`${this.apiUrl}/student/${studentId}`, { headers })
+      .pipe(
+        tap((grades) =>
+          console.log(`Fetched grades for student ${studentId}`, grades),
+        ),
+        map((grades) => this.addDetailsToGrades(grades)),
+        catchError(this.handleError('getGradesByStudent')),
+      );
   }
 
-  // Obtener calificaciones de un estudiante en un curso específico
+  /**
+   * Get grades for a specific evaluation
+   */
+  getGradesByEvaluation(evaluationId: string): Observable<StudentGrade[]> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<
+        StudentGrade[]
+      >(`${this.apiUrl}/evaluation/${evaluationId}`, { headers })
+      .pipe(
+        tap((grades) =>
+          console.log(`Fetched grades for evaluation ${evaluationId}`, grades),
+        ),
+        catchError(this.handleError('getGradesByEvaluation')),
+      );
+  }
+
+  /**
+   * Get grades for a specific course
+   */
+  getGradesByCourse(courseId: string): Observable<GradeWithDetails[]> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<StudentGrade[]>(`${this.apiUrl}/course/${courseId}`, { headers })
+      .pipe(
+        tap((grades) =>
+          console.log(`Fetched grades for course ${courseId}`, grades),
+        ),
+        map((grades) => this.addDetailsToGrades(grades)),
+        catchError(this.handleError('getGradesByCourse')),
+      );
+  }
+
+  /**
+   * Get a student's grades in a specific course
+   */
   getStudentGradesInCourse(
     studentId: string,
     courseId: string,
   ): Observable<GradeWithDetails[]> {
-    console.log(
-      `Obteniendo calificaciones del estudiante ${studentId} en el curso ${courseId}`,
-    );
+    const headers = this.getAuthHeaders();
     return this.http
-      .get<any[]>(`${this.apiUrl}/student/${studentId}/course/${courseId}`)
+      .get<
+        StudentGrade[]
+      >(`${this.apiUrl}/student/${studentId}/course/${courseId}`, { headers })
       .pipe(
-        map((grades) => {
+        tap((grades) =>
           console.log(
-            `Se encontraron ${grades.length} calificaciones para el estudiante en este curso`,
-          );
-          // Mapeamos para asegurar compatibilidad con la propiedad 'value'
-          const mappedGrades = grades.map((grade) => ({
-            ...grade,
-            value: grade.score || grade.value,
-          }));
-          return mappedGrades;
-        }),
-        catchError((error) => {
-          console.error(
-            'Error obteniendo calificaciones del estudiante en el curso:',
-            error,
-          );
-          return throwError(
-            () =>
-              new Error(
-                'No se pudieron obtener las calificaciones. Por favor, inténtelo de nuevo.',
-              ),
-          );
-        }),
+            `Fetched grades for student ${studentId} in course ${courseId}`,
+            grades,
+          ),
+        ),
+        map((grades) => this.addDetailsToGrades(grades)),
+        catchError(this.handleError('getStudentGradesInCourse')),
       );
   }
 
-  // Registrar una nueva calificación
-  createGrade(grade: Partial<Grade>): Observable<Grade> {
-    // Aseguramos que usamos 'value' si viene como 'score'
-    const gradeCopy = { ...grade };
-    if ('score' in gradeCopy && !('value' in gradeCopy)) {
-      gradeCopy.value = (gradeCopy as any).score;
-      delete (gradeCopy as any).score;
-    }
+  /**
+   * Get a specific grade by evaluation and student
+   */
+  getGradeByEvaluationAndStudent(
+    evaluationId: string,
+    studentId: string,
+  ): Observable<StudentGrade> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .get<StudentGrade>(
+        `${this.apiUrl}/evaluation/${evaluationId}/student/${studentId}`,
+        { headers },
+      )
+      .pipe(
+        tap((grade) =>
+          console.log(
+            `Fetched grade for student ${studentId} on evaluation ${evaluationId}`,
+            grade,
+          ),
+        ),
+        catchError(this.handleError('getGradeByEvaluationAndStudent')),
+      );
+  }
 
-    return this.http.post<Grade>(this.apiUrl, gradeCopy).pipe(
-      catchError((error) => {
-        console.error('Error registrando calificación:', error);
-        return throwError(
-          () =>
-            new Error(
-              'No se pudo registrar la calificación. Por favor, inténtelo de nuevo.',
-            ),
-        );
+  /**
+   * Create a new grade
+   */
+  createGrade(grade: CreateGradeDto): Observable<StudentGrade> {
+    const headers = this.getAuthHeaders();
+    return this.http.post<StudentGrade>(this.apiUrl, grade, { headers }).pipe(
+      tap((newGrade) => {
+        console.log('Created grade', newGrade);
+        this.notificationService.success('Grade created successfully');
       }),
+      catchError(this.handleError('createGrade')),
     );
   }
 
-  // Actualizar una calificación
-  updateGrade(gradeId: string, grade: Partial<Grade>): Observable<Grade> {
-    // Aseguramos que usamos 'value' si viene como 'score'
-    const gradeCopy = { ...grade };
-    if ('score' in gradeCopy && !('value' in gradeCopy)) {
-      gradeCopy.value = (gradeCopy as any).score;
-      delete (gradeCopy as any).score;
-    }
-
-    return this.http.put<Grade>(`${this.apiUrl}/${gradeId}`, gradeCopy).pipe(
-      catchError((error) => {
-        console.error('Error actualizando calificación:', error);
-        return throwError(
-          () =>
-            new Error(
-              'No se pudo actualizar la calificación. Por favor, inténtelo de nuevo.',
-            ),
-        );
-      }),
-    );
+  /**
+   * Update a grade
+   */
+  updateGrade(
+    evaluationId: string,
+    studentId: string,
+    grade: UpdateGradeDto,
+  ): Observable<StudentGrade> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .put<StudentGrade>(
+        `${this.apiUrl}/evaluation/${evaluationId}/student/${studentId}`,
+        grade,
+        { headers },
+      )
+      .pipe(
+        tap((updatedGrade) => {
+          console.log('Updated grade', updatedGrade);
+          this.notificationService.success('Grade updated successfully');
+        }),
+        catchError(this.handleError('updateGrade')),
+      );
   }
 
-  // Eliminar una calificación
-  deleteGrade(gradeId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${gradeId}`).pipe(
-      catchError((error) => {
-        console.error('Error eliminando calificación:', error);
-        return throwError(
-          () =>
-            new Error(
-              'No se pudo eliminar la calificación. Por favor, inténtelo de nuevo.',
-            ),
-        );
-      }),
-    );
+  /**
+   * Delete a grade
+   */
+  deleteGrade(evaluationId: string, studentId: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http
+      .delete(
+        `${this.apiUrl}/evaluation/${evaluationId}/student/${studentId}`,
+        { headers },
+      )
+      .pipe(
+        tap((_) => {
+          console.log(
+            `Deleted grade for student ${studentId} on evaluation ${evaluationId}`,
+          );
+          this.notificationService.success('Grade deleted successfully');
+        }),
+        catchError(this.handleError('deleteGrade')),
+      );
   }
 
-  // Calcular promedio de calificaciones para un estudiante en un curso
+  /**
+   * Calculate average grade for a student in a course
+   */
   calculateStudentAverage(
     studentId: string,
     courseId: string,
@@ -236,37 +216,94 @@ export class GradeService {
     return this.getStudentGradesInCourse(studentId, courseId).pipe(
       map((grades) => {
         if (grades.length === 0) return 0;
-
-        const sum = grades.reduce((total, grade) => total + grade.value, 0);
-        return parseFloat((sum / grades.length).toFixed(1));
+        const sum = grades.reduce((total, grade) => total + grade.grade, 0);
+        return Math.round((sum / grades.length) * 100) / 100;
+      }),
+      catchError((error) => {
+        console.error('Error calculating student average:', error);
+        return of(0);
       }),
     );
   }
 
-  // Registrar calificaciones en masa (útil para calificar a todos los estudiantes de un examen)
-  bulkCreateGrades(grades: Partial<Grade>[]): Observable<Grade[]> {
-    // Aseguramos que usamos 'value' si viene como 'score' para cada calificación
-    const gradesCopy = grades.map((grade) => {
-      const gradeCopy = { ...grade };
-      if ('score' in gradeCopy && !('value' in gradeCopy)) {
-        gradeCopy.value = (gradeCopy as any).score;
-        delete (gradeCopy as any).score;
-      }
-      return gradeCopy;
-    });
-
+  /**
+   * Get course average grades for all students
+   */
+  getCourseAverages(
+    courseId: string,
+  ): Observable<{ studentId: string; studentName: string; average: number }[]> {
+    const headers = this.getAuthHeaders();
     return this.http
-      .post<Grade[]>(`${this.apiUrl}/bulk`, { grades: gradesCopy })
+      .get<StudentGrade[]>(`${this.apiUrl}/course/${courseId}`, { headers })
       .pipe(
-        catchError((error) => {
-          console.error('Error registrando calificaciones en masa:', error);
-          return throwError(
-            () =>
-              new Error(
-                'No se pudieron registrar las calificaciones. Por favor, inténtelo de nuevo.',
-              ),
+        map((grades) => {
+          // Group grades by student
+          const studentGrades = grades.reduce(
+            (acc, grade) => {
+              const studentId = grade.studentId.toString();
+              if (!acc[studentId]) {
+                acc[studentId] = {
+                  grades: [],
+                  studentName: grade.studentName || 'Unknown Student',
+                };
+              }
+              acc[studentId].grades.push(grade);
+              return acc;
+            },
+            {} as Record<
+              string,
+              { grades: StudentGrade[]; studentName: string }
+            >,
           );
+
+          // Calculate average for each student
+          return Object.entries(studentGrades).map(([studentId, data]) => {
+            const sum = data.grades.reduce(
+              (total, grade) => total + grade.grade,
+              0,
+            );
+            const average = Math.round((sum / data.grades.length) * 100) / 100;
+            return {
+              studentId,
+              studentName: data.studentName,
+              average,
+            };
+          });
         }),
+        catchError(this.handleError('getCourseAverages')),
       );
+  }
+
+  /**
+   * Add details to grades
+   */
+  private addDetailsToGrades(grades: StudentGrade[]): GradeWithDetails[] {
+    // This function would typically fetch additional details from other entities
+    // For now, we'll just pass through the data
+    return grades as GradeWithDetails[];
+  }
+
+  /**
+   * Get auth headers
+   */
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    });
+  }
+
+  /**
+   * Error handler
+   */
+  private handleError(operation: string) {
+    return (error: any): Observable<any> => {
+      console.error(`${operation} failed:`, error);
+      this.notificationService.error(
+        `Failed to ${operation.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
+      );
+      return throwError(() => error);
+    };
   }
 }

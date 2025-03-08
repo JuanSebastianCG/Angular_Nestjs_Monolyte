@@ -238,28 +238,32 @@ export class InscribirComponent implements OnInit {
     this.courseService.getAllCourses().subscribe({
       next: (courses) => {
         console.log(`Retrieved ${courses.length} total courses from server`);
-        
+
         // Check user enrollments
         this.enrollmentService.getEnrollmentsByStudent(this.userId).subscribe({
           next: (enrollments) => {
-            console.log(`Retrieved ${enrollments.length} enrollments for student`);
-            
+            console.log(
+              `Retrieved ${enrollments.length} enrollments for student`,
+            );
+
             // Extraer IDs de cursos en los que el estudiante está inscrito
-            const enrolledCourseIds = enrollments.map((e) => {
-              // Manejar tanto si courseId es un string como si es un objeto
-              if (typeof e.courseId === 'string') {
-                return e.courseId;
-              } else if (e.courseId && e.courseId._id) {
-                return e.courseId._id;
-              }
-              return null;
-            }).filter(id => id !== null);
-            
+            const enrolledCourseIds = enrollments
+              .map((e) => {
+                // Manejar tanto si courseId es un string como si es un objeto
+                if (typeof e.courseId === 'string') {
+                  return e.courseId;
+                } else if (e.courseId && e.courseId._id) {
+                  return e.courseId._id;
+                }
+                return null;
+              })
+              .filter((id) => id !== null);
+
             console.log('Enrolled course IDs:', enrolledCourseIds);
 
             // Filtrar los cursos: solo mostrar aquellos en los que NO está inscrito
             this.availableCourses = courses
-              .filter(course => !enrolledCourseIds.includes(course._id)) // Filtrar cursos ya inscritos
+              .filter((course) => !enrolledCourseIds.includes(course._id)) // Filtrar cursos ya inscritos
               .map((course) => ({
                 _id: course._id,
                 name: course.name,
@@ -267,10 +271,12 @@ export class InscribirComponent implements OnInit {
                 capacity: course.capacity || 0, // Agregar la propiedad capacity
                 professorId: course.professorId,
                 professor: course.professor || course.professorId, // Si existe el nombre del profesor, usarlo
-                isEnrolled: false // Ya sabemos que no está inscrito porque los filtramos
+                isEnrolled: false, // Ya sabemos que no está inscrito porque los filtramos
               }));
 
-            console.log(`Displaying ${this.availableCourses.length} available courses for enrollment`);
+            console.log(
+              `Displaying ${this.availableCourses.length} available courses for enrollment`,
+            );
             this.isLoading = false;
           },
           error: (error) => {
@@ -308,7 +314,7 @@ export class InscribirComponent implements OnInit {
       courseId: courseId,
       enrollmentStartDate: today.toISOString().split('T')[0],
       enrollmentEndDate: endDate.toISOString().split('T')[0],
-      status: 'start'
+      status: 'start',
     };
 
     this.enrollmentService.createEnrollment(enrollment).subscribe({
@@ -322,30 +328,34 @@ export class InscribirComponent implements OnInit {
         }
 
         this.notificationService.success('Inscripción exitosa');
-        
+
         // Recargar la lista de cursos para actualizar el estado
         this.loadAvailableCourses();
       },
       error: (error) => {
         console.error('Error enrolling in course:', error);
-        
+
         // Mostrar mensaje detallado del error al usuario
-        let errorMessage = 'Error al inscribirse en el curso. Por favor, inténtelo de nuevo.';
-        
+        let errorMessage =
+          'Error al inscribirse en el curso. Por favor, inténtelo de nuevo.';
+
         // Verificar si el error es por falta de prerrequisitos
         if (error.error && error.error.message) {
-          if (error.error.message.includes('prerequisite') || 
-              error.error.message.includes('prerrequisito')) {
-            errorMessage = 'No puedes inscribirte en este curso porque no cumples con los prerrequisitos necesarios.';
+          if (
+            error.error.message.includes('prerequisite') ||
+            error.error.message.includes('prerrequisito')
+          ) {
+            errorMessage =
+              'No puedes inscribirte en este curso porque no cumples con los prerrequisitos necesarios.';
           } else {
             // Mostrar el mensaje exacto de la API para pruebas
             errorMessage = `Error del servidor: ${error.error.message}`;
           }
         }
-        
+
         // Mostrar detalles completos para depuración
         console.log('Detalles del error:', JSON.stringify(error, null, 2));
-        
+
         this.notificationService.error(errorMessage);
       },
     });

@@ -58,35 +58,29 @@ export class NotificationService {
     });
   }
 
-  // Remove a notification by ID
-  removeNotification(id: string): void {
-    const currentNotifications = this.notificationsSubject.getValue();
-    const updatedNotifications = currentNotifications.filter(
-      (notif) => notif.id !== id,
+  // Dismiss a notification by its ID
+  dismissNotification(id: string): void {
+    const currentNotifications = this.notificationsSubject.value;
+    this.notificationsSubject.next(
+      currentNotifications.filter((notification) => notification.id !== id),
     );
-    this.notificationsSubject.next(updatedNotifications);
   }
 
-  // Clear all notifications
-  clearAll(): void {
-    this.notificationsSubject.next([]);
-  }
-
-  // Private method to add a notification
+  // Add a new notification to the list
   private addNotification(notification: Notification): void {
-    const currentNotifications = this.notificationsSubject.getValue();
+    const currentNotifications = this.notificationsSubject.value;
     this.notificationsSubject.next([...currentNotifications, notification]);
 
-    // Auto-remove notification after duration
+    // Remove notification after duration if provided
     if (notification.duration) {
       setTimeout(() => {
-        this.removeNotification(notification.id);
+        this.dismissNotification(notification.id);
       }, notification.duration);
     }
   }
 
-  // Generate a unique ID for notifications
+  // Generate a unique ID for the notification
   private generateId(): string {
-    return 'notification-' + Math.random().toString(36).substring(2, 11);
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
   }
 }

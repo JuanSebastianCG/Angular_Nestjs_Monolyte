@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import {
-  Router,
   CanActivate,
   ActivatedRouteSnapshot,
   RouterStateSnapshot,
+  Router,
 } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { NotificationService } from '../components/notification/notification.service';
@@ -13,59 +13,56 @@ import { NotificationService } from '../components/notification/notification.ser
 })
 export class RoleGuard implements CanActivate {
   constructor(
-    private router: Router,
     private authService: AuthService,
+    private router: Router,
     private notificationService: NotificationService,
   ) {}
 
   canActivate(
-    route: ActivatedRouteSnapshot,
+    next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot,
   ): boolean {
-    // Get the roles required for this route
-    const requiredRoles = route.data['roles'] as Array<string>;
-
-    // If no roles are required, allow access
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
-
-    // Get the current user
     const currentUser = this.authService.currentUserValue;
 
-    // If no user or no user role, deny access
-    if (!currentUser || !currentUser.role) {
-      this.notificationService.error(
-        'Acceso denegado. Por favor inicie sesión.',
-      );
+    // First check if the user is authenticated
+    if (!currentUser) {
       this.router.navigate(['/login']);
       return false;
     }
 
-    // Check if the user's role is allowed
-    const hasRole = requiredRoles.includes(currentUser.role.toLowerCase());
+    // Check if route has any role requirements
+    if (next.data && next.data['roles']) {
+      const requiredRoles = next.data['roles'] as Array<string>;
 
-    if (!hasRole) {
-      this.notificationService.error(
-        'No tienes permisos para acceder a esta página.',
-      );
+      // Check if user's role is in the list of required roles
+      if (requiredRoles.includes(currentUser.role)) {
+        return true;
+      } else {
+        // User doesn't have the required role
+        this.notificationService.error(
+          `Access denied. You need ${requiredRoles.join(' or ')} role to access this page.`,
+        );
 
-      // Redirect to an appropriate page based on role
-      switch (currentUser.role.toLowerCase()) {
-        case 'student':
-          this.router.navigate(['/cursos']);
-          break;
-        case 'professor':
-          this.router.navigate(['/cursos']);
-          break;
-        case 'admin':
-          this.router.navigate(['/departamentos']);
-          break;
-        default:
-          this.router.navigate(['/home']);
+        // Redirect based on user's role
+        switch (currentUser.role) {
+          case 'admin':
+            this.router.navigate(['/admin/dashboard']);
+            break;
+          case 'professor':
+            this.router.navigate(['/professor/courses']);
+            break;
+          case 'student':
+            this.router.navigate(['/student/courses']);
+            break;
+          default:
+            this.router.navigate(['/home']);
+        }
+
+        return false;
       }
     }
 
-    return hasRole;
+    // If no roles are required, allow access
+    return true;
   }
 }

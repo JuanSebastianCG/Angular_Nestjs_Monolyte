@@ -8,9 +8,9 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../services/auth.service';
-import { FormFieldComponent } from '../components/shared/form-field/form-field.component';
-import { NotificationService } from '../components/shared/notification/notification.service';
+import { AuthService } from '../../../services/auth.service';
+import { FormFieldComponent } from '../../../components/form-field/form-field.component';
+import { NotificationService } from '../../../components/shared/notification/notification.service';
 
 @Component({
   selector: 'app-login',

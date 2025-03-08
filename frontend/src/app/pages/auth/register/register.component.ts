@@ -8,11 +8,11 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../services/auth.service';
-import { DepartmentService } from '../services/department.service';
+import { AuthService } from '../../../services/auth.service';
+import { DepartmentService } from '../../../services/department.service';
 import { finalize } from 'rxjs/operators';
-import { FormFieldComponent } from '../components/shared/form-field/form-field.component';
-import { NotificationService } from '../components/shared/notification/notification.service';
+import { FormFieldComponent } from '../../../components/form-field/form-field.component';
+import { NotificationService } from '../../../components/shared/notification/notification.service';
 
 interface Department {
   _id: string;

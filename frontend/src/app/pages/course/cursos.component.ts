@@ -5,7 +5,10 @@ import { AuthService } from '../services/auth.service';
 import { CourseService } from '../services/course.service';
 import { Course as ApiCourse } from '../models/course.model';
 import { Prerequisite } from '../models/prerequisite.model';
-import { CourseCardComponent, Course as UiCourse } from '../components/shared/course-card/course-card.component';
+import {
+  CourseCardComponent,
+  Course as UiCourse,
+} from '../components/shared/course-card/course-card.component';
 import { forkJoin, of } from 'rxjs';
 import { switchMap, catchError, map } from 'rxjs/operators';
 
@@ -105,24 +108,35 @@ import { switchMap, catchError, map } from 'rxjs/operators';
       <!-- Main Content -->
       <main class="container mx-auto py-6 px-4">
         <!-- Filter Options (Admin/Professor view) -->
-        <div class="mb-6 flex flex-wrap items-center gap-4" *ngIf="userRole !== 'student'">
+        <div
+          class="mb-6 flex flex-wrap items-center gap-4"
+          *ngIf="userRole !== 'student'"
+        >
           <div>
-            <label for="filter" class="block text-sm font-medium text-gray-700">Filtrar por:</label>
-            <select 
-              id="filter" 
+            <label for="filter" class="block text-sm font-medium text-gray-700"
+              >Filtrar por:</label
+            >
+            <select
+              id="filter"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               (change)="applyFilter($event)"
             >
               <option value="all">Todos los cursos</option>
-              <option value="mine" *ngIf="userRole === 'professor'">Mis cursos</option>
+              <option value="mine" *ngIf="userRole === 'professor'">
+                Mis cursos
+              </option>
               <option value="department">Por departamento</option>
             </select>
           </div>
-          
+
           <div *ngIf="showDepartmentFilter">
-            <label for="department" class="block text-sm font-medium text-gray-700">Departamento:</label>
-            <select 
-              id="department" 
+            <label
+              for="department"
+              class="block text-sm font-medium text-gray-700"
+              >Departamento:</label
+            >
+            <select
+              id="department"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               (change)="filterByDepartment($event)"
             >
@@ -230,20 +244,30 @@ export class CursosComponent implements OnInit {
   loadCourses(): void {
     this.isLoading = true;
     this.errorMessage = '';
-    console.log(`Loading courses for user role: ${this.userRole}, userId: ${this.userId}`);
+    console.log(
+      `Loading courses for user role: ${this.userRole}, userId: ${this.userId}`,
+    );
 
     // Determine which API call to make based on user role
     let courseObservable = this.courseService.getAllCourses();
-    
+
     if (this.userRole === 'student') {
       console.log('Loading enrolled courses for student');
       courseObservable = this.courseService.getCoursesByStudent(this.userId);
-    } else if (this.userRole === 'professor' && this.selectedFilter === 'mine') {
+    } else if (
+      this.userRole === 'professor' &&
+      this.selectedFilter === 'mine'
+    ) {
       console.log('Loading courses for professor');
       courseObservable = this.courseService.getCoursesByProfessor(this.userId);
-    } else if (this.selectedFilter === 'department' && this.selectedDepartment) {
+    } else if (
+      this.selectedFilter === 'department' &&
+      this.selectedDepartment
+    ) {
       console.log(`Loading courses for department: ${this.selectedDepartment}`);
-      courseObservable = this.courseService.getCoursesByDepartment(this.selectedDepartment);
+      courseObservable = this.courseService.getCoursesByDepartment(
+        this.selectedDepartment,
+      );
     } else {
       console.log('Loading all courses');
     }
@@ -256,9 +280,10 @@ export class CursosComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading courses:', error);
-        this.errorMessage = 'No se pudieron cargar los cursos. Por favor intente de nuevo.';
+        this.errorMessage =
+          'No se pudieron cargar los cursos. Por favor intente de nuevo.';
         this.isLoading = false;
-      }
+      },
     });
   }
 
@@ -272,28 +297,31 @@ export class CursosComponent implements OnInit {
     }
 
     // Log para depuración
-    console.log(`Procesando ${this.apiCourses.length} cursos para el usuario con rol ${this.userRole}`);
+    console.log(
+      `Procesando ${this.apiCourses.length} cursos para el usuario con rol ${this.userRole}`,
+    );
 
     // Procesamos los cursos directamente sin llamadas adicionales para obtener prerrequisitos
-    this.uiCourses = this.apiCourses.map(course => {
+    this.uiCourses = this.apiCourses.map((course) => {
       console.log(`Procesando curso: ${course.name} (${course._id})`);
-      
+
       // Extraemos los prerrequisitos directamente del objeto curso
       const prerequisites = course.prerequisites || [];
-      
+
       // Para estudiantes, los cursos que vienen de getCoursesByStudent ya tienen información de inscripción
-      const isEnrolled = this.userRole === 'student' ? true : !!course.isEnrolled;
-      
+      const isEnrolled =
+        this.userRole === 'student' ? true : !!course.isEnrolled;
+
       // Obtenemos la información del horario
-      const schedule = course.schedule || { 
+      const schedule = course.schedule || {
         room: '',
-        startTime: '', 
-        endTime: '', 
+        startTime: '',
+        endTime: '',
         days: [],
         startDate: '',
-        endDate: ''
+        endDate: '',
       };
-      
+
       // Convertimos a formato UI
       const uiCourse: UiCourse = {
         id: course._id,
@@ -311,14 +339,16 @@ export class CursosComponent implements OnInit {
         enrolledStudents: course.enrolledStudents?.length,
         isEnrolled: isEnrolled,
         enrollmentStatus: course.enrollmentStatus || '',
-        enrollmentDate: course.enrollmentDate || ''
+        enrollmentDate: course.enrollmentDate || '',
       };
-      
+
       return uiCourse;
     });
 
     // Log para depuración
-    console.log(`Procesados ${this.uiCourses.length} cursos para mostrar en la UI`);
+    console.log(
+      `Procesados ${this.uiCourses.length} cursos para mostrar en la UI`,
+    );
     this.isLoading = false;
   }
 
@@ -337,16 +367,17 @@ export class CursosComponent implements OnInit {
 
   viewCourseDetails(courseId: string): void {
     console.log('Navegando a detalles del curso:', courseId);
-    
+
     // Usar navigateByUrl para mayor simplicidad
     const url = `/cursos/${courseId}`;
     console.log('URL de navegación:', url);
-    
+
     // Forzar navegación programática
     setTimeout(() => {
-      this.router.navigateByUrl(url)
+      this.router
+        .navigateByUrl(url)
         .then(() => console.log('Navegación exitosa'))
-        .catch(error => console.error('Error de navegación:', error));
+        .catch((error) => console.error('Error de navegación:', error));
     }, 100);
   }
 
@@ -368,7 +399,9 @@ export class CursosComponent implements OnInit {
     this.courseService.deleteCourse(courseId).subscribe({
       next: () => {
         // Remove the course from the list
-        this.uiCourses = this.uiCourses.filter((course) => course.id !== courseId);
+        this.uiCourses = this.uiCourses.filter(
+          (course) => course.id !== courseId,
+        );
       },
       error: (error) => {
         console.error('Error deleting course:', error);
@@ -384,7 +417,7 @@ export class CursosComponent implements OnInit {
   applyFilter(event: Event): void {
     const target = event.target as HTMLSelectElement;
     this.selectedFilter = target.value;
-    
+
     if (this.selectedFilter === 'department') {
       this.showDepartmentFilter = true;
     } else {
@@ -404,7 +437,10 @@ export class CursosComponent implements OnInit {
   getNoCoursesMessage(): string {
     if (this.userRole === 'student') {
       return 'No estás inscrito en ningún curso.';
-    } else if (this.selectedFilter === 'mine' && this.userRole === 'professor') {
+    } else if (
+      this.selectedFilter === 'mine' &&
+      this.userRole === 'professor'
+    ) {
       return 'No estás asignado a ningún curso.';
     } else if (this.selectedFilter === 'department') {
       return 'No hay cursos en este departamento.';
@@ -427,14 +463,14 @@ export class CursosComponent implements OnInit {
   handleCourseAction(course: UiCourse): void {
     // Registrar información detallada para depuración
     console.log('---------------------------------------');
-    console.log('Course action triggered:', { 
-      id: course.id, 
+    console.log('Course action triggered:', {
+      id: course.id,
       title: course.title,
       userRole: this.userRole,
       isEnrolled: course.isEnrolled,
-      actionType: this.getActionButtonText(course)
+      actionType: this.getActionButtonText(course),
     });
-    
+
     if (this.userRole === 'admin') {
       console.log('Admin - Editing course');
       this.editCourse(course.id);
@@ -456,9 +492,10 @@ export class CursosComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error enrolling in course:', error);
-        this.errorMessage = 'No se pudo inscribir en el curso. Por favor intente de nuevo.';
+        this.errorMessage =
+          'No se pudo inscribir en el curso. Por favor intente de nuevo.';
         this.isLoading = false;
-      }
+      },
     });
   }
 }

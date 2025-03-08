@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 
@@ -25,7 +25,7 @@ export class AuthService {
     private http: HttpClient,
     private router: Router,
   ) {
-    // Initialize current user from localStorage
+    // Retrieve user info from localStorage on service initialization
     const storedUser = localStorage.getItem('currentUser');
     this.currentUserSubject = new BehaviorSubject<User | null>(
       storedUser ? JSON.parse(storedUser) : null,
@@ -43,9 +43,8 @@ export class AuthService {
 
   login(credentials: { username: string; password: string }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/auth/login`, credentials).pipe(
-      map((response) => {
-        console.log('Login response:', response);
-        // Store user details and jwt token in local storage to keep user logged in
+      tap((response) => {
+        // Store user details and token in localStorage
         const user: User = {
           id: response.user.id,
           name: response.user.name,
@@ -53,18 +52,16 @@ export class AuthService {
           role: response.user.role,
           token: response.access_token,
         };
-
         localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('refreshToken', response.refresh_token);
         this.currentUserSubject.next(user);
-
-        // Navigate to the appropriate home page based on role
-        this.navigateByRole(user.role);
-
-        return user;
       }),
       catchError((error) => {
         console.error('Login error:', error);
-        return throwError(() => error);
+        return throwError(
+          () =>
+            new Error('Authentication failed. Please check your credentials.'),
+        );
       }),
     );
   }
@@ -73,39 +70,46 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/users`, userData).pipe(
       catchError((error) => {
         console.error('Registration error:', error);
-        return throwError(() => error);
+        return throwError(
+          () => new Error('Registration failed. Please try again.'),
+        );
       }),
     );
   }
 
   logout(): void {
-    // Remove user from local storage and reset the subject
+    // Remove user from localStorage
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('refreshToken');
     this.currentUserSubject.next(null);
-    this.router.navigate(['/login']);
+
+    // Navigate to login page
+    this.navigateByRole('guest');
   }
 
-  // Helper method to navigate based on user role
   private navigateByRole(role: string): void {
-    const normalizedRole = role.toLowerCase();
+    if (role === 'guest') {
+      this.router.navigate(['/login']);
+      return;
+    }
 
-    switch (normalizedRole) {
-      case 'student':
-        this.router.navigate(['/cursos']);
+    switch (role.toLowerCase()) {
+      case 'admin':
+        this.router.navigate(['/admin/dashboard']);
         break;
       case 'professor':
-        this.router.navigate(['/cursos']);
+        this.router.navigate(['/professor/courses']);
         break;
-      case 'admin':
-        this.router.navigate(['/departamentos']);
+      case 'student':
+        this.router.navigate(['/student/courses']);
         break;
       default:
-        this.router.navigate(['/home']);
+        this.router.navigate(['/login']);
     }
   }
 
   getToken(): string {
-    const currentUser = this.currentUserValue;
-    return currentUser && currentUser.token ? currentUser.token : '';
+    const user = this.currentUserValue;
+    return user ? user.token || '' : '';
   }
 }

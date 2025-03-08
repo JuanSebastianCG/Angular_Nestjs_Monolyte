@@ -6,8 +6,8 @@
         <button
           (click)="goBack($event)"
           class="mr-4 text-gray-600 hover:text-gray-900"
-          aria-label="Volver a la lista de cursos"
-          title="Volver a la lista de cursos"
+          aria-label="Back to course list"
+          title="Back to course list"
         >
           <svg
             class="w-6 h-6"
@@ -23,7 +23,7 @@
             ></path>
           </svg>
         </button>
-        <h1 class="text-xl font-semibold text-gray-800">Detalles del Curso</h1>
+        <h1 class="text-xl font-semibold text-gray-800">Course Details</h1>
       </div>
       <div class="flex items-center">
         <span class="text-gray-600 mr-4">{{ userName }}</span>
@@ -35,7 +35,7 @@
   <main class="container mx-auto py-6 px-4">
     <!-- Loading indicator -->
     <div *ngIf="isLoading" class="text-center p-8">
-      <p class="text-gray-600">Cargando información del curso...</p>
+      <p class="text-gray-600">Loading course information...</p>
     </div>
 
     <!-- Error message -->
@@ -50,26 +50,26 @@
     <div *ngIf="!isLoading && course && hasAccess">
       <div class="bg-white rounded-lg shadow-md p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Información del curso -->
+          <!-- Course Information -->
           <div>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">
               {{ course.name }}
             </h2>
             <p class="text-gray-600 mb-4">{{ course.description }}</p>
 
-            <!-- Detalles del profesor y departamento -->
+            <!-- Professor and Department Details -->
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p class="text-gray-500 font-medium">Profesor</p>
+                <p class="text-gray-500 font-medium">Professor</p>
                 <p class="text-gray-800">
-                  {{ course.professor || 'No asignado' }}
+                  {{ course.professor || 'Not assigned' }}
                 </p>
               </div>
             </div>
 
-            <!-- Prerrequisitos -->
+            <!-- Prerequisites -->
             <div class="mt-4" *ngIf="prerequisites && prerequisites.length > 0">
-              <p class="text-gray-500 font-medium">Prerrequisitos:</p>
+              <p class="text-gray-500 font-medium">Prerequisites:</p>
               <ul class="mt-2 space-y-1 text-sm text-gray-700">
                 <li
                   *ngFor="let prerequisite of prerequisites"
@@ -96,25 +96,29 @@
               class="mt-4"
               *ngIf="!prerequisites || prerequisites.length === 0"
             >
-              <p class="text-gray-500 font-medium">Prerrequisitos:</p>
+              <p class="text-gray-500 font-medium">Prerequisites:</p>
               <p class="text-sm text-gray-700">
-                No hay prerrequisitos para este curso.
+                No prerequisites for this course.
               </p>
             </div>
           </div>
 
-          <!-- Información del horario -->
+          <!-- Schedule Information -->
           <div *ngIf="course.schedule">
-            <h3 class="text-lg font-semibold text-gray-700 mb-2">Horario</h3>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Schedule</h3>
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p class="text-gray-500 font-medium">Días</p>
+                <p class="text-gray-500 font-medium">Days</p>
                 <p class="text-gray-800">
-                  {{ course.schedule.days?.join(', ') || 'No especificado' }}
+                  {{
+                    course.schedule.days && course.schedule.days.length > 0
+                      ? course.schedule.days.join(', ')
+                      : 'Not specified'
+                  }}
                 </p>
               </div>
               <div>
-                <p class="text-gray-500 font-medium">Hora</p>
+                <p class="text-gray-500 font-medium">Time</p>
                 <p
                   class="text-gray-800"
                   *ngIf="course.schedule.startTime && course.schedule.endTime"
@@ -126,38 +130,38 @@
                   class="text-gray-800"
                   *ngIf="!course.schedule.startTime || !course.schedule.endTime"
                 >
-                  No especificado
+                  Not specified
                 </p>
               </div>
               <div>
-                <p class="text-gray-500 font-medium">Aula</p>
+                <p class="text-gray-500 font-medium">Room</p>
                 <p class="text-gray-800">
-                  {{ course.schedule.room || 'No asignada' }}
+                  {{ course.schedule.room || 'Not assigned' }}
                 </p>
               </div>
               <div>
-                <p class="text-gray-500 font-medium">Periodo</p>
+                <p class="text-gray-500 font-medium">Period</p>
                 <p
                   class="text-gray-800"
                   *ngIf="course.schedule.startDate && course.schedule.endDate"
                 >
-                  {{ course.schedule.startDate }} a
+                  {{ course.schedule.startDate }} to
                   {{ course.schedule.endDate }}
                 </p>
                 <p
                   class="text-gray-800"
                   *ngIf="!course.schedule.startDate || !course.schedule.endDate"
                 >
-                  No especificado
+                  Not specified
                 </p>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <!-- Pestañas: Estudiantes, Evaluaciones, Calificaciones -->
+      <!-- Tabs: Students, Evaluations, Grades -->
       <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <!-- Navegación de pestañas -->
+        <!-- Tab Navigation -->
         <div class="border-b border-gray-200">
           <nav class="flex -mb-px">
             <ng-container *ngFor="let tab of tabs">
@@ -178,18 +182,18 @@
           </nav>
         </div>
 
-        <!-- Contenido de pestañas -->
+        <!-- Tab Content -->
         <div class="p-6">
-          <!-- Contenido de la pestaña Estudiantes -->
+          <!-- Students Tab Content -->
           <div *ngIf="activeTab === 'students'">
-            <!-- Buscador de estudiantes -->
+            <!-- Students Search -->
             <div class="mb-4">
               <div class="relative">
                 <input
                   type="text"
                   [(ngModel)]="studentSearchTerm"
                   (input)="filterStudents()"
-                  placeholder="Buscar estudiante..."
+                  placeholder="Search student..."
                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
                 <div
@@ -212,19 +216,19 @@
               </div>
             </div>
 
-            <!-- Loading indicator para estudiantes -->
+            <!-- Loading indicator for students -->
             <div *ngIf="isLoadingEnrollments" class="text-center py-4">
-              <p class="text-gray-600">Cargando estudiantes inscritos...</p>
+              <p class="text-gray-600">Loading enrolled students...</p>
             </div>
 
-            <!-- Lista de estudiantes -->
+            <!-- Students List -->
             <div *ngIf="!isLoadingEnrollments">
               <div
                 *ngIf="filteredEnrollments.length === 0"
                 class="text-center py-4"
               >
                 <p class="text-gray-600">
-                  No hay estudiantes inscritos en este curso.
+                  No students enrolled in this course.
                 </p>
               </div>
 
@@ -239,19 +243,19 @@
                         scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Nombre
+                        Name
                       </th>
                       <th
                         scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Fecha de inscripción
+                        Enrollment Date
                       </th>
                       <th
                         scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Estado
+                        Status
                       </th>
                     </tr>
                   </thead>
@@ -283,15 +287,15 @@
                         >
                           {{
                             enrollment.status === 'start'
-                              ? 'Activo'
+                              ? 'Active'
                               : enrollment.status === 'active'
-                                ? 'Activo'
+                                ? 'Active'
                                 : enrollment.status === 'pending'
-                                  ? 'Pendiente'
+                                  ? 'Pending'
                                   : enrollment.status === 'inactive'
-                                    ? 'Inactivo'
+                                    ? 'Inactive'
                                     : enrollment.status === 'withdrawn'
-                                      ? 'Retirado'
+                                      ? 'Withdrawn'
                                       : enrollment.status
                           }}
                         </span>
@@ -303,22 +307,22 @@
             </div>
           </div>
 
-          <!-- Contenido de la pestaña Evaluaciones -->
-          <div *ngIf="activeTab === 'exams'">
-            <!-- Loading indicator para evaluaciones -->
+          <!-- Evaluations Tab Content -->
+          <div *ngIf="activeTab === 'evaluations'">
+            <!-- Loading indicator for evaluations -->
             <div *ngIf="isLoadingEvaluations" class="text-center py-4">
-              <p class="text-gray-600">Cargando evaluaciones...</p>
+              <p class="text-gray-600">Loading evaluations...</p>
             </div>
 
-            <!-- Lista de evaluaciones -->
+            <!-- Evaluations List -->
             <div *ngIf="!isLoadingEvaluations">
               <div *ngIf="evaluations.length === 0" class="text-center py-4">
                 <p class="text-gray-600">
-                  No hay evaluaciones programadas para este curso.
+                  No evaluations scheduled for this course.
                 </p>
               </div>
 
-              <!-- Botón para crear evaluación (solo para profesores y admins) -->
+              <!-- Create evaluation button (professors/admins only) -->
               <div
                 *ngIf="userRole === 'professor' || userRole === 'admin'"
                 class="mb-4"
@@ -341,12 +345,12 @@
                         d="M12 4v16m8-8H4"
                       ></path>
                     </svg>
-                    Nueva Evaluación
+                    New Evaluation
                   </span>
                 </button>
               </div>
 
-              <!-- Tabla de evaluaciones -->
+              <!-- Evaluations table -->
               <div *ngIf="evaluations.length > 0" class="space-y-4">
                 <div
                   *ngFor="let evaluation of evaluations"
@@ -375,9 +379,9 @@
                           />
                         </svg>
                         <span
-                          >Fecha:
+                          >Date:
                           {{
-                            evaluation.evaluationDate | date: 'dd/MM/yyyy'
+                            evaluation.evaluationDate | date: 'MM/dd/yyyy'
                           }}</span
                         >
                       </div>
@@ -395,71 +399,56 @@
                             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                           />
                         </svg>
-                        <span
-                          >Puntuación máxima: {{ evaluation.maxScore }}</span
-                        >
+                        <span>Maximum Score: {{ evaluation.maxScore }}</span>
                       </div>
                     </div>
 
-                    <!-- Acciones (solo para profesores y admins) -->
-                    <div
-                      *ngIf="userRole === 'professor' || userRole === 'admin'"
-                      class="ml-4 flex flex-col space-y-2"
-                    >
+                    <!-- Actions (available for all roles) -->
+                    <div class="ml-4 flex flex-col space-y-2">
                       <button
                         (click)="toggleEvaluationExpansion(evaluation)"
                         class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
                       >
-                        <span *ngIf="!evaluation.expanded"
-                          >Ver calificaciones</span
-                        >
-                        <span *ngIf="evaluation.expanded"
-                          >Ocultar calificaciones</span
-                        >
+                        <span *ngIf="!evaluation.expanded">View Grades</span>
+                        <span *ngIf="evaluation.expanded">Hide Grades</span>
                       </button>
 
-                      <button
-                        (click)="editEvaluation(evaluation._id)"
-                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none"
+                      <!-- Buttons for professors and administrators -->
+                      <div
+                        *ngIf="userRole === 'professor' || userRole === 'admin'"
+                        class="flex flex-col space-y-2"
                       >
-                        Editar
-                      </button>
+                        <button
+                          (click)="editEvaluation(evaluation._id)"
+                          class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          (click)="manageGrades(evaluation._id)"
+                          class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none"
+                        >
+                          Manage Grades
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <!-- Sección expandible con las calificaciones por estudiante -->
+                  <!-- Expandable section with student grades -->
                   <div
                     *ngIf="evaluation.expanded"
                     class="border-t border-gray-200 p-4"
                   >
-                    <!-- Debugging Info -->
-                    <div
-                      class="bg-blue-50 p-2 mb-3 text-xs text-blue-700 rounded"
-                    >
-                      <p>
-                        Estado de expansión:
-                        {{ evaluation.expanded ? 'Expandido' : 'Colapsado' }}
-                      </p>
-                      <p>
-                        Calificaciones:
-                        {{ evaluation.studentGrades?.length || 0 }}
-                      </p>
-                    </div>
-
-                    <!-- Loading indicator mientras cargan las calificaciones -->
+                    <!-- Loading indicator for grades -->
                     <div *ngIf="isLoadingGrades" class="text-center py-4">
-                      <p class="text-gray-600">
-                        Cargando calificaciones de estudiantes...
-                      </p>
+                      <p class="text-gray-600">Loading student grades...</p>
                     </div>
 
-                    <!-- Mostrar calificaciones de estudiantes -->
+                    <!-- Student grades display -->
                     <div *ngIf="!isLoadingGrades">
-                      <h4 class="text-lg font-medium mb-3">
-                        Calificaciones de Estudiantes
-                      </h4>
+                      <h4 class="text-lg font-medium mb-3">Student Grades</h4>
 
-                      <!-- Sin calificaciones -->
+                      <!-- No grades message -->
                       <div
                         *ngIf="
                           !evaluation.studentGrades ||
@@ -468,12 +457,11 @@
                         class="text-center py-4"
                       >
                         <p class="text-gray-600">
-                          No hay calificaciones registradas para esta
-                          evaluación.
+                          No grades recorded for this evaluation.
                         </p>
                       </div>
 
-                      <!-- Tabla de calificaciones -->
+                      <!-- Grades table -->
                       <div
                         *ngIf="
                           evaluation.studentGrades &&
@@ -488,25 +476,25 @@
                                 scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                               >
-                                Estudiante
+                                Student
                               </th>
                               <th
                                 scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                               >
-                                Calificación
+                                Grade
                               </th>
                               <th
                                 scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                               >
-                                Comentarios
+                                Comments
                               </th>
                               <th
                                 scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                               >
-                                Fecha
+                                Date
                               </th>
                             </tr>
                           </thead>
@@ -514,15 +502,20 @@
                             <tr *ngFor="let grade of evaluation.studentGrades">
                               <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">
-                                  {{ grade.studentId?.name }}
+                                  {{
+                                    grade.studentId &&
+                                    typeof grade.studentId === 'object'
+                                      ? grade.studentId.name
+                                      : 'Student not found'
+                                  }}
                                 </div>
                               </td>
                               <td class="px-6 py-4 whitespace-nowrap">
                                 <div
                                   class="text-sm font-medium"
                                   [ngClass]="{
-                                    'text-green-600': grade.grade >= 3.0,
-                                    'text-red-600': grade.grade < 3.0,
+                                    'text-green-600': grade.grade >= 60,
+                                    'text-red-600': grade.grade < 60,
                                   }"
                                 >
                                   {{ grade.grade.toFixed(1) }}
@@ -530,13 +523,13 @@
                               </td>
                               <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-500">
-                                  {{ grade.comments || 'Sin comentarios' }}
+                                  {{ grade.comments || 'No comments' }}
                                 </div>
                               </td>
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
-                                {{ grade.date | date: 'dd/MM/yyyy' }}
+                                {{ grade.date | date: 'MM/dd/yyyy' }}
                               </td>
                             </tr>
                           </tbody>
@@ -549,14 +542,14 @@
             </div>
           </div>
 
-          <!-- Contenido de la pestaña Calificaciones -->
+          <!-- Grades Tab Content -->
           <div *ngIf="activeTab === 'grades'">
-            <!-- Loading indicator para calificaciones -->
+            <!-- Loading indicator for grades -->
             <div *ngIf="isLoadingGrades" class="text-center py-4">
-              <p class="text-gray-600">Cargando calificaciones...</p>
+              <p class="text-gray-600">Loading grades...</p>
             </div>
 
-            <!-- Contenido para profesores/administradores: todas las calificaciones -->
+            <!-- Content for professors/administrators: all grades -->
             <div
               *ngIf="
                 !isLoadingGrades &&
@@ -564,9 +557,7 @@
               "
             >
               <div *ngIf="grades.length === 0" class="text-center py-4">
-                <p class="text-gray-600">
-                  No hay calificaciones registradas para este curso.
-                </p>
+                <p class="text-gray-600">No grades recorded for this course.</p>
               </div>
 
               <div *ngIf="grades.length > 0" class="overflow-x-auto">
@@ -577,25 +568,25 @@
                         scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Estudiante
+                        Student
                       </th>
                       <th
                         scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Examen
+                        Evaluation
                       </th>
                       <th
                         scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Calificación
+                        Grade
                       </th>
                       <th
                         scope="col"
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Fecha
+                        Date
                       </th>
                     </tr>
                   </thead>
@@ -608,15 +599,15 @@
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-gray-900">
-                          {{ grade.examTitle }}
+                          {{ grade.examTitle || grade.evaluationName }}
                         </div>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap">
                         <div
                           class="text-sm font-medium"
                           [ngClass]="{
-                            'text-green-600': grade.value >= 3.0,
-                            'text-red-600': grade.value < 3.0,
+                            'text-green-600': grade.value >= 60,
+                            'text-red-600': grade.value < 60,
                           }"
                         >
                           {{ grade.value.toFixed(1) }}
@@ -625,7 +616,7 @@
                       <td
                         class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                       >
-                        {{ grade.date | date: 'dd/MM/yyyy' }}
+                        {{ grade.date | date: 'MM/dd/yyyy' }}
                       </td>
                     </tr>
                   </tbody>
@@ -633,16 +624,16 @@
               </div>
             </div>
 
-            <!-- Contenido para estudiantes: solo sus calificaciones -->
+            <!-- Content for students: only their grades -->
             <div *ngIf="!isLoadingGrades && userRole === 'student'">
               <div *ngIf="studentGrades.length === 0" class="text-center py-4">
                 <p class="text-gray-600">
-                  No tienes calificaciones registradas en este curso.
+                  You don't have any grades recorded in this course.
                 </p>
               </div>
 
               <div *ngIf="studentGrades.length > 0">
-                <!-- Mostrar promedio del estudiante -->
+                <!-- Display student average -->
                 <div class="mb-6 bg-gray-50 p-4 rounded-lg">
                   <div class="flex items-center">
                     <div
@@ -658,21 +649,20 @@
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 ai-2 2h-2a2 2 0 ai-2-2z"
                         />
                       </svg>
                     </div>
                     <div class="ml-4">
                       <h3 class="text-lg font-medium text-gray-900">
-                        Promedio del curso
+                        Course Average
                       </h3>
                       <p
                         class="text-xl font-bold"
                         [ngClass]="{
                           'text-green-600':
-                            studentAverage && studentAverage >= 3.0,
-                          'text-red-600':
-                            studentAverage && studentAverage < 3.0,
+                            studentAverage && studentAverage >= 60,
+                          'text-red-600': studentAverage && studentAverage < 60,
                         }"
                       >
                         {{ studentAverage?.toFixed(1) || 'N/A' }}
@@ -681,7 +671,7 @@
                   </div>
                 </div>
 
-                <!-- Lista de calificaciones del estudiante -->
+                <!-- Student grades list -->
                 <div class="overflow-x-auto">
                   <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -690,19 +680,19 @@
                           scope="col"
                           class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          Examen
+                          Evaluation
                         </th>
                         <th
                           scope="col"
                           class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          Calificación
+                          Grade
                         </th>
                         <th
                           scope="col"
                           class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          Fecha
+                          Date
                         </th>
                       </tr>
                     </thead>
@@ -710,18 +700,18 @@
                       <tr *ngFor="let grade of studentGrades">
                         <td class="px-6 py-4 whitespace-nowrap">
                           <div class="text-sm font-medium text-gray-900">
-                            {{ grade.examTitle }}
+                            {{ grade.examTitle || grade.evaluationName }}
                           </div>
                           <div class="text-xs text-gray-500">
-                            {{ grade.feedback || 'Sin comentarios' }}
+                            {{ grade.feedback || 'No comments' }}
                           </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                           <div
                             class="text-sm font-medium"
                             [ngClass]="{
-                              'text-green-600': grade.value >= 3.0,
-                              'text-red-600': grade.value < 3.0,
+                              'text-green-600': grade.value >= 60,
+                              'text-red-600': grade.value < 60,
                             }"
                           >
                             {{ grade.value.toFixed(1) }}
@@ -730,7 +720,7 @@
                         <td
                           class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                         >
-                          {{ grade.date | date: 'dd/MM/yyyy' }}
+                          {{ grade.date | date: 'MM/dd/yyyy' }}
                         </td>
                       </tr>
                     </tbody>
@@ -766,7 +756,7 @@
             <p class="text-sm text-yellow-700">
               {{
                 errorMessage ||
-                  'No tienes acceso a este curso o el curso no existe.'
+                  'You do not have access to this course or the course does not exist.'
               }}
             </p>
           </div>
@@ -776,7 +766,7 @@
         (click)="goBack($event)"
         class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
-        Volver a mis cursos
+        Back to my courses
       </button>
     </div>
   </main>

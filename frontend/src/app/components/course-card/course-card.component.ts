@@ -1,24 +1,28 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-interface Schedule {
-  days: string[];
-  startTime: string;
-  endTime: string;
-  room: string;
-  startDate: string;
-  endDate: string;
+export interface Prerequisite {
+  courseId: string;
+  name: string;
 }
 
-interface Course {
-  _id: string;
-  name: string;
+export interface Course {
+  id: string;
+  title: string;
   description: string;
-  professorId?: string;
-  professor?: string;
-  schedule?: Schedule;
-  department?: string;
+  prerequisites?: Prerequisite[];
+  room?: string;
+  startTime?: string;
+  endTime?: string;
+  days?: string[];
+  startDate?: string;
+  endDate?: string;
+  isEnrolled?: boolean;
+  enrollmentStatus?: string;
+  enrollmentDate?: string;
   enrolledStudents?: number;
+  department?: string;
+  professor?: string;
 }
 
 @Component({
@@ -27,101 +31,114 @@ interface Course {
   imports: [CommonModule],
   template: `
     <div
-      class="bg-white p-4 rounded-md shadow-sm border border-gray-200 relative"
+      class="border border-blue-200 rounded-md p-4 flex flex-col relative"
+      [ngClass]="{ 'border-green-300 bg-green-50': course.isEnrolled }"
     >
-      <!-- Course Title -->
-      <h3 class="text-lg font-medium text-gray-800">{{ course.name }}</h3>
-
-      <!-- Course Description -->
-      <p class="text-gray-600 mt-2">{{ course.description }}</p>
-
-      <!-- Conditional Info based on role -->
-      <div class="mt-3">
-        <!-- Show professor if available (for student or admin view) -->
-        <p *ngIf="course.professor" class="text-sm text-gray-500">
-          Profesor: {{ course.professor }}
-        </p>
-
-        <!-- Show department if available (for admin view) -->
-        <p *ngIf="course.department" class="text-sm text-gray-500">
-          Departamento: {{ course.department }}
-        </p>
-
-        <!-- Show enrolled students if available (for professor view) -->
-        <p
-          *ngIf="course.enrolledStudents !== undefined"
-          class="text-sm text-gray-500"
+      <!-- Delete Button (Only shown for admin) -->
+      <button
+        *ngIf="showDeleteButton"
+        class="absolute top-2 right-2 text-red-500 hover:text-red-700"
+        (click)="onDelete.emit(course.id)"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          Estudiantes inscritos: {{ course.enrolledStudents }}
-        </p>
+          <path
+            fill-rule="evenodd"
+            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+            clip-rule="evenodd"
+          ></path>
+        </svg>
+      </button>
 
-        <!-- Show schedule if available -->
-        <div *ngIf="course.schedule" class="mt-2 text-sm text-gray-500">
-          <p *ngIf="course.schedule.days?.length">
-            Días: {{ course.schedule.days.join(', ') }}
+      <!-- Enrollment Status Badge -->
+      <div *ngIf="course.isEnrolled" class="absolute top-2 left-2">
+        <span class="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+          Inscrito
+        </span>
+      </div>
+
+      <!-- Course Title and Description -->
+      <h3 class="text-lg font-medium border-b border-gray-200 pb-2 mt-6">
+        {{ course.title }}
+      </h3>
+      <p class="text-gray-600 my-2">{{ course.description }}</p>
+
+      <!-- Department and Professor Info -->
+      <div class="text-sm text-gray-600 mb-2">
+        <p *ngIf="course.department">Departamento: {{ course.department }}</p>
+        <p *ngIf="course.professor">Profesor: {{ course.professor }}</p>
+      </div>
+
+      <!-- Prerequisites - Always shown now -->
+      <div
+        *ngIf="course.prerequisites?.length"
+        class="mt-2 border-t border-gray-100 pt-2"
+      >
+        <h4 class="text-xs text-gray-500 font-medium">Requisitos Previos</h4>
+        <ul class="text-sm list-disc list-inside">
+          <li *ngFor="let prereq of course.prerequisites">{{ prereq.name }}</li>
+        </ul>
+      </div>
+
+      <!-- Enrollment Details - Only shown if enrolled -->
+      <div *ngIf="course.isEnrolled" class="mt-2 border-t border-gray-100 pt-2">
+        <h4 class="text-xs text-gray-500 font-medium">
+          Información de Inscripción
+        </h4>
+        <p class="text-sm">Estado: {{ course.enrollmentStatus || 'Activo' }}</p>
+        <p class="text-sm" *ngIf="course.enrollmentDate">
+          Fecha de inscripción: {{ course.enrollmentDate }}
+        </p>
+      </div>
+
+      <!-- Enrolled Students Count - Only for Professor and Admin -->
+      <div
+        *ngIf="showDetails && course.enrolledStudents !== undefined"
+        class="mt-2"
+      >
+        <h4 class="text-xs text-gray-500 font-medium">Estudiantes Inscritos</h4>
+        <p class="text-sm">{{ course.enrolledStudents }} estudiante(s)</p>
+      </div>
+
+      <!-- Course Details - Only shown for professor/admin mode -->
+      <div
+        *ngIf="showDetails"
+        class="grid grid-cols-2 gap-2 mt-4 border-t border-gray-100 pt-2"
+      >
+        <!-- Left Column -->
+        <div>
+          <h4 class="text-xs text-gray-500 font-medium">Habitación</h4>
+          <p class="text-sm">{{ course.room || 'N/A' }}</p>
+
+          <h4 class="text-xs text-gray-500 mt-2 font-medium">Días</h4>
+          <p class="text-sm">{{ course.days?.join(', ') || 'N/A' }}</p>
+          <p class="text-sm" *ngIf="course.startTime && course.endTime">
+            {{ course.startTime }} a {{ course.endTime }}
           </p>
-          <p *ngIf="course.schedule.startTime">
-            Horario: {{ course.schedule.startTime }} -
-            {{ course.schedule.endTime }}
-          </p>
-          <p *ngIf="course.schedule.room">Aula: {{ course.schedule.room }}</p>
+        </div>
+
+        <!-- Right Column -->
+        <div>
+          <h4 class="text-xs text-gray-500 font-medium">Fecha Inicio</h4>
+          <p class="text-sm">{{ course.startDate || 'N/A' }}</p>
+
+          <h4 class="text-xs text-gray-500 mt-2 font-medium">Fecha Final</h4>
+          <p class="text-sm">{{ course.endDate || 'N/A' }}</p>
         </div>
       </div>
 
       <!-- Action Buttons -->
-      <div class="mt-4 flex justify-end space-x-2">
-        <!-- Student: view details only -->
+      <div *ngIf="showActionButton" class="mt-4 text-right">
         <button
-          *ngIf="userRole === 'student'"
-          (click)="onViewDetails()"
-          class="text-blue-600 hover:text-blue-800 text-sm"
+          (click)="onAction.emit(course.id)"
+          class="bg-blue-600 text-white px-4 py-1 rounded text-sm hover:bg-blue-700"
         >
-          Ver detalles
+          {{ actionButtonText }}
         </button>
-
-        <!-- Professor: view details and students -->
-        <button
-          *ngIf="userRole === 'professor'"
-          (click)="onViewDetails()"
-          class="text-blue-600 hover:text-blue-800 text-sm"
-        >
-          Ver detalles
-        </button>
-
-        <!-- Admin: delete and edit buttons -->
-        <div *ngIf="userRole === 'admin'" class="flex space-x-2">
-          <button (click)="onEdit()" class="text-blue-500 hover:text-blue-700">
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              ></path>
-            </svg>
-          </button>
-
-          <button (click)="onDelete()" class="text-red-500 hover:text-red-700">
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              ></path>
-            </svg>
-          </button>
-        </div>
       </div>
     </div>
   `,
@@ -129,21 +146,11 @@ interface Course {
 })
 export class CourseCardComponent {
   @Input() course!: Course;
-  @Input() userRole: 'student' | 'professor' | 'admin' = 'student';
+  @Input() showDetails: boolean = false;
+  @Input() showDeleteButton: boolean = false;
+  @Input() showActionButton: boolean = false;
+  @Input() actionButtonText: string = 'Ver';
 
-  @Output() viewDetails = new EventEmitter<string>();
-  @Output() edit = new EventEmitter<string>();
-  @Output() delete = new EventEmitter<string>();
-
-  onViewDetails(): void {
-    this.viewDetails.emit(this.course._id);
-  }
-
-  onEdit(): void {
-    this.edit.emit(this.course._id);
-  }
-
-  onDelete(): void {
-    this.delete.emit(this.course._id);
-  }
+  @Output() onDelete = new EventEmitter<string>();
+  @Output() onAction = new EventEmitter<string>();
 }
