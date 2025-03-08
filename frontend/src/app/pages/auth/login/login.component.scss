@@ -1,0 +1,30 @@
+// Any login-specific styles can go here
+// Most styles are now provided by the theme system
+
+// Espacio adicional para el formulario
+.auth-page {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+// Form actions spacing
+.form-actions {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+// Fix the double nesting issue where the card is inside a form container
+.login-content {
+  .form-container {
+    width: auto;
+    padding: 0;
+
+    .form-card {
+      // Prevent double border and shadow
+      box-shadow: none;
+      border-radius: 0;
+    }
+  }
+} 

@@ -1,155 +1,119 @@
-<div class="min-h-screen flex flex-col">
-  <!-- Header -->
-  <header class="p-4">
-    <div class="container mx-auto">
-      <a
-        routerLink="/"
-        class="text-blue-600 hover:text-blue-800 font-medium border-b-2 border-blue-600 px-2 py-1"
-        >Home</a
+<div class="auth-page">
+  <app-form-container>
+    <app-form-card
+      title="Registrar usuario"
+      [showBackButton]="true"
+      backUrl="/"
+    >
+      <!-- Error message -->
+      <app-alert
+        *ngIf="error"
+        [message]="error"
+        type="danger"
+        [dismissible]="true"
+        (dismiss)="clearError()"
       >
-    </div>
-  </header>
+      </app-alert>
 
-  <!-- Main Content -->
-  <main class="container mx-auto flex-grow p-4 flex flex-col items-center">
-    <div class="w-full max-w-md mb-16">
-      <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">
-        Registrar usuario
-      </h1>
-
-      <!-- Error Alert -->
-      <div
-        *ngIf="errorMessage"
-        class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6"
-        role="alert"
-      >
-        <p>{{ errorMessage }}</p>
-      </div>
-
-      <!-- Registration Form -->
-      <form
-        [formGroup]="registerForm"
-        (ngSubmit)="onSubmit()"
-        class="space-y-6"
-      >
-        <!-- Full Name -->
-        <div class="mb-4">
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        <div class="form-grid">
           <app-form-field
-            [control]="getControl('name')"
-            label="Nombre Completo"
-            placeholder="Ingrese su nombre completo"
-            inputId="name"
-          ></app-form-field>
-        </div>
-
-        <!-- Username -->
-        <div class="mb-4">
-          <app-form-field
-            [control]="getControl('username')"
-            label="Usuario"
-            placeholder="usuario"
+            label="Usuer"
             inputId="username"
+            [control]="registerForm.get('username')!"
+            placeholder="user"
+            [showSuccessIndicator]="submitted"
           ></app-form-field>
-        </div>
 
-        <!-- Email -->
-        <div class="mb-4">
           <app-form-field
-            [control]="getControl('email')"
-            label="Correo Electrónico"
-            placeholder="ejemplo@correo.com"
-            inputId="email"
-          ></app-form-field>
-        </div>
-
-        <!-- Role Selection -->
-        <div class="mb-4">
-          <app-form-field
-            [control]="getControl('role')"
             label="Tipo"
-            type="select"
             inputId="role"
-            [options]="userTypeOptions"
-          ></app-form-field>
-        </div>
-
-        <!-- Password Fields -->
-        <div class="grid md:grid-cols-2 gap-6 mb-8">
-          <app-form-field
-            [control]="getControl('password')"
-            label="Contraseña"
-            type="password"
-            placeholder="********"
-            inputId="password"
-          ></app-form-field>
-
-          <app-form-field
-            [control]="getControl('confirmPassword')"
-            label="Confirmar"
-            type="password"
-            placeholder="********"
-            inputId="confirmPassword"
-          ></app-form-field>
-        </div>
-
-        <!-- Birth Date -->
-        <div class="mb-8">
-          <app-form-field
-            [control]="getControl('birthDate')"
-            label="Fecha de nacimiento"
-            type="date"
-            inputId="birthDate"
-          ></app-form-field>
-        </div>
-
-        <!-- Professor Fields -->
-        <div
-          *ngIf="showProfessorFields"
-          class="border border-blue-200 rounded-md p-4 bg-blue-50 mt-4 mb-8"
-        >
-          <h3 class="text-blue-700 font-medium text-sm mb-4">
-            Información de Profesor
-          </h3>
-
-          <!-- Department -->
-          <div *ngIf="isLoadingDepartments" class="text-gray-500 py-2">
-            <span class="animate-pulse">Loading departments...</span>
-          </div>
-
-          <!-- Department error -->
-          <div *ngIf="departmentError" class="text-red-500 text-sm my-2">
-            {{ departmentError }}
-            <button
-              type="button"
-              (click)="loadDepartments()"
-              class="text-blue-600 underline ml-2"
-            >
-              Retry
-            </button>
-          </div>
-
-          <!-- Department select -->
-          <app-form-field
-            *ngIf="!isLoadingDepartments && !departmentError"
-            [control]="getControl('departmentId')"
-            label="Departamento"
+            [control]="registerForm.get('role')!"
             type="select"
-            inputId="departmentId"
-            [options]="departmentOptions"
+            [options]="[
+              { value: 'profesor', label: 'Profesor' },
+              { value: 'estudiante', label: 'Estudiante' },
+            ]"
+            [showSuccessIndicator]="submitted"
+            (selectionChange)="onRoleChange($event)"
           ></app-form-field>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex justify-center mt-12 mb-10">
-          <button
+        <div class="form-grid">
+          <app-form-field
+            label="contraseña"
+            inputId="password"
+            [control]="registerForm.get('password')!"
+            type="password"
+            placeholder="****************"
+            [showSuccessIndicator]="submitted"
+          ></app-form-field>
+
+          <app-form-field
+            label="contraseña"
+            inputId="confirmPassword"
+            [control]="registerForm.get('confirmPassword')!"
+            type="password"
+            placeholder="****************"
+            [showSuccessIndicator]="submitted"
+          ></app-form-field>
+        </div>
+
+        <!-- Date input container -->
+        <div class="date-container">
+          <app-form-field
+            label="Fecha de nacimiento"
+            inputId="birthDate"
+            [control]="registerForm.get('birthDate')!"
+            type="date"
+            [showSuccessIndicator]="submitted"
+          ></app-form-field>
+        </div>
+
+        <!-- Professor-specific fields -->
+        <div
+          *ngIf="selectedRole === 'profesor'"
+          class="professor-container card mb-4"
+        >
+          <div class="card-header">
+            <h3 class="card-title">Profesor</h3>
+          </div>
+          <div class="card-body">
+            <app-form-field
+              label="Departamento"
+              inputId="departmentId"
+              [control]="registerForm.get('departmentId')!"
+              type="select"
+              [options]="[
+                { value: 'matematica', label: 'Matematica' },
+                { value: 'ciencias', label: 'Ciencias' },
+                { value: 'historia', label: 'Historia' },
+              ]"
+              [showSuccessIndicator]="submitted"
+            ></app-form-field>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <app-button
             type="submit"
-            [disabled]="isSubmitting"
-            class="bg-white text-blue-600 border border-blue-600 py-2 px-6 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            [loading]="loading"
+            [disabled]="loading"
+            variant="primary"
           >
             Registrar
-          </button>
+          </app-button>
+
+          <app-button
+            type="button"
+            [disabled]="loading"
+            variant="secondary"
+            (click)="navigateToLogin()"
+          >
+            Volver al login
+          </app-button>
         </div>
       </form>
-    </div>
-  </main>
+    </app-form-card>
+  </app-form-container>
 </div>

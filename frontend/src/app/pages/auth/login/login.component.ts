@@ -4,90 +4,107 @@ import {
   FormGroup,
   Validators,
   ReactiveFormsModule,
-  FormControl,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { CommonModule } from '@angular/common';
 import { FormFieldComponent } from '../../../components/form-field/form-field.component';
-import { NotificationService } from '../../../components/shared/notification/notification.service';
+import { AppButtonComponent } from '../../../components/app-button/app-button.component';
+import { FormCardComponent } from '../../../components/form-card/form-card.component';
+import { FormContainerComponent } from '../../../components/form-container/form-container.component';
+import { AlertComponent } from '../../../components/alert/alert.component';
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css'],
+  selector: 'app-login-page',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, RouterLink, FormFieldComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterModule,
+    FormFieldComponent,
+    AppButtonComponent,
+    FormCardComponent,
+    FormContainerComponent,
+    AlertComponent,
+  ],
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent implements OnInit {
+export class LoginPageComponent implements OnInit {
   loginForm!: FormGroup;
-  isSubmitting = false;
-  errorMessage = '';
+  loading = false;
+  submitted = false;
+  error = '';
+  returnUrl: string = '/';
+  successMessage: string = '';
 
   constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
+    private formBuilder: FormBuilder,
+    private route: ActivatedRoute,
     private router: Router,
-    private notificationService: NotificationService,
-  ) {}
+    private authService: AuthService,
+  ) {
+    // Redirect if already logged in
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/']);
+    }
 
-  ngOnInit(): void {
-    this.initForm();
+    // Get the success message if registration was successful
+    this.successMessage = this.route.snapshot.queryParams['registered']
+      ? 'Registration successful! Please log in.'
+      : '';
   }
 
-  initForm(): void {
-    this.loginForm = this.fb.group({
+  ngOnInit() {
+    this.loginForm = this.formBuilder.group({
       username: ['', Validators.required],
       password: ['', Validators.required],
     });
+
+    // Get return url from route parameters or default to '/'
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
   }
 
-  onSubmit(): void {
+  // Convenience getter for easy access to form fields
+  get f() {
+    return this.loginForm.controls;
+  }
+
+  onSubmit() {
+    this.submitted = true;
+    this.error = '';
+
+    // stop here if form is invalid
     if (this.loginForm.invalid) {
-      // Mark all fields as touched to trigger validation messages
-      Object.keys(this.loginForm.controls).forEach((key) => {
-        const control = this.loginForm.get(key);
-        control?.markAsTouched();
-      });
-      this.notificationService.warning(
-        'Please enter both username and password.',
-      );
       return;
     }
 
-    this.isSubmitting = true;
-    this.errorMessage = '';
-
-    // Get credentials from form
-    const credentials = {
-      username: this.loginForm.get('username')?.value,
-      password: this.loginForm.get('password')?.value,
-    };
-
-    console.log('Login credentials:', credentials);
-
-    this.authService.login(credentials).subscribe({
-      next: (response) => {
-        this.notificationService.success('Login successful!');
-        // AuthService will handle the redirection based on role
-        this.isSubmitting = false;
+    this.loading = true;
+    this.authService.login(this.loginForm.value).subscribe({
+      next: () => {
+        this.router.navigate([this.returnUrl]);
       },
       error: (error) => {
-        this.isSubmitting = false;
-        console.error('Login error:', error);
-        this.errorMessage =
+        this.error =
           error.error?.message ||
           'Login failed. Please check your credentials.';
-        this.notificationService.error(this.errorMessage);
+        this.loading = false;
       },
     });
   }
 
-  navigateToRegister(): void {
+  /**
+   * Navigate to the register page programmatically
+   */
+  navigateToRegister() {
     this.router.navigate(['/register']);
   }
 
-  getControl(name: string): FormControl {
-    return this.loginForm.get(name) as FormControl;
+  clearError() {
+    this.error = '';
+  }
+
+  clearSuccessMessage() {
+    this.successMessage = '';
   }
 }

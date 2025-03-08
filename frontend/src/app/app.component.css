@@ -1,0 +1,18 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 70px; /* Space for fixed navbar */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Handle auth pages layout differently */
+:host-context(.auth-page) .main-content {
+  padding-top: 0;
+}

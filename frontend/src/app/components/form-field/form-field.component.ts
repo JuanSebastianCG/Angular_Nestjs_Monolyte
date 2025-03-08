@@ -1,6 +1,10 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import {
+  AbstractControl,
+  FormControl,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-form-field',
@@ -10,7 +14,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
   imports: [CommonModule, ReactiveFormsModule],
 })
 export class FormFieldComponent implements OnInit {
-  @Input() control!: FormControl;
+  @Input() control!: AbstractControl;
   @Input() label!: string;
   @Input() placeholder: string = '';
   @Input() type: string = 'text';
@@ -18,22 +22,29 @@ export class FormFieldComponent implements OnInit {
   @Input() showSuccessIndicator: boolean = true;
   @Input() options: { value: string; label: string }[] = [];
   @Input() icon: string = '';
+  @Output() selectionChange = new EventEmitter<string>();
 
   constructor() {}
 
   ngOnInit(): void {
-    // Generate a unique ID if none is provided
     if (!this.inputId) {
-      this.inputId = 'input_' + Math.random().toString(36).substring(2, 9);
+      // Generate a random ID if not provided
+      this.inputId = `field-${Math.random().toString(36).substring(2, 9)}`;
+    }
+
+    if (this.isSelect) {
+      this.control.valueChanges.subscribe((value) => {
+        this.selectionChange.emit(value);
+      });
     }
   }
 
   get hasError(): boolean {
-    return (
-      this.control &&
-      this.control.invalid &&
-      (this.control.dirty || this.control.touched)
-    );
+    const control = this.control;
+    if (!control) return false;
+
+    // Only show error if field is touched or dirty
+    return (control.touched || control.dirty) && control.invalid;
   }
 
   get errorMessage(): string {
@@ -41,24 +52,23 @@ export class FormFieldComponent implements OnInit {
 
     const errors = this.control.errors || {};
 
-    if (errors['required']) return 'Este campo es requerido';
-    if (errors['email']) return 'Ingrese un correo electrónico válido';
+    if (errors['required']) return 'This field is required';
+    if (errors['email']) return 'Please enter a valid email address';
     if (errors['minlength'])
-      return `Mínimo ${errors['minlength'].requiredLength} caracteres`;
+      return `Min length is ${errors['minlength'].requiredLength} characters`;
     if (errors['maxlength'])
-      return `Máximo ${errors['maxlength'].requiredLength} caracteres`;
-    if (errors['pattern']) return 'Formato inválido';
-    if (errors['passwordMismatch']) return 'Las contraseñas no coinciden';
+      return `Max length is ${errors['maxlength'].requiredLength} characters`;
+    if (errors['pattern']) return 'Please enter a valid format';
+    if (errors['mustMatch']) return 'Passwords must match';
 
-    return 'Campo inválido';
+    return 'Invalid input';
   }
 
   get isValid(): boolean {
-    return (
-      this.control &&
-      this.control.valid &&
-      (this.control.dirty || this.control.touched)
-    );
+    const control = this.control;
+    if (!control) return false;
+
+    return (control.touched || control.dirty) && control.valid;
   }
 
   get isSelect(): boolean {

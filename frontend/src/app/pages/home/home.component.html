@@ -1,0 +1,41 @@
+<div class="home-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          <span>University Management System</span>
+          <span class="accent">Streamline your academic journey</span>
+        </h1>
+        <p class="hero-description">
+          A comprehensive platform for students, professors, and administrators
+          to manage courses, grades, and academic resources.
+        </p>
+
+        <!-- User-specific greeting and actions -->
+        <div class="user-greeting" *ngIf="isAuthenticated">
+          <h2 class="greeting">{{ greeting }}</h2>
+          <p class="user-role" *ngIf="user">
+            Logged in as {{ user.role | titlecase }}
+          </p>
+        </div>
+
+        <div class="cta-buttons">
+          <div *ngIf="!isAuthenticated" class="auth-buttons">
+            <a routerLink="/login" class="btn btn-primary">Sign In</a>
+            <a routerLink="/register" class="btn btn-secondary"
+              >Create Account</a
+            >
+          </div>
+          <div *ngIf="isAuthenticated" class="dashboard-buttons">
+            <a [routerLink]="dashboardRoute" class="btn btn-primary">{{
+              dashboardName
+            }}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+</div>

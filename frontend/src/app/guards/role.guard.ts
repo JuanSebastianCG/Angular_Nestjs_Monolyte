@@ -6,7 +6,7 @@ import {
   Router,
 } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { NotificationService } from '../components/notification/notification.service';
+import { Observable, map, take } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -15,54 +15,37 @@ export class RoleGuard implements CanActivate {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private notificationService: NotificationService,
   ) {}
 
   canActivate(
-    next: ActivatedRouteSnapshot,
+    route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot,
-  ): boolean {
-    const currentUser = this.authService.currentUserValue;
+  ): Observable<boolean> | Promise<boolean> | boolean {
+    const expectedRole = route.data['expectedRole'];
 
-    // First check if the user is authenticated
-    if (!currentUser) {
-      this.router.navigate(['/login']);
+    if (!expectedRole) {
+      console.error('Role guard used without specifying an expected role');
       return false;
     }
 
-    // Check if route has any role requirements
-    if (next.data && next.data['roles']) {
-      const requiredRoles = next.data['roles'] as Array<string>;
-
-      // Check if user's role is in the list of required roles
-      if (requiredRoles.includes(currentUser.role)) {
-        return true;
-      } else {
-        // User doesn't have the required role
-        this.notificationService.error(
-          `Access denied. You need ${requiredRoles.join(' or ')} role to access this page.`,
-        );
-
-        // Redirect based on user's role
-        switch (currentUser.role) {
-          case 'admin':
-            this.router.navigate(['/admin/dashboard']);
-            break;
-          case 'professor':
-            this.router.navigate(['/professor/courses']);
-            break;
-          case 'student':
-            this.router.navigate(['/student/courses']);
-            break;
-          default:
-            this.router.navigate(['/home']);
-        }
-
-        return false;
-      }
+    // First check if the user is authenticated
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: state.url },
+      });
+      return false;
     }
 
-    // If no roles are required, allow access
-    return true;
+    // Check for specific roles
+    switch (expectedRole) {
+      case 'admin':
+        return this.authService.isAdmin();
+      case 'professor':
+        return this.authService.isProfessor();
+      case 'student':
+        return this.authService.isStudent();
+      default:
+        return false;
+    }
   }
 }

@@ -1,0 +1,97 @@
+/**
+ * Main Theme Style System
+ * This file is the entry point for all global styles.
+ * Import this file to use the mixins and variables.
+ */
+
+// Variables and Settings - updated to use @use instead of @import
+@use 'variables' as *;
+@use 'mixins' as *;
+@use 'component-theme' as *;
+
+/**
+ * CSS Variables for use within components
+ * This allows easy access to the color palette in components
+ * without needing to import the entire SCSS system
+ */
+:root {
+  // Primary Colors
+  --primary: #{$primary};
+  --primary-dark: #{$primary-dark};
+  --primary-light: #{$primary-light};
+  --primary-bg: #{$primary-bg};
+  
+  // Secondary Colors
+  --secondary: #{$secondary};
+  --secondary-dark: #{$secondary-dark};
+  --secondary-light: #{$secondary-light};
+  
+  // Accent Colors
+  --accent: #{$accent};
+  --accent-dark: #{$accent-dark};
+  --accent-light: #{$accent-light};
+  
+  // Neutral Colors
+  --light: #{$light};
+  --dark: #{$dark};
+  --white: #{$white};
+  --black: #{$black};
+  
+  // Text Colors
+  --text-color: #{$text-color};
+  --text-light: #{$text-light};
+  --text-dark: #{$text-dark};
+  --text-muted: #{$text-muted};
+  
+  // Status Colors
+  --success: #{$success};
+  --info: #{$info};
+  --warning: #{$warning};
+  --danger: #{$danger};
+  
+  // Borders
+  --border-color: #{$border-color};
+  --border-color-dark: #{$border-color-dark};
+  --border-color-light: #{$border-color-light};
+  
+  // Border Radius
+  --border-radius-sm: #{$border-radius-sm};
+  --border-radius-md: #{$border-radius-md};
+  --border-radius-lg: #{$border-radius-lg};
+  
+  // Shadows
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-hover: #{$shadow-hover};
+  
+  // Spacing
+  --spacer-1: #{$spacer-1};
+  --spacer-2: #{$spacer-2};
+  --spacer-3: #{$spacer-3};
+  --spacer-4: #{$spacer-4};
+  --spacer-5: #{$spacer-5};
+  --spacer-6: #{$spacer-6};
+  
+  // Typography
+  --font-family-base: #{$font-family-base};
+  --font-weight-medium: #{$font-weight-medium};
+  --font-weight-semibold: #{$font-weight-semibold};
+  --font-weight-bold: #{$font-weight-bold};
+  
+  // Transitions
+  --transition-base: #{$transition-base};
+}
+
+/**
+ * Global base styles - These styles may be overridden in components
+ */
+html, body {
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $text-color;
+  background-color: $bg-light;
+  margin: 0;
+  padding: 0;
+} 

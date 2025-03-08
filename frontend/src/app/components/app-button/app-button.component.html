@@ -1,0 +1,23 @@
+<!-- Router link button -->
+<a
+  *ngIf="routerLink"
+  [routerLink]="routerLink"
+  [ngClass]="buttonClasses"
+  [class.disabled]="disabled || loading"
+  (click)="handleClick($event)"
+>
+  <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+  <ng-content></ng-content>
+</a>
+
+<!-- Regular button -->
+<button
+  *ngIf="!routerLink"
+  [type]="type"
+  [disabled]="disabled || loading"
+  [ngClass]="buttonClasses"
+  (click)="handleClick($event)"
+>
+  <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+  <ng-content></ng-content>
+</button>

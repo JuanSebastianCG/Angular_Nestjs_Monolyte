@@ -1,0 +1,150 @@
+.form-card {
+  display: flex;
+  width: 100%;
+  margin: auto;
+  background-color: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 2px solid var(--border-color-light);
+}
+
+.form-card-content {
+  width: 100%;
+  padding: 3rem;
+}
+
+.header-area {
+  margin-bottom: 1.8rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-color);
+  font-weight: var(--font-weight-medium);
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: var(--transition-base);
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color-light);
+  cursor: pointer;
+}
+
+.back-icon {
+  margin-right: 0.5rem;
+  color: var(--primary);
+  font-size: 1.2rem;
+}
+
+.back-link:hover {
+  color: var(--primary);
+  background-color: var(--primary-bg);
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+.back-link:active {
+  transform: translateY(0);
+}
+
+.form-header {
+  position: relative;
+  margin-bottom: 2.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border-color-light);
+}
+
+.form-title {
+  color: var(--primary);
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 0.5rem;
+  margin-top: 0;
+}
+
+.title-decoration {
+  position: absolute;
+  width: 80px;
+  height: 4px;
+  background-color: var(--primary);
+  border-radius: 2px;
+  left: 0;
+  bottom: -2px;
+}
+
+.form-subtitle {
+  margin-top: 0.8rem;
+  margin-bottom: 0;
+  color: var(--text-light);
+  font-size: 1rem;
+}
+
+.form-body {
+  width: 100%;
+}
+
+/* Decorative elements */
+.form-decoration {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: block;
+    width: 40%;
+    background-color: rgba(67, 97, 238, 0.03);
+    position: relative;
+    overflow: hidden;
+  }
+}
+
+.decoration-shape {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.shape-1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.1),
+    rgba(67, 97, 238, 0.05)
+  );
+  top: -100px;
+  right: -150px;
+}
+
+.shape-2 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.15),
+    rgba(67, 97, 238, 0.08)
+  );
+  bottom: 50px;
+  right: -50px;
+}
+
+.shape-3 {
+  width: 180px;
+  height: 180px;
+  background: linear-gradient(
+    135deg,
+    rgba(67, 97, 238, 0.1),
+    rgba(67, 97, 238, 0.03)
+  );
+  top: 40%;
+  left: -90px;
+}
+
+@media (max-width: 768px) {
+  .form-card {
+    flex-direction: column;
+  }
+
+  .form-card-content {
+    padding: 2rem;
+  }
+}

@@ -1,0 +1,11 @@
+<div
+  class="form-container"
+  [ngClass]="{
+    'full-height': fullHeight,
+    'bg-gradient': backgroundStyle === 'gradient',
+    'bg-light': backgroundStyle === 'light',
+    'bg-white': backgroundStyle === 'white',
+  }"
+>
+  <ng-content></ng-content>
+</div>

@@ -1,0 +1,118 @@
+<nav class="navbar" [ngClass]="{ scrolled: isScrolled }">
+  <div class="container">
+    <div class="navbar-content">
+      <!-- Logo -->
+      <a class="navbar-logo" routerLink="/">
+        <span class="logo-text">UniApp</span>
+      </a>
+
+      <!-- Mobile menu toggle -->
+      <button
+        class="mobile-toggle"
+        (click)="toggleMobileMenu()"
+        aria-label="Toggle navigation"
+      >
+        <span class="toggle-icon" [ngClass]="{ active: isMobileMenuOpen }">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+
+      <!-- Navigation Menu -->
+      <div class="navbar-collapse" [ngClass]="{ open: isMobileMenuOpen }">
+        <ul class="navbar-nav">
+          <!-- Dynamic navigation links based on user role -->
+          <li class="nav-item" *ngFor="let link of navLinks">
+            <a
+              class="nav-link"
+              [routerLink]="link.path"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: link.path === '/' }"
+              (click)="isMobileMenuOpen = false"
+            >
+              <i class="fas" [ngClass]="link.icon"></i>
+              <span>{{ link.label }}</span>
+            </a>
+          </li>
+        </ul>
+
+        <!-- Authentication Buttons -->
+        <div class="auth-buttons" *ngIf="!isAuthenticated">
+          <a routerLink="/login" class="btn btn-outline">Sign In</a>
+          <a routerLink="/register" class="btn btn-solid">Sign Up</a>
+        </div>
+
+        <!-- User Profile Dropdown -->
+        <div class="profile-dropdown" *ngIf="isAuthenticated">
+          <button
+            class="profile-button"
+            (click)="toggleProfileDropdown($event)"
+          >
+            <div class="avatar">
+              <span>{{ avatarInitial }}</span>
+            </div>
+            <span class="username">{{ displayName }}</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+
+          <div
+            class="dropdown-menu"
+            [ngClass]="{ show: isProfileDropdownOpen }"
+          >
+            <div class="dropdown-header">
+              <div class="avatar">
+                <span>{{ avatarInitial }}</span>
+              </div>
+              <div class="user-info">
+                <span class="user-name">{{ displayName }}</span>
+                <span class="user-role">{{ userRole }}</span>
+              </div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <a class="dropdown-item" routerLink="/profile">
+              <i class="fas fa-user"></i>
+              <span>My Profile</span>
+            </a>
+
+            <a
+              class="dropdown-item"
+              *ngIf="user?.role === 'student'"
+              routerLink="/student/dashboard"
+            >
+              <i class="fas fa-graduation-cap"></i>
+              <span>Student Dashboard</span>
+            </a>
+
+            <a
+              class="dropdown-item"
+              *ngIf="user?.role === 'professor'"
+              routerLink="/professor/courses"
+            >
+              <i class="fas fa-chalkboard-teacher"></i>
+              <span>Professor Dashboard</span>
+            </a>
+
+            <a
+              class="dropdown-item"
+              *ngIf="user?.role === 'admin'"
+              routerLink="/admin/dashboard"
+            >
+              <i class="fas fa-cog"></i>
+              <span>Admin Dashboard</span>
+            </a>
+
+            <div class="dropdown-divider"></div>
+
+            <button class="dropdown-item" (click)="logout()">
+              <i class="fas fa-sign-out-alt"></i>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>

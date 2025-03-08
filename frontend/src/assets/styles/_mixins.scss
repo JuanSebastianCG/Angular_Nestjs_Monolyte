@@ -1,0 +1,162 @@
+// Media query mixins
+@mixin media-breakpoint-up($breakpoint) {
+  @if $breakpoint == sm {
+    @media (min-width: $breakpoint-sm) { @content; }
+  }
+  @else if $breakpoint == md {
+    @media (min-width: $breakpoint-md) { @content; }
+  }
+  @else if $breakpoint == lg {
+    @media (min-width: $breakpoint-lg) { @content; }
+  }
+  @else if $breakpoint == xl {
+    @media (min-width: $breakpoint-xl) { @content; }
+  }
+  @else if $breakpoint == xxl {
+    @media (min-width: $breakpoint-xxl) { @content; }
+  }
+}
+
+@mixin media-breakpoint-down($breakpoint) {
+  @if $breakpoint == xs {
+    @media (max-width: $breakpoint-sm - 1) { @content; }
+  }
+  @else if $breakpoint == sm {
+    @media (max-width: $breakpoint-md - 1) { @content; }
+  }
+  @else if $breakpoint == md {
+    @media (max-width: $breakpoint-lg - 1) { @content; }
+  }
+  @else if $breakpoint == lg {
+    @media (max-width: $breakpoint-xl - 1) { @content; }
+  }
+  @else if $breakpoint == xl {
+    @media (max-width: $breakpoint-xxl - 1) { @content; }
+  }
+}
+
+// Flexbox layouts
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// Typography
+@mixin font-heading {
+  font-family: $font-family-base;
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: $text-dark;
+}
+
+@mixin font-body {
+  font-family: $font-family-base;
+  font-weight: $font-weight-normal;
+  line-height: $line-height-base;
+  color: $text-color;
+}
+
+// Shadows and elevations
+@mixin shadow-sm {
+  box-shadow: $shadow-sm;
+}
+
+@mixin shadow-md {
+  box-shadow: $shadow-md;
+}
+
+@mixin shadow-lg {
+  box-shadow: $shadow-lg;
+}
+
+@mixin card-elevation {
+  background-color: $white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+}
+
+// Border and focus styles
+@mixin focus-outline {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba($primary, 0.25);
+}
+
+@mixin form-control-base {
+  display: block;
+  width: 100%;
+  padding: $spacer-2 $spacer-3;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
+  line-height: $line-height-base;
+  color: $text-color;
+  background-color: $white;
+  background-clip: padding-box;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  transition: $transition-base;
+  
+  &:focus {
+    color: $text-color;
+    background-color: $white;
+    border-color: lighten($primary, 25%);
+    @include focus-outline;
+  }
+}
+
+// Create customized left border for inputs
+@mixin input-left-border($color: $primary) {
+  position: relative;
+  border-left: 4px solid $color;
+  
+  input, select, textarea {
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+}
+
+// Common transitions
+@mixin hover-transform {
+  transition: $transition-base;
+  
+  &:hover {
+    transform: translateY(-2px);
+    @include shadow-md;
+  }
+}
+
+// Gradients
+@mixin gradient-primary {
+  background: $bg-gradient;
+}
+
+// For form decoration shapes
+@mixin decoration-shape($size, $color) {
+  position: absolute;
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba($color, 0.2), rgba($color, 0.05));
+}
+
+// Container with max-width and centered
+@mixin container($max-width: 1200px) {
+  width: 100%;
+  max-width: $max-width;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $spacer-3;
+  padding-right: $spacer-3;
+} 

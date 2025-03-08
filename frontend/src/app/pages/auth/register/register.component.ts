@@ -4,235 +4,208 @@ import {
   FormGroup,
   Validators,
   ReactiveFormsModule,
-  FormControl,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
 import { DepartmentService } from '../../../services/department.service';
-import { finalize } from 'rxjs/operators';
 import { FormFieldComponent } from '../../../components/form-field/form-field.component';
-import { NotificationService } from '../../../components/shared/notification/notification.service';
+import { Department } from '../../../models/department.model';
 
-interface Department {
-  _id: string;
-  name: string;
-  description: string;
-}
-
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface StudentInfo {
-  // Student-specific fields can be added here if needed
-}
-
-interface ProfessorInfo {
-  departmentId: string;
-  hiringDate: string;
-}
-
-interface UserData {
-  name: string; // Full name
-  username: string; // Login username
-  email: string; // Email address
-  birthDate: string;
-  password: string;
-  role: string; // "student" or "professor" (lowercase)
-  studentInfo?: StudentInfo;
-  professorInfo?: ProfessorInfo;
-}
+// Import custom components
+import { AppButtonComponent } from '../../../components/app-button/app-button.component';
+import { FormCardComponent } from '../../../components/form-card/form-card.component';
+import { FormContainerComponent } from '../../../components/form-container/form-container.component';
+import { AlertComponent } from '../../../components/alert/alert.component';
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-register-page',
   templateUrl: './register.component.html',
-  styleUrls: ['./register.component.css'],
+  styleUrls: ['./register.component.scss'],
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, RouterLink, FormFieldComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterModule,
+    FormFieldComponent,
+    AppButtonComponent,
+    FormCardComponent,
+    FormContainerComponent,
+    AlertComponent,
+  ],
 })
-export class RegisterComponent implements OnInit {
+export class RegisterPageComponent implements OnInit {
   registerForm!: FormGroup;
-  isSubmitting = false;
-  errorMessage = '';
-  userTypes = ['Estudiante', 'Profesor'];
-  userTypeOptions: SelectOption[] = [];
+  loading = false;
+  submitted = false;
+  error = '';
+  roles = ['student', 'professor'];
+  selectedRole = 'profesor'; // Default role
   departments: Department[] = [];
-  departmentOptions: SelectOption[] = [];
-  isLoadingDepartments = false;
-  departmentError = '';
-  showProfessorFields = false;
+  loadingDepartments = false;
 
   constructor(
-    private fb: FormBuilder,
+    private formBuilder: FormBuilder,
+    private router: Router,
     private authService: AuthService,
     private departmentService: DepartmentService,
-    private router: Router,
-    private notificationService: NotificationService,
   ) {
-    // Pre-compute options arrays
-    this.userTypeOptions = this.userTypes.map((type) => ({
-      value: type,
-      label: type,
-    }));
+    // Redirect if already logged in
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/']);
+    }
   }
 
-  ngOnInit(): void {
-    this.initForm();
-    this.loadDepartments();
-  }
-
-  loadDepartments(): void {
-    this.isLoadingDepartments = true;
-    this.departmentError = '';
-
-    this.departmentService
-      .getAllDepartments()
-      .pipe(
-        finalize(() => {
-          this.isLoadingDepartments = false;
-        }),
-      )
-      .subscribe({
-        next: (departments) => {
-          this.departments = departments;
-          // Update department options
-          this.updateDepartmentOptions();
-        },
-        error: (error) => {
-          this.departmentError = 'Error loading departments. Please try again.';
-          this.notificationService.error(
-            'Failed to load departments. Please try again later.',
-          );
-          console.error('Error loading departments:', error);
-        },
-      });
-  }
-
-  updateDepartmentOptions(): void {
-    // Create base option first
-    const baseOption: SelectOption = {
-      value: '',
-      label: 'Seleccione departamento',
-    };
-
-    // Map departments to options
-    const deptOptions = this.departments.map((dept) => ({
-      value: dept._id,
-      label: dept.name,
-    }));
-
-    // Combine base option with department options
-    this.departmentOptions = [baseOption, ...deptOptions];
-  }
-
-  initForm(): void {
-    this.registerForm = this.fb.group(
+  ngOnInit() {
+    this.registerForm = this.formBuilder.group(
       {
-        name: ['', [Validators.required, Validators.minLength(3)]], // Full name
-        username: ['', [Validators.required, Validators.minLength(3)]], // Login username
-        email: ['', [Validators.required, Validators.email]], // Email address
-        password: ['', [Validators.required, Validators.minLength(8)]],
+        username: ['', Validators.required],
+        role: ['profesor', Validators.required],
+        password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', Validators.required],
-        role: ['Estudiante', Validators.required],
         birthDate: ['', Validators.required],
         departmentId: [''],
       },
-      { validators: this.passwordMatchValidator },
+      {
+        validator: this.mustMatch('password', 'confirmPassword'),
+      },
     );
 
-    // Subscribe to role changes to show/hide professor fields
+    this.loadDepartments();
+    this.updateValidators();
+
+    // Listen for role changes
     this.registerForm.get('role')?.valueChanges.subscribe((role) => {
-      this.showProfessorFields = role === 'Profesor';
-      if (this.showProfessorFields) {
-        this.registerForm
-          .get('departmentId')
-          ?.setValidators(Validators.required);
-      } else {
-        this.registerForm.get('departmentId')?.clearValidators();
-        this.registerForm.get('departmentId')?.setValue(''); // Clear department value for students
-      }
-      this.registerForm.get('departmentId')?.updateValueAndValidity();
+      this.onRoleChange(role);
     });
   }
 
-  // Custom validator to check if passwords match
-  passwordMatchValidator(group: FormGroup): { [key: string]: any } | null {
-    const password = group.get('password')?.value;
-    const confirmPassword = group.get('confirmPassword')?.value;
-
-    return password === confirmPassword ? null : { passwordMismatch: true };
-  }
-
-  onSubmit(): void {
-    if (this.registerForm.invalid) {
-      // Mark all fields as touched to trigger validation messages
-      Object.keys(this.registerForm.controls).forEach((key) => {
-        const control = this.registerForm.get(key);
-        control?.markAsTouched();
-      });
-      this.notificationService.warning(
-        'Please correct all errors before submitting.',
-      );
-      return;
-    }
-
-    this.isSubmitting = true;
-    this.errorMessage = '';
-
-    // Create a clean copy of the form values
-    const formValues = this.registerForm.value;
-
-    // Map role value to lowercase as expected by the API
-    const roleMapping: { [key: string]: string } = {
-      Estudiante: 'student',
-      Profesor: 'professor',
-    };
-
-    const userData: UserData = {
-      name: formValues.name,
-      username: formValues.username,
-      email: formValues.email,
-      password: formValues.password,
-      role: roleMapping[formValues.role], // Convert to lowercase as expected by API
-      birthDate: formValues.birthDate,
-    };
-
-    // Add appropriate info based on the role
-    if (userData.role === 'student') {
-      userData.studentInfo = {};
-    } else if (userData.role === 'professor') {
-      userData.professorInfo = {
-        departmentId: formValues.departmentId,
-        hiringDate: new Date().toISOString().split('T')[0], // Today's date
-      };
-    }
-
-    console.log('Submitting user data:', userData);
-
-    this.authService.register(userData).subscribe({
-      next: () => {
-        this.notificationService.success(
-          'Registration successful! You can now log in.',
-        );
-        this.router.navigate(['/login']);
-      },
-      error: (error) => {
-        this.isSubmitting = false;
-        console.error('Registration error:', error);
-        this.errorMessage =
-          error.error?.message || 'Registration failed. Please try again.';
-        this.notificationService.error(this.errorMessage);
-      },
-    });
-  }
-
-  navigateToLogin(): void {
+  /**
+   * Navigate to the login page programmatically
+   */
+  navigateToLogin() {
     this.router.navigate(['/login']);
   }
 
-  getControl(name: string): FormControl {
-    return this.registerForm.get(name) as FormControl;
+  onRoleChange(role: string): void {
+    this.selectedRole = role;
+    this.updateValidators();
+  }
+
+  handleRoleChange(event: any): void {
+    const role = event?.target?.value || event;
+    this.onRoleChange(role);
+  }
+
+  loadDepartments() {
+    this.loadingDepartments = true;
+    this.departmentService.getAllDepartments().subscribe({
+      next: (departments) => {
+        this.departments = departments;
+        this.loadingDepartments = false;
+      },
+      error: (error) => {
+        console.error('Error loading departments:', error);
+        this.loadingDepartments = false;
+      },
+    });
+  }
+
+  updateValidators() {
+    const departmentIdControl = this.registerForm.get('departmentId');
+
+    if (this.selectedRole === 'profesor') {
+      departmentIdControl?.setValidators(Validators.required);
+    } else {
+      departmentIdControl?.clearValidators();
+    }
+
+    departmentIdControl?.updateValueAndValidity();
+  }
+
+  mustMatch(controlName: string, matchingControlName: string) {
+    return (formGroup: FormGroup) => {
+      const control = formGroup.controls[controlName];
+      const matchingControl = formGroup.controls[matchingControlName];
+
+      if (matchingControl.errors && !matchingControl.errors['mustMatch']) {
+        // return if another validator has already found an error
+        return;
+      }
+
+      // set error on matchingControl if validation fails
+      if (control.value !== matchingControl.value) {
+        matchingControl.setErrors({ mustMatch: true });
+      } else {
+        matchingControl.setErrors(null);
+      }
+    };
+  }
+
+  get f() {
+    return this.registerForm.controls;
+  }
+
+  onSubmit() {
+    this.submitted = true;
+    this.error = '';
+
+    // stop here if form is invalid
+    if (this.registerForm.invalid) {
+      return;
+    }
+
+    this.loading = true;
+
+    const userData = {
+      username: this.f['username'].value,
+      password: this.f['password'].value,
+      birthDate: this.f['birthDate'].value,
+      role: this.f['role'].value,
+    };
+
+    if (this.selectedRole === 'profesor') {
+      this.registerProfessor({
+        ...userData,
+        professorInfo: {
+          departmentId: this.f['departmentId'].value,
+        },
+      });
+    } else {
+      this.registerStudent({
+        ...userData,
+        studentInfo: {},
+      });
+    }
+  }
+
+  registerProfessor(userData: any) {
+    this.authService.registerProfessor(userData).subscribe({
+      next: () => {
+        this.router.navigate(['/login'], { queryParams: { registered: true } });
+      },
+      error: (error) => {
+        this.error =
+          error.error?.message || 'Registration failed. Please try again.';
+        this.loading = false;
+      },
+    });
+  }
+
+  registerStudent(userData: any) {
+    this.authService.registerStudent(userData).subscribe({
+      next: () => {
+        this.router.navigate(['/login'], { queryParams: { registered: true } });
+      },
+      error: (error) => {
+        this.error =
+          error.error?.message || 'Registration failed. Please try again.';
+        this.loading = false;
+      },
+    });
+  }
+
+  clearError() {
+    this.error = '';
   }
 }

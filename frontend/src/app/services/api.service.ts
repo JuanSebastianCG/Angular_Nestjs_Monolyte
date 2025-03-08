@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -7,12 +7,12 @@ import { environment } from '../../environments/environment';
   providedIn: 'root',
 })
 export class ApiService {
-  private apiUrl = environment.apiUrl;
+  private apiUrl = environment.apiUrl || 'http://localhost:3000/api';
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Generic GET request
+   * Get request with optional params and headers
    */
   get<T>(endpoint: string, params?: any, headers?: HttpHeaders): Observable<T> {
     const options = {
@@ -23,28 +23,28 @@ export class ApiService {
   }
 
   /**
-   * Generic POST request
+   * Post request with optional headers
    */
-  post<T>(endpoint: string, body: any, headers?: HttpHeaders): Observable<T> {
-    return this.http.post<T>(`${this.apiUrl}/${endpoint}`, body, { headers });
+  post<T>(endpoint: string, data: any, headers?: HttpHeaders): Observable<T> {
+    return this.http.post<T>(`${this.apiUrl}/${endpoint}`, data, { headers });
   }
 
   /**
-   * Generic PUT request
+   * Put request with optional headers
    */
-  put<T>(endpoint: string, body: any, headers?: HttpHeaders): Observable<T> {
-    return this.http.put<T>(`${this.apiUrl}/${endpoint}`, body, { headers });
+  put<T>(endpoint: string, data: any, headers?: HttpHeaders): Observable<T> {
+    return this.http.put<T>(`${this.apiUrl}/${endpoint}`, data, { headers });
   }
 
   /**
-   * Generic PATCH request
+   * Patch request with optional headers
    */
-  patch<T>(endpoint: string, body: any, headers?: HttpHeaders): Observable<T> {
-    return this.http.patch<T>(`${this.apiUrl}/${endpoint}`, body, { headers });
+  patch<T>(endpoint: string, data: any, headers?: HttpHeaders): Observable<T> {
+    return this.http.patch<T>(`${this.apiUrl}/${endpoint}`, data, { headers });
   }
 
   /**
-   * Generic DELETE request
+   * Delete request with optional headers
    */
   delete<T>(endpoint: string, headers?: HttpHeaders): Observable<T> {
     return this.http.delete<T>(`${this.apiUrl}/${endpoint}`, { headers });
