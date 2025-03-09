@@ -77,9 +77,16 @@
 
             <div class="dropdown-divider"></div>
 
-            <button class="dropdown-item" (click)="logout()">
+            <button
+              class="dropdown-item"
+              (click)="logout()"
+              [disabled]="loggingOut"
+            >
               <i class="fas fa-sign-out-alt"></i>
-              <span>Sign Out</span>
+              <span>
+                <span *ngIf="!loggingOut">Sign Out</span>
+                <span *ngIf="loggingOut">Signing out...</span>
+              </span>
             </button>
           </div>
         </div>

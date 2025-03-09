@@ -1,0 +1,277 @@
+<div class="courses-page">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Course Management</h1>
+      <p class="page-description">
+        View, create, edit and manage university courses
+      </p>
+    </div>
+
+    <div class="header-actions" *ngIf="canManageCourses">
+      <button class="btn btn-primary create-btn" (click)="openCreateModal()">
+        <i class="fas fa-plus"></i>
+        <span>Create Course</span>
+      </button>
+
+      <div class="additional-actions">
+        <button class="btn btn-secondary btn-icon" title="Import Courses">
+          <i class="fas fa-file-import"></i>
+        </button>
+        <button class="btn btn-secondary btn-icon" title="Export Courses">
+          <i class="fas fa-file-export"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert messages -->
+  <app-alert
+    *ngIf="alert.show"
+    [message]="alert.message"
+    [type]="alert.type"
+    [dismissible]="true"
+    (dismiss)="dismissAlert()"
+  ></app-alert>
+
+  <!-- Filters section - Simplified to only search by name -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search courses by name..."
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
+      />
+      <button
+        *ngIf="searchQuery"
+        class="clear-search"
+        (click)="searchQuery = ''; onSearchChange()"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Courses grid -->
+  <div class="courses-container">
+    <!-- Loading indicator -->
+    <div class="loading-container" *ngIf="loading">
+      <div class="spinner-container">
+        <div class="spinner"></div>
+      </div>
+      <p>Loading courses...</p>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="!loading && filteredCourses.length === 0">
+      <div class="empty-icon">
+        <i class="fas fa-book"></i>
+      </div>
+      <h3>No courses found</h3>
+      <p>
+        {{
+          searchQuery
+            ? 'No courses match your search. Try changing your search criteria.'
+            : 'There are no courses available. Click "Create Course" to add one.'
+        }}
+      </p>
+      <button
+        *ngIf="canManageCourses && !searchQuery"
+        class="btn btn-primary"
+        (click)="openCreateModal()"
+      >
+        Create Course
+      </button>
+      <button
+        *ngIf="searchQuery"
+        class="btn btn-secondary"
+        (click)="searchQuery = ''; onSearchChange()"
+      >
+        Clear Search
+      </button>
+    </div>
+
+    <!-- Course grid -->
+    <div class="courses-grid" *ngIf="!loading && filteredCourses.length > 0">
+      <div class="course-card-wrapper" *ngFor="let course of filteredCourses">
+        <app-course-card
+          [course]="course"
+          [showActions]="canManageCourses"
+          (edit)="onEditCourse($event)"
+          (delete)="onDeleteCourse($event)"
+          (view)="onViewCourse($event)"
+        ></app-course-card>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Create course modal -->
+  <app-modal
+    [showModal]="showCreateModal"
+    title="Create New Course"
+    (close)="closeCreateModal()"
+  >
+    <app-course-form
+      [loading]="loading"
+      [professors]="professors"
+      [courses]="courses"
+      (formSubmit)="createCourse($event)"
+      (cancel)="closeCreateModal()"
+    ></app-course-form>
+  </app-modal>
+
+  <!-- Edit course modal -->
+  <app-modal
+    [showModal]="showEditModal"
+    title="Edit Course"
+    (close)="closeEditModal()"
+  >
+    <app-course-form
+      [course]="selectedCourse"
+      [loading]="loading"
+      [professors]="professors"
+      [courses]="courses"
+      (formSubmit)="updateCourse($event)"
+      (cancel)="closeEditModal()"
+    ></app-course-form>
+  </app-modal>
+
+  <!-- Delete confirmation modal -->
+  <app-modal
+    [showModal]="showDeleteModal"
+    title="Confirm Deletion"
+    (close)="closeDeleteModal()"
+  >
+    <div class="delete-confirmation">
+      <p class="warning-message">
+        <i class="fas fa-exclamation-triangle"></i>
+        Are you sure you want to delete the course "{{ selectedCourse?.name }}"?
+      </p>
+      <p class="delete-details">
+        This action cannot be undone. All data associated with this course will
+        be permanently deleted.
+      </p>
+
+      <div class="modal-actions">
+        <button
+          class="btn btn-secondary"
+          (click)="closeDeleteModal()"
+          [disabled]="loading"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn btn-danger"
+          (click)="confirmDeleteCourse()"
+          [disabled]="loading"
+        >
+          Delete
+          <span *ngIf="loading" class="spinner"></span>
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- View course details modal -->
+  <app-modal
+    [showModal]="showViewModal"
+    title="{{ selectedCourse?.name }}"
+    (close)="closeViewModal()"
+  >
+    <div class="course-details" *ngIf="selectedCourse">
+      <!-- Action buttons at the top -->
+      <div class="quick-actions" *ngIf="canManageCourses">
+        <button
+          class="action-btn edit-action"
+          (click)="closeViewModal(); openEditModal(selectedCourse)"
+          title="Edit Course"
+        >
+          <i class="fas fa-edit"></i>
+        </button>
+        <button
+          class="action-btn delete-action"
+          (click)="closeViewModal(); openDeleteModal(selectedCourse)"
+          title="Delete Course"
+        >
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+
+      <div class="detail-section">
+        <h3 class="section-title">Description</h3>
+        <p class="course-description">{{ selectedCourse.description }}</p>
+      </div>
+
+      <div class="detail-section">
+        <h3 class="section-title">Schedule</h3>
+        <div class="detail-item">
+          <span class="detail-label">Days:</span>
+          <span class="detail-value">{{
+            selectedCourse.scheduleId.days.join(', ')
+          }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Time:</span>
+          <span class="detail-value"
+            >{{ selectedCourse.scheduleId.startTime }} -
+            {{ selectedCourse.scheduleId.endTime }}</span
+          >
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Room:</span>
+          <span class="detail-value">{{ selectedCourse.scheduleId.room }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Period:</span>
+          <span class="detail-value">
+            {{ selectedCourse.scheduleId.startDate | date: 'mediumDate' }} -
+            {{ selectedCourse.scheduleId.endDate | date: 'mediumDate' }}
+          </span>
+        </div>
+      </div>
+
+      <div
+        class="detail-section"
+        *ngIf="
+          selectedCourse.prerequisites &&
+          selectedCourse.prerequisites.length > 0
+        "
+      >
+        <h3 class="section-title">Prerequisites</h3>
+        <ul class="prerequisites-list">
+          <li
+            *ngFor="let prereq of selectedCourse.prerequisites"
+            class="prerequisite-item"
+          >
+            {{ getPrerequisiteName(prereq) }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="closeViewModal()">
+          Close
+        </button>
+
+        <div class="action-buttons" *ngIf="canManageCourses">
+          <button
+            class="btn btn-primary"
+            (click)="closeViewModal(); openEditModal(selectedCourse)"
+          >
+            <i class="fas fa-edit"></i> Edit
+          </button>
+
+          <button
+            class="btn btn-danger"
+            (click)="closeViewModal(); openDeleteModal(selectedCourse)"
+          >
+            <i class="fas fa-trash-alt"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </app-modal>
+</div>

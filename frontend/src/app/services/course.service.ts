@@ -1,87 +1,126 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { ApiService } from './api.service';
-import { Course, CourseJustId } from '../models/course.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Course } from '../models/course.model';
 import { Schedule } from '../models/schedule.model';
 import { Prerequisite } from '../models/prerequisite.model';
+import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CourseService {
-  constructor(private apiService: ApiService) {}
+  private apiUrl = `${environment.apiUrl}/courses`;
+
+  constructor(private http: HttpClient) {}
 
   /**
    * Get all courses
-   * @param includePrerequisites Whether to include prerequisites in the response
    */
-  getAllCourses(includePrerequisites: boolean = false): Observable<Course[]> {
-    return this.apiService.get<Course[]>('courses', { includePrerequisites });
+  getAllCourses(): Observable<Course[]> {
+    return this.http.get<Course[]>(this.apiUrl);
   }
 
   /**
    * Get course by ID
    */
-  getCourseById(courseId: string): Observable<Course> {
-    return this.apiService.get<Course>(`courses/${courseId}`);
+  getCourse(id: string): Observable<Course> {
+    return this.http.get<Course>(`${this.apiUrl}/${id}`);
   }
 
   /**
    * Create a new course with inline schedule
+   * Based on the API example:
+   * POST /courses
+   * {
+   *   "name": "Course Name",
+   *   "description": "Description",
+   *   "professorId": "id",
+   *   "schedule": { days, times, etc. }
+   * }
    */
   createCourse(
     name: string,
     description: string,
-    professorId: string,
-    schedule: Partial<Schedule>,
-    departmentId?: string,
+    professorId: string | null,
+    schedule: {
+      days: string[];
+      startTime: string;
+      endTime: string;
+      room: string;
+      startDate: string;
+      endDate: string;
+    },
   ): Observable<Course> {
-    const courseData = {
+    // Build the request body according to the API format
+    const courseData: any = {
       name,
       description,
-      professorId,
       schedule,
-      departmentId,
     };
-    return this.apiService.post<Course>('courses', courseData);
+
+    // Only include professorId if it's provided and not null/empty
+    if (professorId) {
+      courseData.professorId = professorId;
+    }
+
+    return this.http.post<Course>(this.apiUrl, courseData);
   }
 
   /**
-   * Update course
+   * Update a course
+   * Based on the API example:
+   * PATCH /courses/{id}
+   * {
+   *   "name": "Updated Name",
+   *   "schedule": { updated schedule }
+   * }
    */
-  updateCourse(
-    courseId: string,
-    courseData: Partial<Course>,
-  ): Observable<Course> {
-    return this.apiService.patch<Course>(`courses/${courseId}`, courseData);
+  updateCourse(courseId: string, courseData: any): Observable<Course> {
+    return this.http.patch<Course>(`${this.apiUrl}/${courseId}`, courseData);
   }
 
   /**
-   * Delete course
+   * Delete a course
    */
   deleteCourse(courseId: string): Observable<any> {
-    return this.apiService.delete<any>(`courses/${courseId}`);
+    return this.http.delete<any>(`${this.apiUrl}/${courseId}`);
   }
 
   /**
-   * Search courses by name or description
+   * Search courses by name - performs client-side filtering
    */
   searchCourses(query: string): Observable<Course[]> {
-    return this.apiService.get<Course[]>('courses/search', { query });
+    // Get all courses and filter them locally
+    return this.getAllCourses().pipe(
+      map((courses: Course[]) => {
+        if (!query) return courses;
+
+        // Filter by name using case-insensitive matching
+        return courses.filter((course) =>
+          course.name.toLowerCase().includes(query.toLowerCase()),
+        );
+      }),
+    );
   }
 
   /**
-   * Get courses by professor
+   * Get courses by professor ID
    */
   getCoursesByProfessor(professorId: string): Observable<Course[]> {
-    return this.apiService.get<Course[]>(`courses/professor/${professorId}`);
+    return this.http.get<Course[]>(`${this.apiUrl}`, {
+      params: { professorId },
+    });
   }
 
   /**
-   * Get courses by department
+   * Get courses by department ID
    */
   getCoursesByDepartment(departmentId: string): Observable<Course[]> {
-    return this.apiService.get<Course[]>(`courses/department/${departmentId}`);
+    return this.http.get<Course[]>(`${this.apiUrl}`, {
+      params: { departmentId },
+    });
   }
 
   /**
@@ -90,20 +129,10 @@ export class CourseService {
   addPrerequisite(
     courseId: string,
     prerequisiteCourseId: string,
-  ): Observable<Prerequisite> {
-    return this.apiService.post<Prerequisite>('prerequisites', {
-      courseId,
+  ): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${courseId}/prerequisites`, {
       prerequisiteCourseId,
     });
-  }
-
-  /**
-   * Get prerequisites for a course
-   */
-  getPrerequisitesForCourse(courseId: string): Observable<Prerequisite[]> {
-    return this.apiService.get<Prerequisite[]>(
-      `prerequisites/course/${courseId}`,
-    );
   }
 
   /**
@@ -111,10 +140,10 @@ export class CourseService {
    */
   removePrerequisite(
     courseId: string,
-    prerequisiteCourseId: string,
+    prerequisiteId: string,
   ): Observable<any> {
-    return this.apiService.delete<any>(
-      `prerequisites/${courseId}/${prerequisiteCourseId}`,
+    return this.http.delete<any>(
+      `${this.apiUrl}/${courseId}/prerequisites/${prerequisiteId}`,
     );
   }
 
@@ -122,8 +151,8 @@ export class CourseService {
    * Get courses with their prerequisites
    */
   getCoursesWithPrerequisites(): Observable<Course[]> {
-    return this.apiService.get<Course[]>('courses', {
-      includePrerequisites: true,
+    return this.http.get<Course[]>(this.apiUrl, {
+      params: { includePrerequisites: true },
     });
   }
 
@@ -131,7 +160,7 @@ export class CourseService {
    * Get courses that the student is not enrolled in
    */
   getAvailableCoursesForStudent(studentId: string): Observable<Course[]> {
-    return this.apiService.get<Course[]>(`courses/available/${studentId}`);
+    return this.http.get<Course[]>(`${this.apiUrl}/available/${studentId}`);
   }
 
   /**
@@ -143,18 +172,18 @@ export class CourseService {
     passRate: number;
     evaluationsCount: number;
   }> {
-    return this.apiService.get<{
+    return this.http.get<{
       enrollmentsCount: number;
       averageGrade: number;
       passRate: number;
       evaluationsCount: number;
-    }>(`courses/${courseId}/statistics`);
+    }>(`${this.apiUrl}/${courseId}/statistics`);
   }
 
   /**
    * Get courses by schedule day
    */
   getCoursesByDay(day: string): Observable<Course[]> {
-    return this.apiService.get<Course[]>('courses', { day });
+    return this.http.get<Course[]>(this.apiUrl, { params: { day } });
   }
 }

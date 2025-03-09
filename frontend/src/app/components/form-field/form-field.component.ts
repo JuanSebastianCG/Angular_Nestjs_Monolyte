@@ -22,6 +22,7 @@ export class FormFieldComponent implements OnInit {
   @Input() showSuccessIndicator: boolean = true;
   @Input() options: { value: string; label: string }[] = [];
   @Input() icon: string = '';
+  @Input() multiple: boolean = false;
   @Output() selectionChange = new EventEmitter<string>();
 
   constructor() {}

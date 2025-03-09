@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { ApiService } from './api.service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap, of } from 'rxjs';
+import { environment } from '../../environments/environment';
 import {
   User,
   LoginUserDto,
@@ -13,6 +14,7 @@ import {
   providedIn: 'root',
 })
 export class AuthService {
+  private baseUrl = environment.apiUrl;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
@@ -20,7 +22,7 @@ export class AuthService {
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private readonly USER_DATA_KEY = 'user_data';
 
-  constructor(private apiService: ApiService) {
+  constructor(private http: HttpClient) {
     this.loadUserFromStorage();
   }
 
@@ -35,7 +37,7 @@ export class AuthService {
         this.currentUserSubject.next(user);
       } catch (e) {
         console.error('Error parsing user data from local storage', e);
-        this.logout();
+        this.clearAuthData();
       }
     }
   }
@@ -91,34 +93,36 @@ export class AuthService {
    * Login user with username and password
    */
   login(loginData: LoginUserDto): Observable<LoginResponse> {
-    return this.apiService.post<LoginResponse>('auth/login', loginData).pipe(
-      tap((response) => {
-        this.setTokens(response.access_token, response.refresh_token);
-        this.storeUserData(response.user);
-        this.currentUserSubject.next(response.user);
-      }),
-    );
+    return this.http
+      .post<LoginResponse>(`${this.baseUrl}/auth/login`, loginData)
+      .pipe(
+        tap((response) => {
+          this.setTokens(response.access_token, response.refresh_token);
+          this.storeUserData(response.user);
+          this.currentUserSubject.next(response.user);
+        }),
+      );
   }
 
   /**
    * Register a new user
    */
   register(userData: any): Observable<User> {
-    return this.apiService.post<User>('users', userData);
+    return this.http.post<User>(`${this.baseUrl}/users`, userData);
   }
 
   /**
    * Register an admin user (admin only)
    */
   registerAdmin(userData: any): Observable<User> {
-    return this.apiService.post<User>('users/admin', userData);
+    return this.http.post<User>(`${this.baseUrl}/users/admin`, userData);
   }
 
   /**
    * Get user profile
    */
   getProfile(): Observable<User> {
-    return this.apiService.get<User>('auth/profile').pipe(
+    return this.http.get<User>(`${this.baseUrl}/auth/profile`).pipe(
       tap((user) => {
         this.storeUserData(user);
         this.currentUserSubject.next(user);
@@ -127,36 +131,32 @@ export class AuthService {
   }
 
   /**
-   * Refresh access token using refresh token
-   */
-  refreshToken(): Observable<{ access_token: string; refresh_token: string }> {
-    const refreshToken = this.getRefreshToken();
-    return this.apiService
-      .post<{ access_token: string; refresh_token: string }>('auth/refresh', {})
-      .pipe(
-        tap((tokens) => {
-          this.setTokens(tokens.access_token, tokens.refresh_token);
-        }),
-      );
-  }
-
-  /**
    * Logout user
+   * POST /auth/logout
    */
   logout(): Observable<any> {
     // Call the logout endpoint if the user is authenticated
     if (this.isAuthenticated()) {
-      return this.apiService
-        .post<any>('auth/logout', {})
-        .pipe(tap(() => this.clearAuthData()));
+      const accessToken = this.getAccessToken();
+
+      // Create headers with Authorization token
+      const headers = new HttpHeaders({
+        Authorization: `Bearer ${accessToken}`,
+      });
+
+      // Make the POST request to logout with explicit Authorization header
+      return this.http
+        .post<any>(`${this.baseUrl}/auth/logout`, {}, { headers })
+        .pipe(
+          tap(() => {
+            this.clearAuthData();
+          }),
+        );
     }
 
     // Otherwise, just clear the auth data without making an API call
     this.clearAuthData();
-    return new Observable((observer) => {
-      observer.next({});
-      observer.complete();
-    });
+    return of({});
   }
 
   /**

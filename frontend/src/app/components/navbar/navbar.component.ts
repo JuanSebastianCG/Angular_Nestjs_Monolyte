@@ -1,6 +1,5 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { User } from '../../models/user.model';
 import { Router } from '@angular/router';
@@ -10,7 +9,7 @@ import { Router } from '@angular/router';
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.scss'],
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule],
 })
 export class NavbarComponent implements OnInit {
   user: User | null = null;
@@ -19,6 +18,7 @@ export class NavbarComponent implements OnInit {
   isProfileDropdownOpen = false;
   isScrolled = false;
   activeLink: string = '/';
+  loggingOut = false;
 
   constructor(
     private authService: AuthService,
@@ -131,14 +131,31 @@ export class NavbarComponent implements OnInit {
     this.isProfileDropdownOpen = false;
   }
 
-  // Log out user
+  /**
+   * Log out user
+   * Makes a POST request to /auth/logout
+   */
   logout() {
+    // Prevent multiple logout attempts
+    if (this.loggingOut) return;
+
+    this.loggingOut = true;
+
     this.authService.logout().subscribe({
       next: () => {
+        // Always navigate to login page and reset state
+        this.loggingOut = false;
+        this.isProfileDropdownOpen = false;
         this.router.navigate(['/login']);
       },
       error: (error) => {
         console.error('Logout error', error);
+
+        // Even if the API call fails, we should clear local state
+        // and redirect the user to the login page
+        this.loggingOut = false;
+        this.isProfileDropdownOpen = false;
+        this.router.navigate(['/login']);
       },
     });
   }

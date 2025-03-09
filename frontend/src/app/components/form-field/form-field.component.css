@@ -2,103 +2,147 @@
 
 .form-field {
   margin-bottom: 1.25rem;
-  width: 100%;
 }
 
-.label {
+.form-label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--text-color);
-  font-size: 0.9rem;
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.95rem;
 }
 
-.input-wrapper {
+.input-container,
+.select-container {
   position: relative;
-  display: flex;
-  border: 3px solid var(--border-color-dark);
-  border-left: 5px solid var(--primary);
-  border-radius: 0 6px 6px 0;
-  transition: var(--transition-base);
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.input-wrapper:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.85rem 0.85rem;
-  background-color: var(--white);
-  border: none;
+.field-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  color: #6c757d;
   font-size: 1rem;
-  transition: var(--transition-base);
-  color: var(--text-dark);
 }
 
-.form-control:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-.form-control::placeholder {
-  color: var(--text-light);
-  opacity: 0.7;
-}
-
-/* Dropdown styles */
-.dropdown {
-  appearance: none;
-  padding-right: 2.5rem;
-  cursor: pointer;
-  background-color: var(--white);
-}
-
-.dropdown-icon {
-  position: absolute;
-  top: 50%;
-  right: 0.75rem;
-  transform: translateY(-50%);
-  pointer-events: none;
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 12px solid var(--primary);
-}
-
-/* Calendar icon */
-.calendar-icon {
-  position: absolute;
-  top: 50%;
-  right: 0.75rem;
-  transform: translateY(-50%);
-  width: 1.5rem;
-  height: 1.5rem;
-  pointer-events: none;
-  color: var(--primary);
-}
-
-.calendar-icon svg {
+.form-input,
+.form-textarea,
+.form-select,
+.form-date {
   width: 100%;
-  height: 100%;
+  padding: 0.75rem 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #495057;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
-/* Error states */
-.is-invalid {
-  border-color: var(--danger);
+.field-icon ~ .form-input {
+  padding-left: 2.5rem;
 }
 
-.is-invalid .form-control {
-  background-color: rgba(220, 53, 69, 0.05);
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus,
+.form-date:focus {
+  border-color: #4361ee;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
+}
+
+.has-error .form-input,
+.has-error .form-textarea,
+.has-error .form-select,
+.has-error .form-date {
+  border-color: #dc3545;
+}
+
+.has-error .form-input:focus,
+.has-error .form-textarea:focus,
+.has-error .form-select:focus,
+.has-error .form-date:focus {
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
 .error-message {
-  width: 100%;
-  margin-top: 0.4rem;
-  font-size: 0.8rem;
-  color: var(--danger);
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #dc3545;
+}
+
+.success-indicator {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #28a745;
+}
+
+.form-textarea ~ .success-indicator {
+  top: 1.25rem;
+}
+
+/* Select field specific styles */
+.form-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23495057' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  padding-right: 2rem;
+}
+
+.form-select[multiple] {
+  height: auto;
+  padding: 0.5rem;
+  background-image: none;
+}
+
+.form-select[multiple] option {
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.form-select[multiple] option:checked {
+  background-color: #4361ee;
+  color: white;
+}
+
+/* Date field specific styles */
+.form-date {
+  padding-right: 2.5rem;
+}
+
+.form-date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+/* Optional: State styles */
+.is-valid .form-input,
+.is-valid .form-textarea,
+.is-valid .form-select,
+.is-valid .form-date {
+  border-color: #28a745;
+}
+
+.is-valid .form-input:focus,
+.is-valid .form-textarea:focus,
+.is-valid .form-select:focus,
+.is-valid .form-date:focus {
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }

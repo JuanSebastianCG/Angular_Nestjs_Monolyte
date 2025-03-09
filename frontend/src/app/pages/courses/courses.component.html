@@ -1,0 +1,460 @@
+<div class="courses-page">
+  <div class="container">
+    <!-- Header con título y botón de creación -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">Gestión de Cursos</h1>
+        <p class="page-description">
+          Administra todos los cursos disponibles en la universidad
+        </p>
+      </div>
+      <div class="header-actions">
+        <app-button (click)="openCreateModal()" variant="primary">
+          <i class="fas fa-plus-circle"></i> Nuevo Curso
+        </app-button>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <app-alert
+      *ngIf="error"
+      [message]="error"
+      type="danger"
+      [dismissible]="true"
+      (dismiss)="clearMessages()"
+    >
+    </app-alert>
+
+    <app-alert
+      *ngIf="success"
+      [message]="success"
+      type="success"
+      [dismissible]="true"
+      (dismiss)="clearMessages()"
+    >
+    </app-alert>
+
+    <!-- Filters section -->
+    <div class="filters-section">
+      <div class="search-box">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search courses by name..."
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="applyFilter()"
+        />
+        <div class="search-actions">
+          <button
+            *ngIf="searchTerm"
+            class="search-btn"
+            (click)="applyFilter()"
+            title="Search"
+          >
+            <i class="fas fa-search"></i>
+          </button>
+          <button
+            *ngIf="searchTerm"
+            class="clear-btn"
+            (click)="resetFilters()"
+            title="Clear search"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-controls">
+        <div class="filter-select">
+          <label for="department-filter">Departamento:</label>
+          <select
+            id="department-filter"
+            [(ngModel)]="selectedDepartment"
+            (ngModelChange)="applyFilter()"
+            class="filter-dropdown"
+          >
+            <option value="">Todos los departamentos</option>
+            <option *ngFor="let dept of departments" [value]="dept._id">
+              {{ dept.name }}
+            </option>
+          </select>
+        </div>
+
+        <button (click)="resetFilters()" class="reset-filters">
+          <i class="fas fa-sync-alt"></i> Resetear
+        </button>
+      </div>
+    </div>
+
+    <!-- Indicador de carga -->
+    <div *ngIf="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando cursos...</p>
+    </div>
+
+    <!-- Mensaje de no resultados -->
+    <div *ngIf="!loading && filteredCourses.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <i class="fas fa-book"></i>
+      </div>
+      <h3>No se encontraron cursos</h3>
+      <p>Intenta con otros filtros o crea un nuevo curso.</p>
+    </div>
+
+    <!-- Grid de cursos -->
+    <div *ngIf="!loading && filteredCourses.length > 0" class="courses-grid">
+      <div class="course-card" *ngFor="let course of filteredCourses">
+        <div class="card-header">
+          <h3 class="course-name">{{ course.name }}</h3>
+          <div class="card-actions">
+            <button
+              (click)="openEditModal(course)"
+              class="action-btn edit-btn"
+              title="Editar curso"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+            <button
+              (click)="confirmDelete(course)"
+              class="action-btn delete-btn"
+              title="Eliminar curso"
+            >
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <p class="course-description">{{ course.description }}</p>
+
+          <div class="course-details">
+            <div class="detail-item">
+              <i class="fas fa-university"></i>
+              <span>{{ getDepartmentName(course.departmentId || '') }}</span>
+            </div>
+
+            <div class="detail-item">
+              <i class="fas fa-user-tie"></i>
+              <span>{{ getProfessorName(course.professorId) }}</span>
+            </div>
+
+            <div class="detail-item">
+              <i class="fas fa-clock"></i>
+              <span
+                >{{ formatTime(course.scheduleId.startTime) }} -
+                {{ formatTime(course.scheduleId.endTime) }}</span
+              >
+            </div>
+
+            <div class="detail-item">
+              <i class="fas fa-calendar-alt"></i>
+              <span>{{ formatDays(course.scheduleId.days) }}</span>
+            </div>
+
+            <div class="detail-item">
+              <i class="fas fa-door-open"></i>
+              <span>Aula: {{ course.scheduleId.room }}</span>
+            </div>
+
+            <div class="detail-item">
+              <i class="fas fa-calendar-week"></i>
+              <span
+                >{{ formatDate(course.scheduleId.startDate) }} -
+                {{ formatDate(course.scheduleId.endDate) }}</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de creación -->
+  <app-modal
+    [title]="'Crear Nuevo Curso'"
+    [showModal]="showCreateModal"
+    (close)="closeModals()"
+  >
+    <form [formGroup]="courseForm" (ngSubmit)="createCourse()">
+      <div class="form-grid">
+        <app-form-field
+          label="Nombre del curso"
+          inputId="name"
+          [control]="courseForm.get('name')!"
+          placeholder="Nombre del curso"
+        ></app-form-field>
+
+        <app-form-field
+          label="Departamento"
+          inputId="departmentId"
+          [control]="courseForm.get('departmentId')!"
+          type="select"
+          [options]="departments.map(d => ({ value: d._id, label: d.name }))"
+        ></app-form-field>
+      </div>
+
+      <app-form-field
+        label="Descripción"
+        inputId="description"
+        [control]="courseForm.get('description')!"
+        placeholder="Descripción del curso"
+      ></app-form-field>
+
+      <app-form-field
+        label="Profesor"
+        inputId="professorId"
+        [control]="courseForm.get('professorId')!"
+        type="select"
+        [options]="professors.map(p => ({ value: p._id, label: p.name }))"
+      ></app-form-field>
+
+      <!-- Sección de horario -->
+      <div class="schedule-section">
+        <h3>Información de Horario</h3>
+
+        <div formGroupName="schedule">
+          <div class="form-grid">
+            <app-form-field
+              label="Días"
+              inputId="days"
+              [control]="courseForm.get('schedule.days')!"
+              type="select"
+              [options]="[
+                { value: 'Monday', label: 'Lunes' },
+                { value: 'Tuesday', label: 'Martes' },
+                { value: 'Wednesday', label: 'Miércoles' },
+                { value: 'Thursday', label: 'Jueves' },
+                { value: 'Friday', label: 'Viernes' },
+                { value: 'Saturday', label: 'Sábado' },
+              ]"
+            ></app-form-field>
+
+            <app-form-field
+              label="Aula"
+              inputId="room"
+              [control]="courseForm.get('schedule.room')!"
+              placeholder="Ej: A-101"
+            ></app-form-field>
+          </div>
+
+          <div class="form-grid">
+            <app-form-field
+              label="Hora de inicio"
+              inputId="startTime"
+              [control]="courseForm.get('schedule.startTime')!"
+              type="time"
+            ></app-form-field>
+
+            <app-form-field
+              label="Hora de fin"
+              inputId="endTime"
+              [control]="courseForm.get('schedule.endTime')!"
+              type="time"
+            ></app-form-field>
+          </div>
+
+          <div class="form-grid">
+            <app-form-field
+              label="Fecha de inicio"
+              inputId="startDate"
+              [control]="courseForm.get('schedule.startDate')!"
+              type="date"
+            ></app-form-field>
+
+            <app-form-field
+              label="Fecha de fin"
+              inputId="endDate"
+              [control]="courseForm.get('schedule.endDate')!"
+              type="date"
+            ></app-form-field>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <app-button
+          type="submit"
+          [loading]="loading"
+          [disabled]="courseForm.invalid || loading"
+          variant="primary"
+        >
+          Crear Curso
+        </app-button>
+
+        <app-button
+          type="button"
+          [disabled]="loading"
+          variant="secondary"
+          (click)="closeModals()"
+        >
+          Cancelar
+        </app-button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal de edición -->
+  <app-modal
+    [title]="'Editar Curso'"
+    [showModal]="showEditModal"
+    (close)="closeModals()"
+  >
+    <form [formGroup]="courseForm" (ngSubmit)="updateCourse()">
+      <div class="form-grid">
+        <app-form-field
+          label="Nombre del curso"
+          inputId="edit-name"
+          [control]="courseForm.get('name')!"
+          placeholder="Nombre del curso"
+        ></app-form-field>
+
+        <app-form-field
+          label="Departamento"
+          inputId="edit-departmentId"
+          [control]="courseForm.get('departmentId')!"
+          type="select"
+          [options]="departments.map(d => ({ value: d._id, label: d.name }))"
+        ></app-form-field>
+      </div>
+
+      <app-form-field
+        label="Descripción"
+        inputId="edit-description"
+        [control]="courseForm.get('description')!"
+        placeholder="Descripción del curso"
+      ></app-form-field>
+
+      <app-form-field
+        label="Profesor"
+        inputId="edit-professorId"
+        [control]="courseForm.get('professorId')!"
+        type="select"
+        [options]="professors.map(p => ({ value: p._id, label: p.name }))"
+      ></app-form-field>
+
+      <!-- Sección de horario -->
+      <div class="schedule-section">
+        <h3>Información de Horario</h3>
+
+        <div formGroupName="schedule">
+          <div class="form-grid">
+            <app-form-field
+              label="Días"
+              inputId="edit-days"
+              [control]="courseForm.get('schedule.days')!"
+              type="select"
+              [options]="[
+                { value: 'Monday', label: 'Lunes' },
+                { value: 'Tuesday', label: 'Martes' },
+                { value: 'Wednesday', label: 'Miércoles' },
+                { value: 'Thursday', label: 'Jueves' },
+                { value: 'Friday', label: 'Viernes' },
+                { value: 'Saturday', label: 'Sábado' },
+              ]"
+            ></app-form-field>
+
+            <app-form-field
+              label="Aula"
+              inputId="edit-room"
+              [control]="courseForm.get('schedule.room')!"
+              placeholder="Ej: A-101"
+            ></app-form-field>
+          </div>
+
+          <div class="form-grid">
+            <app-form-field
+              label="Hora de inicio"
+              inputId="edit-startTime"
+              [control]="courseForm.get('schedule.startTime')!"
+              type="time"
+            ></app-form-field>
+
+            <app-form-field
+              label="Hora de fin"
+              inputId="edit-endTime"
+              [control]="courseForm.get('schedule.endTime')!"
+              type="time"
+            ></app-form-field>
+          </div>
+
+          <div class="form-grid">
+            <app-form-field
+              label="Fecha de inicio"
+              inputId="edit-startDate"
+              [control]="courseForm.get('schedule.startDate')!"
+              type="date"
+            ></app-form-field>
+
+            <app-form-field
+              label="Fecha de fin"
+              inputId="edit-endDate"
+              [control]="courseForm.get('schedule.endDate')!"
+              type="date"
+            ></app-form-field>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <app-button
+          type="submit"
+          [loading]="loading"
+          [disabled]="courseForm.invalid || loading"
+          variant="primary"
+        >
+          Actualizar Curso
+        </app-button>
+
+        <app-button
+          type="button"
+          [disabled]="loading"
+          variant="secondary"
+          (click)="closeModals()"
+        >
+          Cancelar
+        </app-button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal de confirmación de eliminación -->
+  <app-modal
+    [title]="'Confirmar eliminación'"
+    [showModal]="showDeleteConfirm"
+    (close)="closeModals()"
+  >
+    <div class="delete-confirmation">
+      <div class="warning-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+
+      <p class="confirmation-message">
+        ¿Estás seguro de que deseas eliminar el curso
+        <strong>{{ currentCourse?.name }}</strong
+        >?
+      </p>
+
+      <p class="warning-text">Esta acción no se puede deshacer.</p>
+
+      <div class="confirmation-actions">
+        <app-button
+          (click)="deleteCourse()"
+          [loading]="loading"
+          [disabled]="loading"
+          variant="danger"
+        >
+          Eliminar
+        </app-button>
+
+        <app-button
+          (click)="closeModals()"
+          [disabled]="loading"
+          variant="secondary"
+        >
+          Cancelar
+        </app-button>
+      </div>
+    </div>
+  </app-modal>
+</div>

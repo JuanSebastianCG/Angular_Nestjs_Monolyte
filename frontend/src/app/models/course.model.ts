@@ -58,7 +58,6 @@ export interface Course {
   name: string;
   description: string;
   professorId: string;
-  departmentId?: string;
   prerequisites?: Prerequisite[];
   scheduleId: Schedule;
   createdAt: string;

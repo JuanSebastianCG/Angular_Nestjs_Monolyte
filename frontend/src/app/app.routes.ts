@@ -4,6 +4,8 @@ import { LoginPageComponent } from './pages/auth/login/login.component';
 import { RegisterPageComponent } from './pages/auth/register/register.component';
 import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
+import { CourseListComponent } from './pages/courses/course-list/course-list.component';
+import { authGuard, professorOrAdminGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -27,7 +29,7 @@ export const routes: Routes = [
   {
     path: 'professor',
     children: [
-      { path: 'courses', component: HomeComponent },
+      { path: 'courses', component: CourseListComponent },
       { path: 'evaluations', component: HomeComponent },
     ],
     canActivate: [AuthGuard, RoleGuard],
@@ -46,7 +48,7 @@ export const routes: Routes = [
   },
 
   // Course routes
-  { path: 'courses', component: HomeComponent }, // Placeholder
+  { path: 'courses', component: CourseListComponent, canActivate: [AuthGuard] },
   { path: 'departments', component: HomeComponent }, // Placeholder
 
   // Profile route

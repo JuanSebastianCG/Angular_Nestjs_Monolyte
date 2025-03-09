@@ -1,0 +1,205 @@
+<form [formGroup]="courseForm" (ngSubmit)="onSubmit()">
+  <div class="form-section">
+    <h3 class="section-title">Course Information</h3>
+
+    <div class="form-row">
+      <app-form-field
+        label="Course Name"
+        inputId="name"
+        [control]="f['name']"
+        placeholder="Enter course name"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+    </div>
+
+    <div class="form-row">
+      <app-form-field
+        label="Description"
+        inputId="description"
+        [control]="f['description']"
+        type="textarea"
+        placeholder="Enter course description"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+    </div>
+
+    <div class="form-row">
+      <app-form-field
+        label="Professor (Optional)"
+        inputId="professorId"
+        [control]="f['professorId']"
+        type="select"
+        [options]="professors"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+    </div>
+  </div>
+
+  <!-- Prerequisites Section -->
+  <div class="form-section" *ngIf="availablePrerequisites.length > 0">
+    <h3 class="section-title">
+      Prerequisites
+      <span class="prerequisite-count" *ngIf="prerequisites.length > 0">
+        ({{ prerequisites.length }})
+      </span>
+    </h3>
+    <p class="section-description">
+      Select courses that must be completed before taking this course.
+    </p>
+
+    <div class="prerequisites-container" formArrayName="prerequisites">
+      <!-- Selected Prerequisites List -->
+      <div class="prerequisites-list">
+        <div class="empty-prerequisites" *ngIf="prerequisites.length === 0">
+          <i class="fas fa-info-circle"></i> No prerequisites selected.
+        </div>
+
+        <div class="prerequisites-grid" *ngIf="prerequisites.length > 0">
+          <div
+            class="prerequisite-item"
+            *ngFor="let prereq of prerequisites.controls; let i = index"
+          >
+            <div class="prerequisite-content">
+              <i class="fas fa-book"></i>
+              <span class="prerequisite-name">
+                {{ getPrerequisiteNameById(prereq.value) }}
+              </span>
+            </div>
+            <button
+              type="button"
+              class="btn-remove-prerequisite"
+              (click)="removePrerequisite(i)"
+              title="Remove prerequisite"
+            >
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Prerequisite Controls -->
+      <div class="add-prerequisite-section">
+        <h4 class="add-prerequisite-title">Add Prerequisites</h4>
+
+        <div class="add-prerequisite-controls">
+          <div class="select-container">
+            <select
+              class="prerequisite-select"
+              [disabled]="loading"
+              #prerequisiteSelect
+            >
+              <option value="">-- Select a course to add --</option>
+              <option
+                *ngFor="let course of availablePrerequisites"
+                [value]="course.value"
+                [disabled]="
+                  isPrerequisiteSelected(course.value) ||
+                  wouldCreateCircularDependency(course.value)
+                "
+              >
+                {{ course.label }}
+                <span *ngIf="wouldCreateCircularDependency(course.value)">
+                  (Would create circular dependency)</span
+                >
+              </option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-add-prerequisite"
+            [disabled]="!prerequisiteSelect.value"
+            (click)="addPrerequisiteFromSelect(prerequisiteSelect)"
+          >
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </div>
+
+        <div class="circular-dependency-info" *ngIf="course">
+          <i class="fas fa-info-circle"></i>
+          <span
+            >Courses that would create circular dependencies are disabled</span
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section" formGroupName="schedule">
+    <h3 class="section-title">Schedule Information</h3>
+
+    <div class="form-row">
+      <app-form-field
+        label="Days"
+        inputId="scheduleDays"
+        [control]="scheduleControl('days')"
+        type="select"
+        [options]="dayOptions"
+        [multiple]="true"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+    </div>
+
+    <div class="form-row form-grid">
+      <app-form-field
+        label="Start Time"
+        inputId="startTime"
+        [control]="scheduleControl('startTime')"
+        type="time"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+
+      <app-form-field
+        label="End Time"
+        inputId="endTime"
+        [control]="scheduleControl('endTime')"
+        type="time"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+    </div>
+
+    <div class="form-row">
+      <app-form-field
+        label="Classroom"
+        inputId="room"
+        [control]="scheduleControl('room')"
+        placeholder="Enter classroom (e.g. A-101)"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+    </div>
+
+    <div class="form-row form-grid">
+      <app-form-field
+        label="Start Date"
+        inputId="startDate"
+        [control]="scheduleControl('startDate')"
+        type="date"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+
+      <app-form-field
+        label="End Date"
+        inputId="endDate"
+        [control]="scheduleControl('endDate')"
+        type="date"
+        [showSuccessIndicator]="submitted"
+      ></app-form-field>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      (click)="onCancel()"
+      [disabled]="loading"
+    >
+      Cancel
+    </button>
+
+    <button type="submit" class="btn btn-primary" [disabled]="loading">
+      {{ course ? 'Update Course' : 'Create Course' }}
+      <span *ngIf="loading" class="spinner"></span>
+    </button>
+  </div>
+</form>
