@@ -82,10 +82,29 @@
           <div class="info-item">
             <span class="info-label">Profesor</span>
             <span class="info-value professor-name">
-              <i *ngIf="loadingProfessor" class="fas fa-spinner fa-spin"></i>
-              <ng-container *ngIf="!loadingProfessor">{{
-                professorName
-              }}</ng-container>
+              {{ professorName }}
+            </span>
+            <!-- Debug button - Only for development -->
+            <button
+              *ngIf="isProfessorObject()"
+              (click)="debugProfessorInfo()"
+              style="
+                font-size: 0.8rem;
+                margin-top: 5px;
+                background: #f0f0f0;
+                border: 1px solid #ccc;
+                padding: 2px 5px;
+                cursor: pointer;
+              "
+            >
+              Debug Prof Info
+            </button>
+          </div>
+          <!-- Show additional professor details if available as a user object -->
+          <div class="info-item" *ngIf="isProfessorObject()">
+            <span class="info-label">Contact</span>
+            <span class="info-value">
+              {{ getProfessorEmail() }}
             </span>
           </div>
         </div>

@@ -107,11 +107,26 @@ export class CourseFormComponent implements OnInit, OnChanges {
   private populateForm(): void {
     if (!this.course) return;
 
+    console.log('Populating form with course data:', this.course);
+
+    // Set basic fields
     this.courseForm.patchValue({
       name: this.course.name || '',
       description: this.course.description || '',
-      professorId: this.course.professorId || '',
+      // Handle professorId properly - it can be an object or just an ID string
+      professorId:
+        typeof this.course.professorId === 'object'
+          ? this.course.professorId._id
+          : this.course.professorId || '',
     });
+
+    console.log('Professor data type:', typeof this.course.professorId);
+    console.log('Professor data:', this.course.professorId);
+    console.log(
+      'Form professorId value after patch:',
+      this.courseForm.get('professorId')?.value,
+    );
+    console.log('Form values after basic field patch:', this.courseForm.value);
 
     if (this.course.scheduleId) {
       const schedule = this.course.scheduleId;
@@ -141,26 +156,59 @@ export class CourseFormComponent implements OnInit, OnChanges {
       );
     }
 
+    // Handle prerequisites (clear existing ones first)
     while (this.prerequisites.length) {
       this.prerequisites.removeAt(0);
     }
+
+    // Debug prerequisites
+    console.log('Course prerequisites:', this.course.prerequisites);
+
+    // Process prerequisites if they exist
     if (this.course.prerequisites && this.course.prerequisites.length > 0) {
       this.course.prerequisites.forEach((prereq) => {
         try {
-          if (typeof prereq === 'string') {
-            this.prerequisites.push(new FormControl(prereq));
-          } else if (prereq.prerequisiteCourseId) {
+          // Log each prerequisite to debug
+          console.log('Processing prerequisite:', prereq);
+
+          // Handle prerequisites based on the actual API response format
+          // If the prerequisite is a complete Course object (from the API response as shown in example)
+          if (prereq && prereq._id && prereq.name) {
+            console.log(
+              'Adding prerequisite from course object with name:',
+              prereq.name,
+            );
+            this.prerequisites.push(new FormControl(prereq._id));
+          }
+          // If it's a Prerequisite object with prerequisiteCourseId (legacy format)
+          else if (prereq && prereq.prerequisiteCourseId) {
             if (typeof prereq.prerequisiteCourseId === 'string') {
+              console.log(
+                'Adding prerequisite as string ID:',
+                prereq.prerequisiteCourseId,
+              );
               this.prerequisites.push(
                 new FormControl(prereq.prerequisiteCourseId),
               );
-            } else if (prereq.prerequisiteCourseId._id) {
+            } else if (
+              prereq.prerequisiteCourseId &&
+              prereq.prerequisiteCourseId._id
+            ) {
+              console.log(
+                'Adding prerequisite as object with ID:',
+                prereq.prerequisiteCourseId._id,
+              );
               this.prerequisites.push(
                 new FormControl(prereq.prerequisiteCourseId._id),
               );
             }
-          } else if (prereq._id) {
-            this.prerequisites.push(new FormControl(prereq._id));
+          }
+          // If it's just a string ID (legacy format)
+          else if (typeof prereq === 'string') {
+            console.log('Adding prerequisite as direct string:', prereq);
+            this.prerequisites.push(new FormControl(prereq));
+          } else {
+            console.warn('Unrecognized prerequisite format:', prereq);
           }
         } catch (error) {
           console.error('Error processing prerequisite:', error, prereq);

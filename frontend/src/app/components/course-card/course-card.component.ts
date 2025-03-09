@@ -41,20 +41,39 @@ export class CourseCardComponent {
   }
 
   /**
+   * Returns the professor name if available
+   */
+  get professorName(): string {
+    if (!this.course.professorId) return 'No professor assigned';
+
+    // If professorId is an object with a name property
+    if (
+      typeof this.course.professorId === 'object' &&
+      this.course.professorId.name
+    ) {
+      return this.course.professorId.name;
+    }
+
+    // Otherwise just return the ID
+    return 'Professor ID: ' + this.course.professorId;
+  }
+
+  /**
    * Extracts the name of the prerequisite course
    * @param prereq The prerequisite course object
    * @returns The name of the prerequisite course
    */
   getPrerequisiteName(prereq: any): string {
     // Add debug logging
-    // Check if the prerequisite has a course name directly
-    if (prereq.name) {
+    console.log('Processing prerequisite in card:', prereq);
+
+    // If the prerequisite is a full course object with a name
+    if (prereq && prereq.name) {
       return prereq.name;
     }
 
-    // Check if the prerequisite has a prerequisiteCourseId with a name
-    if (prereq.prerequisiteCourseId) {
-      // If prerequisiteCourseId is a full object with name
+    // If it has a prerequisiteCourseId property that is an object
+    if (prereq && prereq.prerequisiteCourseId) {
       if (
         typeof prereq.prerequisiteCourseId === 'object' &&
         prereq.prerequisiteCourseId !== null &&
@@ -62,15 +81,13 @@ export class CourseCardComponent {
       ) {
         return prereq.prerequisiteCourseId.name;
       }
-
-      // If it's just an ID
+      // If prerequisiteCourseId is a string ID
       if (typeof prereq.prerequisiteCourseId === 'string') {
-        // Try to find the course name among other courses
         return 'Course ID: ' + prereq.prerequisiteCourseId;
       }
     }
 
-    // Check if it's just a string ID reference
+    // If it's just a string ID
     if (typeof prereq === 'string') {
       return 'Course ID: ' + prereq;
     }

@@ -44,6 +44,9 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
     },
   ];
 
+  // Expose console for debugging
+  console = console;
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -87,20 +90,32 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
         next: (course) => {
           this.course = course;
           this.loading = false;
-          console.log('Course loaded successfully:', course);
+          console.log('Course loaded:', course);
 
-          // Log the prerequisites for debugging
-          if (course.prerequisites && course.prerequisites.length > 0) {
-            console.log('Prerequisites:', course.prerequisites);
-            console.log(
-              'Formatted prerequisites:',
-              this.getPrerequisitesText(),
-            );
-          }
-
-          // Load professor data if available
+          // Get professor information directly from the course object
           if (course.professorId) {
-            this.loadProfessorData(course.professorId);
+            // If professorId is a User object with details
+            if (typeof course.professorId === 'object') {
+              // Explicitly cast to avoid TypeScript errors
+              const professor = course.professorId as any;
+              this.professorName =
+                professor.name ||
+                professor.username ||
+                professor.email ||
+                'Unknown';
+              console.log(
+                'Using professor data from course object:',
+                professor,
+              );
+              console.log('Professor name set to:', this.professorName);
+            }
+            // If it's just a string ID, set a default
+            else if (typeof course.professorId === 'string') {
+              this.professorName = 'Professor ID: ' + course.professorId;
+              console.log('Professor is just an ID, not loading details');
+            }
+          } else {
+            this.professorName = 'Not assigned';
           }
         },
         error: (error) => {
@@ -112,33 +127,6 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load professor data using UserService
-   */
-  loadProfessorData(professorId: string): void {
-    this.loadingProfessor = true;
-
-    this.userService
-      .getUserById(professorId)
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error loading professor:', error);
-          return of(null);
-        }),
-        finalize(() => (this.loadingProfessor = false)),
-      )
-      .subscribe((user) => {
-        if (user) {
-          // Use appropriate user properties for display name
-          this.professorName =
-            user.name || user.username || user.email || 'Unknown';
-        } else {
-          this.professorName = 'Not available';
-        }
-      });
-  }
-
-  /**
    * Set the active tab
    */
   setActiveTab(tab: 'students' | 'exams' | 'grades'): void {
@@ -146,15 +134,15 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Format days of the week
+   * Format days array into readable string
    */
   formatDays(days: string[] | undefined): string {
-    if (!days || days.length === 0) return 'N/A';
+    if (!days || days.length === 0) return 'No scheduled days';
     return days.join(', ');
   }
 
   /**
-   * Get prerequisite courses as formatted string
+   * Get formatted text for prerequisites
    */
   getPrerequisitesText(): string {
     if (!this.course?.prerequisites || this.course.prerequisites.length === 0) {
@@ -163,81 +151,52 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
 
     return this.course.prerequisites
       .map((prereq) => {
-        // Handle different prerequisite formats
+        // Handle different prerequisite formats based on the API response
         try {
-          // If the prerequisite is a string
-          if (typeof prereq === 'string') return prereq;
+          // If the prerequisite is a full course object (like in your example)
+          if (prereq && prereq.name) {
+            return prereq.name;
+          }
 
-          // If it has the prerequisiteCourseId property
-          if ('prerequisiteCourseId' in prereq) {
-            // If prerequisiteCourseId is an object with name property
+          // If it has a prerequisiteCourseId property
+          if (prereq && prereq.prerequisiteCourseId) {
+            // If prerequisiteCourseId is an object with a name
             if (
               typeof prereq.prerequisiteCourseId === 'object' &&
               prereq.prerequisiteCourseId !== null &&
-              'name' in prereq.prerequisiteCourseId
+              prereq.prerequisiteCourseId.name
             ) {
               return prereq.prerequisiteCourseId.name;
             }
             // If prerequisiteCourseId is a string
             if (typeof prereq.prerequisiteCourseId === 'string') {
-              return prereq.prerequisiteCourseId;
+              return `Course ID: ${prereq.prerequisiteCourseId}`;
             }
           }
 
-          // If it's a complete course object (not a Prerequisite type)
-          // We need to use type assertion here because TypeScript doesn't know
-          // that some prerequisites might be Course objects
-          const coursePrereq = prereq as unknown as {
-            name?: string;
-            _id?: string;
-          };
-          if (coursePrereq._id && coursePrereq.name) {
-            return coursePrereq.name;
+          // If it's just a string ID
+          if (typeof prereq === 'string') {
+            return `Course ID: ${prereq}`;
           }
-
-          return 'Unknown prerequisite';
-        } catch (error) {
-          console.error('Error formatting prerequisite:', error, prereq);
-          return 'Unknown prerequisite';
+        } catch (e) {
+          console.error('Error parsing prerequisite:', e);
+          return 'Error parsing prerequisite';
         }
+        return '';
       })
       .join(', ');
   }
 
   /**
-   * Check if the current user is the course professor or an admin
+   * Debug professor info
    */
-  get canManageCourse(): boolean {
-    if (!this.course || !this.authService.isAuthenticated()) return false;
-
-    // Admin can manage any course
-    if (this.authService.isAdmin()) return true;
-
-    // Professor can manage their own courses
-    if (this.authService.isProfessor()) {
-      const currentUser = this.authService.getCurrentUser();
-      return currentUser?._id === this.course.professorId;
+  debugProfessorInfo(): void {
+    if (
+      this.course &&
+      this.course.professorId &&
+      typeof this.course.professorId === 'object'
+    ) {
+      console.log('Professor object:', this.course.professorId);
     }
-
-    return false;
-  }
-
-  /**
-   * Navigate back to courses list
-   */
-  goBack(): void {
-    this.router.navigate(['/courses']);
-  }
-
-  /**
-   * Navigate to courses page with edit modal open for this course
-   */
-  editCourse(): void {
-    if (!this.course) return;
-
-    // Navigate to courses page with query parameter to open edit modal
-    this.router.navigate(['/courses'], {
-      queryParams: { edit: this.course._id },
-    });
   }
 }

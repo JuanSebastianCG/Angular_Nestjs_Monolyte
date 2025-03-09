@@ -1,5 +1,6 @@
 import { Prerequisite } from './prerequisite.model';
 import { Schedule } from './schedule.model';
+import { User } from './user.model';
 
 /* 
 {
@@ -57,7 +58,7 @@ export interface Course {
   _id: string;
   name: string;
   description: string;
-  professorId: string;
+  professorId: User | string;
   prerequisites?: any[];
   scheduleId: Schedule;
   createdAt: string;

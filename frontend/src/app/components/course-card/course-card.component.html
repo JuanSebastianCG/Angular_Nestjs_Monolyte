@@ -48,7 +48,9 @@
         </ul>
       </div>
       <div class="professor" *ngIf="course.professorId">
-        <span class="badge professor-badge">Assigned</span>
+        <span class="badge professor-badge"
+          >Professor: {{ professorName }}</span
+        >
       </div>
 
       <!-- Card Action Buttons -->
