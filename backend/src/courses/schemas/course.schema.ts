@@ -3,6 +3,7 @@ import { Document } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { Professor } from '../../professors/schemas/professor.schema';
 import { Schedule } from '../../schedules/schemas/schedule.schema';
+import { User } from '../../user/schemas/user.schema';
 
 export type CourseDocument = Course & Document;
 
@@ -17,7 +18,7 @@ export class Course {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Professor',
+    ref: 'User',
   })
   professorId: mongoose.Schema.Types.ObjectId;
 
@@ -33,6 +34,3 @@ export class Course {
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);
-
-// Create an index for unique course names
-CourseSchema.index({ name: 1 }, { unique: true });

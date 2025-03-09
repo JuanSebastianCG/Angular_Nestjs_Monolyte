@@ -201,7 +201,7 @@
     /* Card Action Buttons */
     .card-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 10px;
       margin-top: 16px;
       border-top: 1px solid #f0f0f0;
@@ -223,6 +223,14 @@
         
         i {
           font-size: 14px;
+        }
+        
+        &.view-card-btn {
+          background-color: #3498db;
+          
+          &:hover {
+            background-color: #2980b9;
+          }
         }
         
         &.edit-card-btn {

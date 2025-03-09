@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
 // Models
@@ -30,7 +30,6 @@ type AlertType = 'info' | 'success' | 'danger' | 'warning';
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule,
     FormsModule,
     ReactiveFormsModule,
     CourseCardComponent,
@@ -73,11 +72,39 @@ export class CourseListComponent implements OnInit, OnDestroy {
     private courseService: CourseService,
     private userService: UserService,
     private authService: AuthService,
+    private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
     this.loadCourses();
     this.loadProfessors();
+
+    // Check for the edit query parameter
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((params) => {
+        const courseId = params['edit'];
+        if (courseId) {
+          this.courseService.getCourse(courseId).subscribe({
+            next: (course) => {
+              this.openEditModal(course);
+              // Remove the query param after opening the modal
+              this.router.navigate([], {
+                relativeTo: this.route,
+                queryParams: { edit: null },
+                queryParamsHandling: 'merge',
+              });
+            },
+            error: (error) => {
+              this.showAlert(
+                'Error loading course for editing: ' + error.message,
+                'danger',
+              );
+            },
+          });
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -97,6 +124,7 @@ export class CourseListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (courses) => {
           this.courses = courses;
+          console.log('Courses:', courses);
           this.filteredCourses = [...courses];
           this.loading = false;
         },
@@ -196,11 +224,40 @@ export class CourseListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Open edit course modal
+   * Open edit course modal with complete course data
    */
   openEditModal(course: Course): void {
-    this.selectedCourse = course;
-    this.showEditModal = true;
+    this.loading = true;
+    console.log('Opening edit modal for course:', course);
+
+    // Fetch complete course details to ensure we have all data
+    this.courseService.getCourse(course._id).subscribe({
+      next: (completeData) => {
+        console.log('Got complete course data for editing:', completeData);
+
+        // Make sure we have a clean form before setting the course
+        this.selectedCourse = null;
+
+        // Use setTimeout to ensure the change detection cycle completes
+        setTimeout(() => {
+          this.selectedCourse = completeData;
+          this.showEditModal = true;
+          this.loading = false;
+        }, 0);
+      },
+      error: (error) => {
+        console.error('Error fetching course details:', error);
+        // Fallback to using the summary data we already have
+        this.selectedCourse = course;
+        this.showEditModal = true;
+        this.loading = false;
+
+        this.showAlert(
+          'Could not fetch complete course details. Some fields may be missing.',
+          'warning',
+        );
+      },
+    });
   }
 
   /**
@@ -228,22 +285,10 @@ export class CourseListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Open view course details modal
+   * Navigate to the detailed view of a course
    */
-  openViewModal(courseId: string): void {
-    const course = this.courses.find((c) => c._id === courseId);
-    if (course) {
-      this.selectedCourse = course;
-      this.showViewModal = true;
-    }
-  }
-
-  /**
-   * Close view course details modal
-   */
-  closeViewModal(): void {
-    this.showViewModal = false;
-    this.selectedCourse = null;
+  onViewCourse(courseId: string): void {
+    this.router.navigate(['/courses', courseId]);
   }
 
   /**
@@ -261,13 +306,6 @@ export class CourseListComponent implements OnInit, OnDestroy {
     if (course) {
       this.openDeleteModal(course);
     }
-  }
-
-  /**
-   * Handle card view action
-   */
-  onViewCourse(courseId: string): void {
-    this.openViewModal(courseId);
   }
 
   /**

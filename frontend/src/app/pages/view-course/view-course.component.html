@@ -1,0 +1,182 @@
+<div class="view-course-page">
+  <!-- Back button -->
+  <button class="back-btn" (click)="goBack()">
+    <i class="fas fa-arrow-left"></i> Back to Courses
+  </button>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading course details...</p>
+  </div>
+
+  <div *ngIf="error" class="error-container">
+    <p class="error-message">{{ error }}</p>
+    <button class="retry-btn" (click)="loadCourse()">Try Again</button>
+  </div>
+
+  <div *ngIf="!loading && !error && course" class="course-container">
+    <!-- Course Header -->
+    <header class="course-header">
+      <div class="course-title-section">
+        <h1 class="course-title">{{ course.name }}</h1>
+        <p class="course-description">{{ course.description }}</p>
+      </div>
+
+      <!-- Course Info Cards -->
+      <div class="course-info-grid">
+        <div class="info-card">
+          <div class="info-item">
+            <span class="info-label">Habitación:</span>
+            <span class="info-value">{{
+              (course.scheduleId && course.scheduleId.room) || 'N/A'
+            }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">{{
+              formatDays(course.scheduleId && course.scheduleId.days)
+            }}</span>
+            <span class="info-value"
+              >{{
+                (course.scheduleId && course.scheduleId.startTime) || '--:--'
+              }}
+              a
+              {{
+                (course.scheduleId && course.scheduleId.endTime) || '--:--'
+              }}</span
+            >
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-item">
+            <span class="info-label">Fecha Inicio</span>
+            <span class="info-value">
+              <ng-container
+                *ngIf="
+                  course.scheduleId && course.scheduleId.startDate;
+                  else noStartDate
+                "
+              >
+                {{ course.scheduleId.startDate | date: 'dd/MM/yy' }}
+              </ng-container>
+              <ng-template #noStartDate>00/00/00</ng-template>
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Fecha Final</span>
+            <span class="info-value">
+              <ng-container
+                *ngIf="
+                  course.scheduleId && course.scheduleId.endDate;
+                  else noEndDate
+                "
+              >
+                {{ course.scheduleId.endDate | date: 'dd/MM/yy' }}
+              </ng-container>
+              <ng-template #noEndDate>00/00/00</ng-template>
+            </span>
+          </div>
+        </div>
+
+        <div class="info-card professor-card">
+          <div class="info-item">
+            <span class="info-label">Profesor</span>
+            <span class="info-value professor-name">
+              <i *ngIf="loadingProfessor" class="fas fa-spinner fa-spin"></i>
+              <ng-container *ngIf="!loadingProfessor">{{
+                professorName
+              }}</ng-container>
+            </span>
+          </div>
+        </div>
+
+        <div class="info-card prerequisites-card">
+          <div class="info-item">
+            <span class="info-label">Requisitos</span>
+            <span class="info-value">{{ getPrerequisitesText() }}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="course-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'students'"
+        (click)="setActiveTab('students')"
+      >
+        Estudiantes
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'exams'"
+        (click)="setActiveTab('exams')"
+      >
+        Examenes
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'grades'"
+        (click)="setActiveTab('grades')"
+      >
+        Calificaciones
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Students Tab -->
+      <div *ngIf="activeTab === 'students'" class="tab-pane">
+        <h2>Estudiantes inscritos</h2>
+        <p *ngIf="true" class="empty-state">
+          No hay estudiantes inscritos en este curso.
+        </p>
+        <!-- Student list would go here -->
+      </div>
+
+      <!-- Exams Tab -->
+      <div *ngIf="activeTab === 'exams'" class="tab-pane">
+        <div class="tab-actions" *ngIf="canManageCourse">
+          <button class="create-btn">
+            <i class="fas fa-plus"></i> Crear Examen
+          </button>
+        </div>
+
+        <div class="exams-list">
+          <div *ngFor="let exam of exams" class="exam-card">
+            <div class="exam-info">
+              <h3 class="exam-name">{{ exam.name }}</h3>
+              <p class="exam-description">{{ exam.description }}</p>
+            </div>
+            <div class="exam-details">
+              <div class="exam-grade">
+                <span class="exam-label">Calificacion Maxima</span>
+                <span class="exam-value">{{ exam.maxGrade }}</span>
+              </div>
+              <div class="exam-date">
+                <span class="exam-date-value">{{ exam.date }}</span>
+              </div>
+              <button *ngIf="canManageCourse" class="delete-btn">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <p *ngIf="exams.length === 0" class="empty-state">
+            No hay exámenes programados para este curso.
+          </p>
+        </div>
+      </div>
+
+      <!-- Grades Tab -->
+      <div *ngIf="activeTab === 'grades'" class="tab-pane">
+        <h2>Calificaciones</h2>
+        <p *ngIf="true" class="empty-state">
+          No hay calificaciones disponibles.
+        </p>
+        <!-- Grades would go here -->
+      </div>
+    </div>
+  </div>
+</div>

@@ -220,7 +220,7 @@ Content-Type: application/json
 ### Create a second department
 # @name createDepartment2
 POST {{baseUrl}}/departments
-Authorization: Bearer {{professorToken}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
@@ -281,16 +281,6 @@ Content-Type: application/json
   }
 }
 
-{"name":"asdasd",
-"description":"asdasd",
-"schedule":{
-  "days":["Tuesday"],
-  "startTime":"14:22",
-  "endTime":"14:22",
-  "room":"asdasd",
-  "startDate":"20003-01-01",
-  "endDate":"2004-02-22"
-  },"professorId":["67cccf25a4504d8932f00f6b"]}
 
 ### Set course ID from response
 @courseId = {{createCourse.response.body._id}}
@@ -298,7 +288,7 @@ Content-Type: application/json
 ### Create a second course
 # @name createCourse2
 POST {{baseUrl}}/courses
-Authorization: Bearer {{professorToken}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
@@ -321,7 +311,7 @@ Content-Type: application/json
 
 ### Get all courses
 GET {{baseUrl}}/courses?includePrerequisites=true
-Authorization: Bearer {{professorToken}}
+Authorization: Bearer {{adminToken}}
 
 ### Get course by ID
 GET {{baseUrl}}/courses/{{courseId}}
@@ -346,8 +336,8 @@ Content-Type: application/json
 
 ### Delete course
 # Note: Uncomment only when you want to test deletion
- DELETE {{baseUrl}}/courses/{{course2Id}}
- Authorization: Bearer {{professorToken}}
+DELETE {{baseUrl}}/courses/{{course2Id}}
+Authorization: Bearer {{professorToken}}
 
 ###############################################################################
 # PREREQUISITES

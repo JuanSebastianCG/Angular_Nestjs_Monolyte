@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -22,24 +21,29 @@ import { AppButtonComponent } from './components/app-button/app-button.component
 import { ModalComponent } from './components/modal/modal.component';
 
 // Interceptors
-import { AuthInterceptor } from './interceptors/auth.interceptor';
-import { ErrorInterceptor } from './interceptors/error.interceptor';
+import { authInterceptor } from './interceptors/auth.interceptor';
 
 // Services
 import { AuthService } from './services/auth.service';
 import { CourseService } from './services/course.service';
 import { DepartmentService } from './services/department.service';
-import { ProfessorService } from './services/professor.service';
 
 @NgModule({
   declarations: [
+    // No components here - they're all standalone
+  ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    FormsModule,
+    ReactiveFormsModule,
+    // HttpClientModule removed - now using provideHttpClient in main.ts
+    // Add standalone components here
     AppComponent,
-    // Pages
     HomeComponent,
     LoginPageComponent,
     RegisterPageComponent,
     CoursesComponent,
-    // Shared Components
     NavbarComponent,
     AlertComponent,
     FormFieldComponent,
@@ -48,21 +52,11 @@ import { ProfessorService } from './services/professor.service';
     AppButtonComponent,
     ModalComponent,
   ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    FormsModule,
-    ReactiveFormsModule,
-    HttpClientModule,
-  ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-    { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
+    // HTTP interceptors are now provided in main.ts with provideHttpClient(withInterceptors([...]))
     AuthService,
     CourseService,
     DepartmentService,
-    ProfessorService,
   ],
-  bootstrap: [AppComponent],
 })
 export class AppModule {}

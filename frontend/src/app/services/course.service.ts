@@ -5,7 +5,8 @@ import { environment } from '../../environments/environment';
 import { Course } from '../models/course.model';
 import { Schedule } from '../models/schedule.model';
 import { Prerequisite } from '../models/prerequisite.model';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -43,7 +44,7 @@ export class CourseService {
   createCourse(
     name: string,
     description: string,
-    professorId: string | string[] | null,
+    professorId: string | string[] | null | undefined,
     schedule: {
       days: string[];
       startTime: string;
@@ -60,13 +61,17 @@ export class CourseService {
       schedule,
     };
 
-    // Ensure professorId is a string, not an array
+    // Ensure professorId is a string or null
     if (professorId) {
-      if (Array.isArray(professorId)) {
+      // Array with values
+      if (Array.isArray(professorId) && professorId.length > 0) {
         courseData.professorId = professorId[0];
-      } else {
+      }
+      // String with value
+      else if (typeof professorId === 'string' && professorId.trim() !== '') {
         courseData.professorId = professorId;
       }
+      // Otherwise don't set the professorId field at all
     }
 
     return this.http.post<Course>(this.apiUrl, courseData);
@@ -84,12 +89,59 @@ export class CourseService {
    * }
    */
   updateCourse(courseId: string, courseData: any): Observable<Course> {
-    // Handle case where professorId might be an array
-    if (courseData.professorId && Array.isArray(courseData.professorId)) {
-      courseData.professorId = courseData.professorId[0];
+    // Handle professorId properly
+    if (courseData.professorId) {
+      // If it's an array with values
+      if (
+        Array.isArray(courseData.professorId) &&
+        courseData.professorId.length > 0
+      ) {
+        courseData.professorId = courseData.professorId[0];
+      }
+      // If it's an empty array or empty string, remove the property
+      else if (
+        (Array.isArray(courseData.professorId) &&
+          courseData.professorId.length === 0) ||
+        (typeof courseData.professorId === 'string' &&
+          courseData.professorId.trim() === '')
+      ) {
+        delete courseData.professorId;
+      }
+      // Otherwise keep as is (it's a valid string)
+    } else if (
+      courseData.professorId === null ||
+      courseData.professorId === undefined
+    ) {
+      // Explicitly set to null if that's what the API expects for removing a professor
+      // Or just remove the property if the API doesn't accept null
+      delete courseData.professorId;
     }
 
-    return this.http.patch<Course>(`${this.apiUrl}/${courseId}`, courseData);
+    console.log('Updating course with data:', courseData);
+
+    return this.http
+      .patch<Course>(`${this.apiUrl}/${courseId}`, courseData)
+      .pipe(
+        catchError((error) => {
+          console.error('Error updating course:', error);
+
+          // Handle specific error cases
+          if (error.status === 400) {
+            throw new Error(
+              'Invalid course data: ' + (error.error?.message || 'Bad request'),
+            );
+          } else if (error.status === 404) {
+            throw new Error('Course not found');
+          } else if (error.status === 403) {
+            throw new Error('You do not have permission to update this course');
+          } else {
+            throw new Error(
+              'Failed to update course: ' +
+                (error.error?.message || 'Server error'),
+            );
+          }
+        }),
+      );
   }
 
   /**

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -26,6 +26,7 @@ import { AlertComponent } from '../../components/alert/alert.component';
 import { ModalComponent } from '../../components/modal/modal.component';
 import { FormFieldComponent } from '../../components/form-field/form-field.component';
 import { AppButtonComponent } from '../../components/app-button/app-button.component';
+import { CourseCardComponent } from '../../components/course-card/course-card.component';
 
 @Component({
   selector: 'app-courses',
@@ -39,6 +40,7 @@ import { AppButtonComponent } from '../../components/app-button/app-button.compo
     ModalComponent,
     FormFieldComponent,
     AppButtonComponent,
+    CourseCardComponent,
   ],
   templateUrl: './courses.component.html',
   styleUrls: ['./courses.component.scss'],
@@ -73,6 +75,7 @@ export class CoursesComponent implements OnInit {
     private userService: UserService,
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private formBuilder: FormBuilder,
   ) {}
 
@@ -89,6 +92,27 @@ export class CoursesComponent implements OnInit {
     this.loadCourses();
     this.loadDepartments();
     this.loadProfessors();
+
+    // Check if we need to open the edit modal from URL parameters
+    this.route.queryParams.subscribe((params) => {
+      if (params['edit'] && this.canManageCourses) {
+        // Find the course in the loaded courses
+        const courseToEdit = this.courses.find((c) => c._id === params['edit']);
+        if (courseToEdit) {
+          this.openEditModal(courseToEdit);
+        } else {
+          // If the course is not yet loaded, fetch it directly
+          this.courseService.getCourse(params['edit']).subscribe({
+            next: (course) => {
+              this.openEditModal(course);
+            },
+            error: (error) => {
+              this.handleApiError(error, 'Error loading course to edit');
+            },
+          });
+        }
+      }
+    });
   }
 
   initCourseForm(): void {
@@ -113,6 +137,7 @@ export class CoursesComponent implements OnInit {
       next: (data: Course[]) => {
         this.courses = data;
         this.loading = false;
+        console.log('Courses:', this.courses);
       },
       error: (error: any) => {
         this.handleApiError(error, 'Error loading courses');
@@ -227,30 +252,47 @@ export class CoursesComponent implements OnInit {
       return;
     }
 
-    this.currentCourse = course;
+    this.loading = true;
 
-    this.courseForm.patchValue({
-      name: course.name,
-      description: course.description,
-      professorId: course.professorId,
+    // Fetch fresh course data from the server to ensure we have all details
+    this.courseService.getCourse(course._id).subscribe({
+      next: (fullCourse) => {
+        this.currentCourse = fullCourse;
+
+        // Fill the form with course data
+        this.courseForm.patchValue({
+          name: fullCourse.name,
+          description: fullCourse.description,
+          professorId: fullCourse.professorId,
+        });
+
+        if (fullCourse.scheduleId) {
+          try {
+            this.courseForm.get('schedule')?.patchValue({
+              days: fullCourse.scheduleId.days,
+              startTime: fullCourse.scheduleId.startTime,
+              endTime: fullCourse.scheduleId.endTime,
+              room: fullCourse.scheduleId.room,
+              startDate: new Date(fullCourse.scheduleId.startDate)
+                .toISOString()
+                .split('T')[0],
+              endDate: new Date(fullCourse.scheduleId.endDate)
+                .toISOString()
+                .split('T')[0],
+            });
+          } catch (error) {
+            console.error('Error formatting dates:', error);
+          }
+        }
+
+        this.loading = false;
+        this.showEditModal = true;
+      },
+      error: (error) => {
+        this.handleApiError(error, 'Error loading course details for editing');
+        this.loading = false;
+      },
     });
-
-    if (course.scheduleId) {
-      this.courseForm.get('schedule')?.patchValue({
-        days: course.scheduleId.days,
-        startTime: course.scheduleId.startTime,
-        endTime: course.scheduleId.endTime,
-        room: course.scheduleId.room,
-        startDate: new Date(course.scheduleId.startDate)
-          .toISOString()
-          .split('T')[0],
-        endDate: new Date(course.scheduleId.endDate)
-          .toISOString()
-          .split('T')[0],
-      });
-    }
-
-    this.showEditModal = true;
   }
 
   confirmDelete(course: Course): void {
@@ -318,10 +360,17 @@ export class CoursesComponent implements OnInit {
 
   updateCourse(): void {
     if (this.courseForm.invalid || !this.currentCourse) {
+      // Mark all fields as touched to trigger validation messages
+      this.courseForm.markAllAsTouched();
+      // Show error message
+      this.error = 'Please fill out all required fields correctly.';
       return;
     }
 
     this.loading = true;
+    this.error = '';
+    this.success = '';
+
     const formValue = this.courseForm.value;
 
     // Prepare dates in the correct format
@@ -349,6 +398,8 @@ export class CoursesComponent implements OnInit {
       updateData.professorId = formValue.professorId;
     }
 
+    console.log('Updating course with data:', updateData);
+
     this.courseService
       .updateCourse(this.currentCourse._id, updateData)
       .subscribe({
@@ -359,8 +410,14 @@ export class CoursesComponent implements OnInit {
           this.closeModals();
         },
         error: (error: any) => {
-          this.handleApiError(error, 'Error updating course');
           this.loading = false;
+
+          // Get the specific error message from the Error object
+          if (error instanceof Error) {
+            this.error = error.message;
+          } else {
+            this.handleApiError(error, 'Error updating course');
+          }
         },
       });
   }
@@ -420,5 +477,12 @@ export class CoursesComponent implements OnInit {
   clearMessages(): void {
     this.error = '';
     this.success = '';
+  }
+
+  /**
+   * Navigate to view a specific course
+   */
+  viewCourse(course: Course): void {
+    this.router.navigate(['/courses', course._id]);
   }
 }

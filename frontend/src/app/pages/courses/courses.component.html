@@ -104,69 +104,14 @@
 
     <!-- Grid de cursos -->
     <div *ngIf="!loading && filteredCourses.length > 0" class="courses-grid">
-      <div class="course-card" *ngFor="let course of filteredCourses">
-        <div class="card-header">
-          <h3 class="course-name">{{ course.name }}</h3>
-          <div class="card-actions">
-            <button
-              (click)="openEditModal(course)"
-              class="action-btn edit-btn"
-              title="Editar curso"
-            >
-              <i class="fas fa-edit"></i>
-            </button>
-            <button
-              (click)="confirmDelete(course)"
-              class="action-btn delete-btn"
-              title="Eliminar curso"
-            >
-              <i class="fas fa-trash-alt"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="card-body">
-          <p class="course-description">{{ course.description }}</p>
-
-          <div class="course-details">
-            <div class="detail-item">
-              <i class="fas fa-university"></i>
-              <span>{{ getDepartmentName(course.departmentId || '') }}</span>
-            </div>
-
-            <div class="detail-item">
-              <i class="fas fa-user-tie"></i>
-              <span>{{ getProfessorName(course.professorId) }}</span>
-            </div>
-
-            <div class="detail-item">
-              <i class="fas fa-clock"></i>
-              <span
-                >{{ formatTime(course.scheduleId.startTime) }} -
-                {{ formatTime(course.scheduleId.endTime) }}</span
-              >
-            </div>
-
-            <div class="detail-item">
-              <i class="fas fa-calendar-alt"></i>
-              <span>{{ formatDays(course.scheduleId.days) }}</span>
-            </div>
-
-            <div class="detail-item">
-              <i class="fas fa-door-open"></i>
-              <span>Aula: {{ course.scheduleId.room }}</span>
-            </div>
-
-            <div class="detail-item">
-              <i class="fas fa-calendar-week"></i>
-              <span
-                >{{ formatDate(course.scheduleId.startDate) }} -
-                {{ formatDate(course.scheduleId.endDate) }}</span
-              >
-            </div>
-          </div>
-        </div>
-      </div>
+      <app-course-card
+        *ngFor="let course of filteredCourses"
+        [course]="course"
+        [showActions]="canManageCourses"
+        (edit)="openEditModal($event)"
+        (delete)="confirmDelete($event)"
+        (view)="viewCourse($event)"
+      ></app-course-card>
     </div>
   </div>
 

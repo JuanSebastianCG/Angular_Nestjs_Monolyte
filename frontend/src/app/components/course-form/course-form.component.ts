@@ -1,4 +1,12 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  Output,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
@@ -21,7 +29,7 @@ import { CourseService } from '../../services/course.service';
   templateUrl: './course-form.component.html',
   styleUrls: ['./course-form.component.scss'],
 })
-export class CourseFormComponent implements OnInit {
+export class CourseFormComponent implements OnInit, OnChanges {
   @Input() course: Course | null = null;
   @Input() loading = false;
   @Input() professors: { value: string; label: string }[] = [];
@@ -42,9 +50,16 @@ export class CourseFormComponent implements OnInit {
   ngOnInit(): void {
     this.initForm();
     this.loadAvailablePrerequisites();
-
     if (this.course) {
       this.populateForm();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['course'] && changes['course'].currentValue) {
+      if (!changes['course'].firstChange) {
+        this.populateForm();
+      }
     }
   }
 
@@ -66,9 +81,7 @@ export class CourseFormComponent implements OnInit {
   }
 
   private loadAvailablePrerequisites(): void {
-    // If we're in edit mode and have a course ID, we need to get all other courses
     if (!this.courses || this.courses.length === 0) {
-      // If courses were not passed as input, load them from the service
       this.courseService.getAllCourses().subscribe({
         next: (courses) => {
           this.setupPrerequisitesOptions(courses);
@@ -83,7 +96,6 @@ export class CourseFormComponent implements OnInit {
   }
 
   private setupPrerequisitesOptions(courses: Course[]): void {
-    // Filter out the current course and format for dropdown
     this.availablePrerequisites = courses
       .filter((c) => !this.course || c._id !== this.course._id)
       .map((c) => ({
@@ -95,55 +107,68 @@ export class CourseFormComponent implements OnInit {
   private populateForm(): void {
     if (!this.course) return;
 
-    // Set basic fields
     this.courseForm.patchValue({
-      name: this.course.name,
-      description: this.course.description,
+      name: this.course.name || '',
+      description: this.course.description || '',
       professorId: this.course.professorId || '',
     });
 
-    // Set schedule fields
     if (this.course.scheduleId) {
-      this.scheduleGroup.patchValue({
-        days: this.course.scheduleId.days,
-        startTime: this.course.scheduleId.startTime,
-        endTime: this.course.scheduleId.endTime,
-        room: this.course.scheduleId.room,
-        startDate: this.course.scheduleId.startDate,
-        endDate: this.course.scheduleId.endDate,
-      });
-    }
+      const schedule = this.course.scheduleId;
 
-    // Set prerequisites if they exist
-    if (this.course.prerequisites && this.course.prerequisites.length > 0) {
-      // Clear the form array first
-      while (this.prerequisites.length) {
-        this.prerequisites.removeAt(0);
+      let startDate = schedule.startDate;
+      let endDate = schedule.endDate;
+
+      if (typeof startDate === 'string' && startDate.includes('T')) {
+        startDate = startDate.split('T')[0];
+      }
+      if (typeof endDate === 'string' && endDate.includes('T')) {
+        endDate = endDate.split('T')[0];
       }
 
-      // Add each prerequisite to the form array
+      this.scheduleGroup.patchValue({
+        days: schedule.days || [],
+        startTime: schedule.startTime || '',
+        endTime: schedule.endTime || '',
+        room: schedule.room || '',
+        startDate: startDate || '',
+        endDate: endDate || '',
+      });
+
+      console.log(
+        'Schedule form values after patch:',
+        this.scheduleGroup.value,
+      );
+    }
+
+    while (this.prerequisites.length) {
+      this.prerequisites.removeAt(0);
+    }
+    if (this.course.prerequisites && this.course.prerequisites.length > 0) {
       this.course.prerequisites.forEach((prereq) => {
-        // If the prerequisite has a prerequisiteCourseId with an _id
-        if (prereq.prerequisiteCourseId && prereq.prerequisiteCourseId._id) {
-          this.prerequisites.push(
-            new FormControl(prereq.prerequisiteCourseId._id),
-          );
-        }
-        // If it has a plain prerequisiteCourseId string
-        else if (prereq.prerequisiteCourseId) {
-          this.prerequisites.push(new FormControl(prereq.prerequisiteCourseId));
-        }
-        // If it's just an ID string
-        else if (typeof prereq === 'string') {
-          this.prerequisites.push(new FormControl(prereq));
+        try {
+          if (typeof prereq === 'string') {
+            this.prerequisites.push(new FormControl(prereq));
+          } else if (prereq.prerequisiteCourseId) {
+            if (typeof prereq.prerequisiteCourseId === 'string') {
+              this.prerequisites.push(
+                new FormControl(prereq.prerequisiteCourseId),
+              );
+            } else if (prereq.prerequisiteCourseId._id) {
+              this.prerequisites.push(
+                new FormControl(prereq.prerequisiteCourseId._id),
+              );
+            }
+          } else if (prereq._id) {
+            this.prerequisites.push(new FormControl(prereq._id));
+          }
+        } catch (error) {
+          console.error('Error processing prerequisite:', error, prereq);
         }
       });
     }
   }
 
-  /**
-   * Form submission
-   */
   onSubmit(): void {
     this.submitted = true;
 
@@ -151,15 +176,22 @@ export class CourseFormComponent implements OnInit {
       return;
     }
 
-    // Get raw form values
     const formValue = this.courseForm.getRawValue();
 
-    // Fix: Ensure professorId is a string, not an array
-    if (formValue.professorId && Array.isArray(formValue.professorId)) {
-      formValue.professorId = formValue.professorId[0];
+    if (formValue.professorId) {
+      if (Array.isArray(formValue.professorId)) {
+        if (formValue.professorId.length > 0) {
+          formValue.professorId = formValue.professorId[0];
+        } else {
+          formValue.professorId = null;
+        }
+      } else if (formValue.professorId === '') {
+        formValue.professorId = null;
+      }
+    } else {
+      formValue.professorId = null;
     }
 
-    // Format prerequisites
     const prerequisitesData = formValue.prerequisites.map(
       (prereqId: string) => {
         return {
@@ -168,7 +200,6 @@ export class CourseFormComponent implements OnInit {
       },
     );
 
-    // Ensure dates are in the correct format
     if (formValue.schedule.startDate) {
       formValue.schedule.startDate = this.formatDate(
         formValue.schedule.startDate,
@@ -183,7 +214,6 @@ export class CourseFormComponent implements OnInit {
       prerequisites: prerequisitesData,
     };
 
-    // Emit form values to parent component
     this.formSubmit.emit(formData);
   }
 
@@ -207,16 +237,12 @@ export class CourseFormComponent implements OnInit {
     return this.scheduleGroup.get(name) as AbstractControl;
   }
 
-  /**
-   * Add a prerequisite to the form
-   */
   addPrerequisite(event: Event): void {
     const selectElement = event.target as HTMLSelectElement;
     const courseId = selectElement.value;
 
     if (!courseId) return;
 
-    // Check if already added or would create circular dependency
     if (
       this.isPrerequisiteSelected(courseId) ||
       this.wouldCreateCircularDependency(courseId)
@@ -226,55 +252,38 @@ export class CourseFormComponent implements OnInit {
 
     this.prerequisites.push(new FormControl(courseId));
 
-    // Reset the select
     selectElement.value = '';
   }
 
-  /**
-   * Remove a prerequisite from the form
-   */
   removePrerequisite(index: number): void {
     this.prerequisites.removeAt(index);
   }
 
-  /**
-   * Check if a course is already selected as prerequisite
-   */
   isPrerequisiteSelected(courseId: string): boolean {
     return this.prerequisites.controls.some(
       (control) => control.value === courseId,
     );
   }
 
-  /**
-   * Check if adding this prerequisite would create a circular dependency
-   * (i.e., if the course we're trying to add as a prerequisite already has this course as its prerequisite)
-   */
   wouldCreateCircularDependency(courseId: string): boolean {
-    // If we're creating a new course, there can't be circular dependencies yet
     if (!this.course || !this.course._id) {
       return false;
     }
 
-    // Find the course we're trying to add
     const potentialPrereq = this.courses.find((c) => c._id === courseId);
 
     if (!potentialPrereq) {
       return false;
     }
 
-    // Check if the potential prerequisite has this course as its prerequisite
     return (
       potentialPrereq.prerequisites?.some((prereq) => {
-        // Handle different ways the prerequisite might be structured
         if (typeof prereq.prerequisiteCourseId === 'string') {
-          // If prerequisiteCourseId is a string, compare directly
           return prereq.prerequisiteCourseId === this.course?._id;
         } else if (
           prereq.prerequisiteCourseId &&
           typeof prereq.prerequisiteCourseId === 'object'
         ) {
-          // If prerequisiteCourseId is an object with _id, compare that
           return prereq.prerequisiteCourseId._id === this.course?._id;
         }
         return false;
@@ -282,9 +291,6 @@ export class CourseFormComponent implements OnInit {
     );
   }
 
-  /**
-   * Get the name of a prerequisite by its ID
-   */
   getPrerequisiteNameById(courseId: string): string {
     const course = this.availablePrerequisites.find(
       (c) => c.value === courseId,
@@ -303,15 +309,11 @@ export class CourseFormComponent implements OnInit {
     ];
   }
 
-  /**
-   * Add a prerequisite using the select element reference
-   */
   addPrerequisiteFromSelect(selectElement: HTMLSelectElement): void {
     const courseId = selectElement.value;
 
     if (!courseId) return;
 
-    // Check if already added or would create circular dependency
     if (
       this.isPrerequisiteSelected(courseId) ||
       this.wouldCreateCircularDependency(courseId)
@@ -321,24 +323,18 @@ export class CourseFormComponent implements OnInit {
 
     this.prerequisites.push(new FormControl(courseId));
 
-    // Reset the select
     selectElement.value = '';
   }
 
-  /**
-   * Format a date for API submission
-   * @param date The date string to format
-   * @returns Formatted date string in YYYY-MM-DD format
-   */
   private formatDate(date: string): string {
     if (!date) return '';
 
     try {
       const d = new Date(date);
-      return d.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+      return d.toISOString().split('T')[0];
     } catch (e) {
       console.error('Error formatting date:', e);
-      return date; // Return original if error
+      return date;
     }
   }
 }

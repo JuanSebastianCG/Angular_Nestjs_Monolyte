@@ -46,14 +46,28 @@ export class CourseCardComponent {
    * @returns The name of the prerequisite course
    */
   getPrerequisiteName(prereq: any): string {
+    // Add debug logging
     // Check if the prerequisite has a course name directly
     if (prereq.name) {
       return prereq.name;
     }
 
     // Check if the prerequisite has a prerequisiteCourseId with a name
-    if (prereq.prerequisiteCourseId && prereq.prerequisiteCourseId.name) {
-      return prereq.prerequisiteCourseId.name;
+    if (prereq.prerequisiteCourseId) {
+      // If prerequisiteCourseId is a full object with name
+      if (
+        typeof prereq.prerequisiteCourseId === 'object' &&
+        prereq.prerequisiteCourseId !== null &&
+        prereq.prerequisiteCourseId.name
+      ) {
+        return prereq.prerequisiteCourseId.name;
+      }
+
+      // If it's just an ID
+      if (typeof prereq.prerequisiteCourseId === 'string') {
+        // Try to find the course name among other courses
+        return 'Course ID: ' + prereq.prerequisiteCourseId;
+      }
     }
 
     // Check if it's just a string ID reference

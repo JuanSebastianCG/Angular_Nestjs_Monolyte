@@ -148,19 +148,15 @@
     <div class="delete-confirmation">
       <p class="warning-message">
         <i class="fas fa-exclamation-triangle"></i>
-        Are you sure you want to delete the course "{{ selectedCourse?.name }}"?
+        Are you sure you want to delete this course?
       </p>
-      <p class="delete-details">
+      <p class="description">
         This action cannot be undone. All data associated with this course will
-        be permanently deleted.
+        be permanently removed.
       </p>
 
       <div class="modal-actions">
-        <button
-          class="btn btn-secondary"
-          (click)="closeDeleteModal()"
-          [disabled]="loading"
-        >
+        <button class="btn btn-outline-secondary" (click)="closeDeleteModal()">
           Cancel
         </button>
         <button
@@ -168,110 +164,39 @@
           (click)="confirmDeleteCourse()"
           [disabled]="loading"
         >
-          Delete
-          <span *ngIf="loading" class="spinner"></span>
+          <span *ngIf="!loading">Delete Course</span>
+          <span *ngIf="loading">Deleting...</span>
         </button>
       </div>
     </div>
   </app-modal>
 
-  <!-- View course details modal -->
-  <app-modal
-    [showModal]="showViewModal"
-    title="{{ selectedCourse?.name }}"
-    (close)="closeViewModal()"
-  >
-    <div class="course-details" *ngIf="selectedCourse">
-      <!-- Action buttons at the top -->
-      <div class="quick-actions" *ngIf="canManageCourses">
-        <button
-          class="action-btn edit-action"
-          (click)="closeViewModal(); openEditModal(selectedCourse)"
-          title="Edit Course"
-        >
-          <i class="fas fa-edit"></i>
-        </button>
-        <button
-          class="action-btn delete-action"
-          (click)="closeViewModal(); openDeleteModal(selectedCourse)"
-          title="Delete Course"
-        >
-          <i class="fas fa-trash-alt"></i>
-        </button>
-      </div>
-
-      <div class="detail-section">
-        <h3 class="section-title">Description</h3>
-        <p class="course-description">{{ selectedCourse.description }}</p>
-      </div>
-
-      <div class="detail-section">
-        <h3 class="section-title">Schedule</h3>
-        <div class="detail-item">
-          <span class="detail-label">Days:</span>
-          <span class="detail-value">{{
-            selectedCourse.scheduleId.days.join(', ')
-          }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Time:</span>
-          <span class="detail-value"
-            >{{ selectedCourse.scheduleId.startTime }} -
-            {{ selectedCourse.scheduleId.endTime }}</span
-          >
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Room:</span>
-          <span class="detail-value">{{ selectedCourse.scheduleId.room }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Period:</span>
-          <span class="detail-value">
-            {{ selectedCourse.scheduleId.startDate | date: 'mediumDate' }} -
-            {{ selectedCourse.scheduleId.endDate | date: 'mediumDate' }}
-          </span>
-        </div>
-      </div>
-
-      <div
-        class="detail-section"
-        *ngIf="
-          selectedCourse.prerequisites &&
-          selectedCourse.prerequisites.length > 0
-        "
+  <!-- No courses message -->
+  <div *ngIf="filteredCourses.length === 0 && !loading" class="no-courses">
+    <div class="no-courses-content">
+      <i class="fas fa-book-open no-courses-icon"></i>
+      <h3 class="no-courses-title">No courses found</h3>
+      <p class="no-courses-message">
+        {{
+          searchQuery
+            ? 'No courses match your search criteria.'
+            : 'There are no courses yet.'
+        }}
+      </p>
+      <button
+        *ngIf="canManageCourses && !searchQuery"
+        class="btn btn-primary"
+        (click)="openCreateModal()"
       >
-        <h3 class="section-title">Prerequisites</h3>
-        <ul class="prerequisites-list">
-          <li
-            *ngFor="let prereq of selectedCourse.prerequisites"
-            class="prerequisite-item"
-          >
-            {{ getPrerequisiteName(prereq) }}
-          </li>
-        </ul>
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn btn-secondary" (click)="closeViewModal()">
-          Close
-        </button>
-
-        <div class="action-buttons" *ngIf="canManageCourses">
-          <button
-            class="btn btn-primary"
-            (click)="closeViewModal(); openEditModal(selectedCourse)"
-          >
-            <i class="fas fa-edit"></i> Edit
-          </button>
-
-          <button
-            class="btn btn-danger"
-            (click)="closeViewModal(); openDeleteModal(selectedCourse)"
-          >
-            <i class="fas fa-trash-alt"></i> Delete
-          </button>
-        </div>
-      </div>
+        <i class="fas fa-plus"></i> Create First Course
+      </button>
+      <button
+        *ngIf="searchQuery"
+        class="btn btn-secondary"
+        (click)="resetFilters()"
+      >
+        <i class="fas fa-times"></i> Clear Filters
+      </button>
     </div>
-  </app-modal>
+  </div>
 </div>

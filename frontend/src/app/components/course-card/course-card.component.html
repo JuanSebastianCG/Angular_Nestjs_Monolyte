@@ -51,8 +51,11 @@
         <span class="badge professor-badge">Assigned</span>
       </div>
 
-      <!-- Card Action Buttons - Only Edit and Delete now -->
+      <!-- Card Action Buttons -->
       <div class="card-actions" *ngIf="showActions">
+        <button class="card-btn view-card-btn" (click)="onView()">
+          <i class="fas fa-eye"></i> View
+        </button>
         <button class="card-btn edit-card-btn" (click)="onEdit()">
           <i class="fas fa-edit"></i> Edit
         </button>

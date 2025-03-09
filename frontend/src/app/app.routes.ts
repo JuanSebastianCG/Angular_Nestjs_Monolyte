@@ -4,6 +4,7 @@ import { LoginPageComponent } from './pages/auth/login/login.component';
 import { RegisterPageComponent } from './pages/auth/register/register.component';
 import { RoleGuard } from './guards/role.guard';
 import { CourseListComponent } from './pages/courses/course-list/course-list.component';
+import { ViewCourseComponent } from './pages/view-course/view-course.component';
 import { authGuard, professorOrAdminGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -48,6 +49,11 @@ export const routes: Routes = [
 
   // Course routes
   { path: 'courses', component: CourseListComponent, canActivate: [authGuard] },
+  {
+    path: 'courses/:id',
+    component: ViewCourseComponent,
+    canActivate: [authGuard],
+  },
   { path: 'departments', component: HomeComponent }, // Placeholder
 
   // Profile route
