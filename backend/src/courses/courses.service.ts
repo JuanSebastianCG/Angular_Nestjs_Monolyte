@@ -5,6 +5,7 @@ import {
   BadRequestException,
   Inject,
   forwardRef,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document } from 'mongoose';
@@ -15,6 +16,7 @@ import { ProfessorsService } from '../professors/professors.service';
 import { SchedulesService } from '../schedules/schedules.service';
 import { Schedule } from '../schedules/schemas/schedule.schema';
 import { PrerequisitesService } from '../prerequisites/prerequisites.service';
+import * as mongoose from 'mongoose';
 
 // Export this interface so it can be used by controllers
 export interface CourseWithPrerequisites extends Document {
@@ -33,6 +35,7 @@ export interface CourseWithPrerequisites extends Document {
 export class CoursesService {
   constructor(
     @InjectModel(Course.name) private courseModel: Model<CourseDocument>,
+    @Inject(forwardRef(() => ProfessorsService))
     private professorsService: ProfessorsService,
     private schedulesService: SchedulesService,
     @Inject(forwardRef(() => PrerequisitesService))
@@ -70,10 +73,21 @@ export class CoursesService {
   }
 
   async findAll(
-    options: { includePrerequisites?: boolean } = {},
+    options: {
+      includePrerequisites?: boolean;
+      professorId?: string;
+    } = {},
   ): Promise<Course[]> {
+    // Build query based on provided filters
+    const query: any = {};
+
+    // Add professorId filter if provided
+    if (options.professorId) {
+      query.professorId = new mongoose.Types.ObjectId(options.professorId);
+    }
+
     const courses = await this.courseModel
-      .find()
+      .find(query)
       .populate('professorId')
       .populate('scheduleId')
       .exec();
@@ -225,12 +239,49 @@ export class CoursesService {
   }
 
   async remove(id: string): Promise<Course> {
-    const course = await this.courseModel.findByIdAndDelete(id).exec();
+    const course = await this.courseModel.findById(id).exec();
 
     if (!course) {
       throw new NotFoundException(`Course with ID ${id} not found`);
     }
 
-    return course;
+    // Delete all prerequisite relationships associated with this course
+    if (this.prerequisitesService) {
+      try {
+        const result = await this.prerequisitesService.deleteAllForCourse(id);
+        if (result.deletedCount > 0) {
+          console.log(
+            `Deleted ${result.deletedCount} prerequisite relationships for course ${id}`,
+          );
+        }
+      } catch (error) {
+        // Log the error but continue with course deletion
+        console.error(
+          `Failed to delete prerequisite relationships: ${error.message}`,
+        );
+      }
+    }
+
+    // Delete the associated schedule if it exists
+    if (course.scheduleId) {
+      try {
+        await this.schedulesService.remove(course.scheduleId.toString());
+      } catch (error) {
+        // Log the error but continue with course deletion
+        console.error(`Failed to delete associated schedule: ${error.message}`);
+      }
+    }
+
+    // Now delete the course
+    const deletedCourse = await this.courseModel.findByIdAndDelete(id).exec();
+
+    // Add null check to satisfy TypeScript
+    if (!deletedCourse) {
+      throw new InternalServerErrorException(
+        `Course with ID ${id} was found but could not be deleted`,
+      );
+    }
+
+    return deletedCourse;
   }
 }

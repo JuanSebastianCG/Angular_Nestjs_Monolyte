@@ -134,6 +134,7 @@ export class NavbarComponent implements OnInit {
   /**
    * Log out user
    * Makes a POST request to /auth/logout
+   * Ensures local state is cleared even if API call fails with 400 error
    */
   logout() {
     // Prevent multiple logout attempts
@@ -142,7 +143,7 @@ export class NavbarComponent implements OnInit {
     this.loggingOut = true;
 
     this.authService.logout().subscribe({
-      next: () => {
+      next: (response) => {
         // Always navigate to login page and reset state
         this.loggingOut = false;
         this.isProfileDropdownOpen = false;
@@ -151,10 +152,20 @@ export class NavbarComponent implements OnInit {
       error: (error) => {
         console.error('Logout error', error);
 
-        // Even if the API call fails, we should clear local state
-        // and redirect the user to the login page
+        // Even if the API call fails with any error (400, 401, etc.)
+        // we should still clear local state and redirect to login page
         this.loggingOut = false;
         this.isProfileDropdownOpen = false;
+
+        // Try to clear auth data again to be extra safe
+        try {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+        } catch (e) {
+          console.error('Error clearing local storage', e);
+        }
+
         this.router.navigate(['/login']);
       },
     });

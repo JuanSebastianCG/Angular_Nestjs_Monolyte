@@ -10,7 +10,7 @@ import { PrerequisitesModule } from '../prerequisites/prerequisites.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Course.name, schema: CourseSchema }]),
-    ProfessorsModule,
+    forwardRef(() => ProfessorsModule),
     SchedulesModule,
     forwardRef(() => PrerequisitesModule),
   ],

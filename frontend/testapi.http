@@ -281,6 +281,17 @@ Content-Type: application/json
   }
 }
 
+{"name":"asdasd",
+"description":"asdasd",
+"schedule":{
+  "days":["Tuesday"],
+  "startTime":"14:22",
+  "endTime":"14:22",
+  "room":"asdasd",
+  "startDate":"20003-01-01",
+  "endDate":"2004-02-22"
+  },"professorId":["67cccf25a4504d8932f00f6b"]}
+
 ### Set course ID from response
 @courseId = {{createCourse.response.body._id}}
 

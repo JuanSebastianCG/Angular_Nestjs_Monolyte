@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, of } from 'rxjs';
+import { BehaviorSubject, Observable, tap, of, catchError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   User,
@@ -133,6 +133,10 @@ export class AuthService {
   /**
    * Logout user
    * POST /auth/logout
+   *
+   * This method always clears the local authentication data (tokens and user info)
+   * regardless of the server response. Even if the server returns a 400 error
+   * (invalid or missing token), the user will still be logged out locally.
    */
   logout(): Observable<any> {
     // Call the logout endpoint if the user is authenticated
@@ -149,14 +153,21 @@ export class AuthService {
         .post<any>(`${this.baseUrl}/auth/logout`, {}, { headers })
         .pipe(
           tap(() => {
+            // Always clear auth data after successful logout
             this.clearAuthData();
+          }),
+          catchError((error) => {
+            // Always clear auth data even if the server request fails
+            console.error('Logout error', error);
+            this.clearAuthData();
+            return of({ success: false, error });
           }),
         );
     }
 
     // Otherwise, just clear the auth data without making an API call
     this.clearAuthData();
-    return of({});
+    return of({ success: true });
   }
 
   /**

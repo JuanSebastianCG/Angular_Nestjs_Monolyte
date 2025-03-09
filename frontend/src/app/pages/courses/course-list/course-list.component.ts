@@ -92,7 +92,7 @@ export class CourseListComponent implements OnInit, OnDestroy {
     this.loading = true;
 
     this.courseService
-      .getAllCourses(true) // Include prerequisites
+      .getAllCourses()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (courses) => {

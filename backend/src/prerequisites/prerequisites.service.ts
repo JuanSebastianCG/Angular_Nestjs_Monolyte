@@ -128,6 +128,32 @@ export class PrerequisitesService {
     return prerequisite;
   }
 
+  /**
+   * Deletes all prerequisite relationships involving a specific course
+   * This includes relationships where the course is either the main course or a prerequisite
+   * @param courseId The ID of the course being deleted
+   * @returns The number of deleted prerequisite relationships
+   */
+  async deleteAllForCourse(
+    courseId: string,
+  ): Promise<{ deletedCount: number }> {
+    // Find and delete prerequisites where the course is either:
+    // 1. The main course (courseId)
+    // 2. A prerequisite for other courses (prerequisiteCourseId)
+    const courseObjectId = new Types.ObjectId(courseId);
+
+    const result = await this.prerequisiteModel
+      .deleteMany({
+        $or: [
+          { courseId: courseObjectId },
+          { prerequisiteCourseId: courseObjectId },
+        ],
+      })
+      .exec();
+
+    return { deletedCount: result.deletedCount };
+  }
+
   // Check if student has completed all prerequisites for a course
   async checkPrerequisitesForEnrollment(
     courseId: string,

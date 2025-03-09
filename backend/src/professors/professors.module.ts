@@ -5,6 +5,7 @@ import { ProfessorsService } from './professors.service';
 import { Professor, ProfessorSchema } from './schemas/professor.schema';
 import { UserModule } from '../user/user.module';
 import { DepartmentsModule } from '../departments/departments.module';
+import { CoursesModule } from '../courses/courses.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { DepartmentsModule } from '../departments/departments.module';
     ]),
     forwardRef(() => UserModule),
     DepartmentsModule,
+    forwardRef(() => CoursesModule),
   ],
   controllers: [ProfessorsController],
   providers: [ProfessorsService],

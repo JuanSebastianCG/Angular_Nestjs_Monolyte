@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { OwnerGuard } from '../../auth/guards/owner.guard';
+import { AuthModule } from '../../auth/auth.module';
 
 @Module({
   imports: [
+    forwardRef(() => AuthModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -17,7 +17,6 @@ import { OwnerGuard } from '../../auth/guards/owner.guard';
       inject: [ConfigService],
     }),
   ],
-  providers: [RolesGuard, OwnerGuard],
-  exports: [RolesGuard, OwnerGuard, JwtModule],
+  exports: [JwtModule],
 })
 export class GuardsModule {}

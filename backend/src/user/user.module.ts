@@ -7,7 +7,6 @@ import { StudentsModule } from '../students/students.module';
 import { ProfessorsModule } from '../professors/professors.module';
 import { DepartmentsModule } from '../departments/departments.module';
 import { AuthModule } from '../auth/auth.module';
-import { GuardsModule } from '../common/guards/guards.module';
 
 @Module({
   imports: [
@@ -16,7 +15,6 @@ import { GuardsModule } from '../common/guards/guards.module';
     forwardRef(() => ProfessorsModule),
     forwardRef(() => AuthModule),
     DepartmentsModule,
-    GuardsModule,
   ],
   controllers: [UserController],
   providers: [UserService],

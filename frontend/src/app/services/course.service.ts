@@ -30,20 +30,20 @@ export class CourseService {
   }
 
   /**
-   * Create a new course with inline schedule
+   * Create a new course
    * Based on the API example:
    * POST /courses
    * {
-   *   "name": "Course Name",
-   *   "description": "Description",
-   *   "professorId": "id",
+   *   "name": "Course name",
+   *   "description": "Course description",
+   *   "professorId": "MongoDB ObjectId",
    *   "schedule": { days, times, etc. }
    * }
    */
   createCourse(
     name: string,
     description: string,
-    professorId: string | null,
+    professorId: string | string[] | null,
     schedule: {
       days: string[];
       startTime: string;
@@ -60,9 +60,13 @@ export class CourseService {
       schedule,
     };
 
-    // Only include professorId if it's provided and not null/empty
+    // Ensure professorId is a string, not an array
     if (professorId) {
-      courseData.professorId = professorId;
+      if (Array.isArray(professorId)) {
+        courseData.professorId = professorId[0];
+      } else {
+        courseData.professorId = professorId;
+      }
     }
 
     return this.http.post<Course>(this.apiUrl, courseData);
@@ -74,10 +78,17 @@ export class CourseService {
    * PATCH /courses/{id}
    * {
    *   "name": "Updated Name",
+   *   "description": "Updated description",
+   *   "professorId": "MongoDB ObjectId",
    *   "schedule": { updated schedule }
    * }
    */
   updateCourse(courseId: string, courseData: any): Observable<Course> {
+    // Handle case where professorId might be an array
+    if (courseData.professorId && Array.isArray(courseData.professorId)) {
+      courseData.professorId = courseData.professorId[0];
+    }
+
     return this.http.patch<Course>(`${this.apiUrl}/${courseId}`, courseData);
   }
 

@@ -1,21 +1,22 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
+  BadRequestException,
   Inject,
   forwardRef,
-  BadRequestException,
-  InternalServerErrorException,
+  Logger,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as mongoose from 'mongoose';
 import { Professor, ProfessorDocument } from './schemas/professor.schema';
 import { CreateProfessorDto } from './dto/create-professor.dto';
 import { UserService } from '../user/user.service';
 import { DepartmentsService } from '../departments/departments.service';
-import * as mongoose from 'mongoose';
 import { HttpException } from '@nestjs/common';
-import { Logger } from '@nestjs/common';
+import { InternalServerErrorException } from '@nestjs/common';
+import { CoursesService } from '../courses/courses.service';
 
 @Injectable()
 export class ProfessorsService {
@@ -27,6 +28,8 @@ export class ProfessorsService {
     @Inject(forwardRef(() => UserService))
     private userService: UserService,
     private departmentsService: DepartmentsService,
+    @Inject(forwardRef(() => CoursesService))
+    private coursesService: CoursesService,
   ) {}
 
   async create(createProfessorDto: CreateProfessorDto): Promise<Professor> {
@@ -171,13 +174,51 @@ export class ProfessorsService {
   }
 
   async remove(id: string): Promise<Professor> {
-    const professor = await this.professorModel.findByIdAndDelete(id).exec();
+    // First check if the professor has any active courses
+    const professor = await this.professorModel.findById(id).exec();
 
     if (!professor) {
       throw new NotFoundException(`Professor with ID ${id} not found`);
     }
 
-    return professor;
+    // Check if the professor has any active courses using the coursesService
+    try {
+      const activeCourses = await this.coursesService.findAll({
+        professorId: id,
+      });
+
+      if (activeCourses && activeCourses.length > 0) {
+        throw new ConflictException(
+          `Cannot delete professor with ID ${id} because they have ${activeCourses.length} active courses assigned. Please reassign or delete the courses first.`,
+        );
+      }
+    } catch (error) {
+      // If the error is not a ConflictException, it's likely a service error
+      if (!(error instanceof ConflictException)) {
+        this.logger.error(
+          `Error checking for active courses: ${error.message}`,
+          error.stack,
+        );
+        throw new InternalServerErrorException(
+          'Error checking for active courses',
+        );
+      }
+      throw error;
+    }
+
+    // No active courses, proceed with deletion
+    const deletedProfessor = await this.professorModel
+      .findByIdAndDelete(id)
+      .exec();
+
+    // Add null check to satisfy TypeScript
+    if (!deletedProfessor) {
+      throw new InternalServerErrorException(
+        `Professor with ID ${id} was found but could not be deleted`,
+      );
+    }
+
+    return deletedProfessor;
   }
 
   async updateByUserId(

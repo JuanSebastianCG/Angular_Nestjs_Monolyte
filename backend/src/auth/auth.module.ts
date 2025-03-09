@@ -18,8 +18,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 @Module({
   imports: [
     forwardRef(() => UserModule),
-    StudentsModule,
-    ProfessorsModule,
+    forwardRef(() => StudentsModule),
+    forwardRef(() => ProfessorsModule),
     PassportModule,
     MongooseModule.forFeature([
       { name: AuthToken.name, schema: AuthTokenSchema },

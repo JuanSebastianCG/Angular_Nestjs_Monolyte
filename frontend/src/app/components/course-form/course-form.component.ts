@@ -141,6 +141,9 @@ export class CourseFormComponent implements OnInit {
     }
   }
 
+  /**
+   * Form submission
+   */
   onSubmit(): void {
     this.submitted = true;
 
@@ -148,8 +151,15 @@ export class CourseFormComponent implements OnInit {
       return;
     }
 
-    const formValue = this.courseForm.value;
+    // Get raw form values
+    const formValue = this.courseForm.getRawValue();
 
+    // Fix: Ensure professorId is a string, not an array
+    if (formValue.professorId && Array.isArray(formValue.professorId)) {
+      formValue.professorId = formValue.professorId[0];
+    }
+
+    // Format prerequisites
     const prerequisitesData = formValue.prerequisites.map(
       (prereqId: string) => {
         return {
@@ -158,11 +168,22 @@ export class CourseFormComponent implements OnInit {
       },
     );
 
+    // Ensure dates are in the correct format
+    if (formValue.schedule.startDate) {
+      formValue.schedule.startDate = this.formatDate(
+        formValue.schedule.startDate,
+      );
+    }
+    if (formValue.schedule.endDate) {
+      formValue.schedule.endDate = this.formatDate(formValue.schedule.endDate);
+    }
+
     const formData = {
       ...formValue,
       prerequisites: prerequisitesData,
     };
 
+    // Emit form values to parent component
     this.formSubmit.emit(formData);
   }
 
@@ -302,5 +323,22 @@ export class CourseFormComponent implements OnInit {
 
     // Reset the select
     selectElement.value = '';
+  }
+
+  /**
+   * Format a date for API submission
+   * @param date The date string to format
+   * @returns Formatted date string in YYYY-MM-DD format
+   */
+  private formatDate(date: string): string {
+    if (!date) return '';
+
+    try {
+      const d = new Date(date);
+      return d.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return date; // Return original if error
+    }
   }
 }
