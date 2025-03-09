@@ -137,7 +137,6 @@ export class CoursesComponent implements OnInit {
       next: (data: Course[]) => {
         this.courses = data;
         this.loading = false;
-        console.log('Courses:', this.courses);
       },
       error: (error: any) => {
         this.handleApiError(error, 'Error loading courses');
@@ -397,8 +396,6 @@ export class CoursesComponent implements OnInit {
     if (formValue.professorId) {
       updateData.professorId = formValue.professorId;
     }
-
-    console.log('Updating course with data:', updateData);
 
     this.courseService
       .updateCourse(this.currentCourse._id, updateData)

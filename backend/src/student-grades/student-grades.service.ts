@@ -61,8 +61,6 @@ export class StudentGradesService {
       courseIdStr = String(evaluation.courseId);
     }
 
-    console.log('Properly extracted courseIdStr:', courseIdStr);
-
     try {
       // Instead of using the service, query the database directly
       const enrollment = await this.enrollmentsService.findOne(

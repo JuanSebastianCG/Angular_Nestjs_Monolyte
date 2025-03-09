@@ -117,8 +117,6 @@ export class CourseService {
       delete courseData.professorId;
     }
 
-    console.log('Updating course with data:', courseData);
-
     return this.http
       .patch<Course>(`${this.apiUrl}/${courseId}`, courseData)
       .pipe(

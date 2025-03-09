@@ -81,8 +81,6 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('Loading course with ID:', courseId);
-
     this.courseService
       .getCourse(courseId)
       .pipe(takeUntil(this.destroy$))
@@ -90,7 +88,6 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
         next: (course) => {
           this.course = course;
           this.loading = false;
-          console.log('Course loaded:', course);
 
           // Get professor information directly from the course object
           if (course.professorId) {
@@ -103,16 +100,10 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
                 professor.username ||
                 professor.email ||
                 'Unknown';
-              console.log(
-                'Using professor data from course object:',
-                professor,
-              );
-              console.log('Professor name set to:', this.professorName);
             }
             // If it's just a string ID, set a default
             else if (typeof course.professorId === 'string') {
               this.professorName = 'Professor ID: ' + course.professorId;
-              console.log('Professor is just an ID, not loading details');
             }
           } else {
             this.professorName = 'Not assigned';
@@ -196,7 +187,6 @@ export class ViewCourseComponent implements OnInit, OnDestroy {
       this.course.professorId &&
       typeof this.course.professorId === 'object'
     ) {
-      console.log('Professor object:', this.course.professorId);
     }
   }
 }

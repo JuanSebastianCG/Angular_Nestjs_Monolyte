@@ -65,8 +65,6 @@ export class CourseCardComponent {
    */
   getPrerequisiteName(prereq: any): string {
     // Add debug logging
-    console.log('Processing prerequisite in card:', prereq);
-
     // If the prerequisite is a full course object with a name
     if (prereq && prereq.name) {
       return prereq.name;

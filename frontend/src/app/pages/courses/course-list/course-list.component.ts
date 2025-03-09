@@ -124,7 +124,6 @@ export class CourseListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (courses) => {
           this.courses = courses;
-          console.log('Courses:', courses);
           this.filteredCourses = [...courses];
           this.loading = false;
         },
@@ -228,13 +227,10 @@ export class CourseListComponent implements OnInit, OnDestroy {
    */
   openEditModal(course: Course): void {
     this.loading = true;
-    console.log('Opening edit modal for course:', course);
 
     // Fetch complete course details to ensure we have all data
     this.courseService.getCourse(course._id).subscribe({
       next: (completeData) => {
-        console.log('Got complete course data for editing:', completeData);
-
         // Make sure we have a clean form before setting the course
         this.selectedCourse = null;
 
