@@ -135,7 +135,7 @@
           inputId="departmentId"
           [control]="courseForm.get('departmentId')!"
           type="select"
-          [options]="departments.map(d => ({ value: d._id, label: d.name }))"
+          [options]="departmentOptions"
         ></app-form-field>
       </div>
 
@@ -151,7 +151,7 @@
         inputId="professorId"
         [control]="courseForm.get('professorId')!"
         type="select"
-        [options]="professors.map(p => ({ value: p._id, label: p.name }))"
+        [options]="professorOptions"
       ></app-form-field>
 
       <!-- Sección de horario -->
@@ -259,7 +259,7 @@
           inputId="edit-departmentId"
           [control]="courseForm.get('departmentId')!"
           type="select"
-          [options]="departments.map(d => ({ value: d._id, label: d.name }))"
+          [options]="departmentOptions"
         ></app-form-field>
       </div>
 
@@ -275,7 +275,7 @@
         inputId="edit-professorId"
         [control]="courseForm.get('professorId')!"
         type="select"
-        [options]="professors.map(p => ({ value: p._id, label: p.name }))"
+        [options]="professorOptions"
       ></app-form-field>
 
       <!-- Sección de horario -->

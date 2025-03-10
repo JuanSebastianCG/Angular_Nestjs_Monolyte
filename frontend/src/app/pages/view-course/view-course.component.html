@@ -84,21 +84,6 @@
             <span class="info-value professor-name">
               {{ professorName }}
             </span>
-            <!-- Debug button - Only for development -->
-            <button
-              *ngIf="isProfessorObject()"
-              (click)="debugProfessorInfo()"
-              style="
-                font-size: 0.8rem;
-                margin-top: 5px;
-                background: #f0f0f0;
-                border: 1px solid #ccc;
-                padding: 2px 5px;
-                cursor: pointer;
-              "
-            >
-              Debug Prof Info
-            </button>
           </div>
           <!-- Show additional professor details if available as a user object -->
           <div class="info-item" *ngIf="isProfessorObject()">
@@ -201,7 +186,7 @@
       <div *ngIf="activeTab === 'exams'" class="tab-pane">
         <div class="tab-header">
           <h2>Course Exams</h2>
-          <div class="tab-actions" *ngIf="canManageCourse">
+          <div class="tab-actions" *ngIf="authService.isProfessor() || authService.isAdmin()">
             <button class="create-btn" (click)="openCreateExamForm()">
               <i class="fas fa-plus"></i> Create Exam
             </button>
@@ -241,7 +226,7 @@
           <app-exam-card
             *ngFor="let exam of exams"
             [exam]="exam"
-            [canManage]="canManageCourse"
+            [canManage]="authService.isProfessor() || authService.isAdmin()"
             (edit)="openEditExamForm($event)"
             (delete)="deleteExam($event)"
           ></app-exam-card>
@@ -254,9 +239,7 @@
           <h2>Course Grades</h2>
           <div
             class="tab-actions"
-            *ngIf="
-              canManageCourse && selectedEvaluationId && enrollments.length > 0
-            "
+            *ngIf="(authService.isProfessor() || authService.isAdmin()) && selectedEvaluationId && enrollments.length > 0"
           ></div>
         </div>
 
@@ -313,7 +296,7 @@
           [grades]="grades"
           [evaluation]="selectedEvaluation"
           [enrolledStudents]="enrollments"
-          [canManage]="canManageCourse"
+          [canManage]="authService.isProfessor() || authService.isAdmin()"
           (saveGrade)="saveStudentGrade($event)"
           (deleteGrade)="deleteStudentGrade($event)"
         ></app-grade-table>

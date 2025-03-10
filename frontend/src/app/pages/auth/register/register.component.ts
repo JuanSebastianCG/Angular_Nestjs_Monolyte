@@ -189,12 +189,18 @@ export class RegisterPageComponent implements OnInit {
   }
 
   registerProfessor(userData: any) {
+    // Asegurar que departmentId sea un string, no un array
+    const departmentId = this.f['departmentId'].value;
+    const departmentIdString = departmentId[0];
+    
     // Agregar información específica de profesor
     userData.professorInfo = {
-      departmentId: this.f['departmentId'].value,
+      departmentId: departmentIdString, // Pasar el valor directo, no como array
       hiringDate:
         this.f['hiringDate'].value || new Date().toISOString().split('T')[0],
     };
+
+    console.log('Registrando profesor con departamento:', departmentId);
 
     this.authService.register(userData).subscribe({
       next: () => {

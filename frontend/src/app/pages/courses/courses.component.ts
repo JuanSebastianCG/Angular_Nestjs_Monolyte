@@ -69,6 +69,10 @@ export class CoursesComponent implements OnInit {
   // Form
   courseForm!: FormGroup;
 
+  // Nuevas propiedades para las opciones de los selectores
+  departmentOptions: Array<{ value: string; label: string }> = [];
+  professorOptions: Array<{ value: string; label: string }> = [];
+
   constructor(
     private courseService: CourseService,
     private departmentService: DepartmentService,
@@ -146,27 +150,33 @@ export class CoursesComponent implements OnInit {
   }
 
   loadDepartments(): void {
-    this.departmentService.getAllDepartments().subscribe({
-      next: (data: Department[]) => {
-        this.departments = data;
+    this.departmentService.getDepartments().subscribe({
+      next: (departments) => {
+        this.departments = departments;
+        // Crear opciones para el selector
+        this.departmentOptions = this.departments.map(d => ({ 
+          value: d._id, 
+          label: d.name 
+        }));
       },
-      error: (error: any) => {
-        this.handleApiError(error, 'Error loading departments');
+      error: (error) => {
+        console.error('Error loading departments', error);
       },
     });
   }
 
   loadProfessors(): void {
-    this.userService.getAllProfessors().subscribe({
-      next: (data: any[]) => {
-        // Extract professor info from user objects
-        this.professors = data.map((professor) => ({
-          _id: professor._id,
-          name: professor.name || professor.userId?.name || 'Unknown',
+    this.userService.getProfessors().subscribe({
+      next: (users) => {
+        this.professors = users;
+        // Crear opciones para el selector
+        this.professorOptions = this.professors.map(p => ({ 
+          value: p._id, 
+          label: p.name 
         }));
       },
-      error: (error: any) => {
-        this.handleApiError(error, 'Error loading professors');
+      error: (error) => {
+        console.error('Error loading professors', error);
       },
     });
   }
