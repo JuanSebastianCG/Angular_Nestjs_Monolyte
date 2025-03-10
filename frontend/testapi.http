@@ -396,7 +396,7 @@ GET {{baseUrl}}/enrollments/student/{{studentId}}
 Authorization: Bearer {{studentToken}}
 
 ### Get enrollments by course
-GET {{baseUrl}}/enrollments/course/{{courseId}}
+GET {{baseUrl}}/enrollments/course/{{course2Id}}
 Authorization: Bearer {{professorToken}}
 
 ### Get specific enrollment

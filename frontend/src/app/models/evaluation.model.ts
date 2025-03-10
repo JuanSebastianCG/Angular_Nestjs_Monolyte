@@ -43,15 +43,28 @@ import { Course, CourseJustId } from './course.model';
   }
 ] */
 
+/**
+ * Enum for different evaluation types
+ */
+export enum EvaluationType {
+  EXAM = 'exam',
+  PROJECT = 'project',
+  QUIZ = 'quiz',
+  ASSIGNMENT = 'assignment',
+}
+
+/**
+ * Interface for evaluation data
+ */
 export interface Evaluation {
   _id?: string;
-  evaluationDate: string;
   name: string;
   description: string;
   maxScore: number;
-  courseId: CourseJustId;
-  createdAt: string;
-  updatedAt: string;
+  evaluationDate: string;
+  courseId: CourseJustId | string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /*     "evaluationId": {
@@ -65,13 +78,37 @@ export interface Evaluation {
       "updatedAt": "2025-03-08T16:21:24.150Z",
       "__v": 0
     }, */
+/**
+ * Interface for evaluation data with just IDs (no populated fields)
+ */
 export interface EvaluationJustId {
   _id: string;
-  evaluationDate: string;
   name: string;
   description: string;
   maxScore: number;
+  evaluationDate: string;
   courseId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Interface for evaluation creation data
+ */
+export interface CreateEvaluationDTO {
+  name: string;
+  description: string;
+  maxScore: number;
+  evaluationDate: string;
+  courseId: string;
+}
+
+/**
+ * Interface for evaluation update data
+ */
+export interface UpdateEvaluationDTO {
+  name?: string;
+  description?: string;
+  maxScore?: number;
+  evaluationDate?: string;
 }

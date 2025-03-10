@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { StudentGradesController } from './student-grades.controller';
 import { StudentGradesService } from './student-grades.service';
@@ -17,7 +17,7 @@ import { UserModule } from '../user/user.module';
       { name: StudentGrade.name, schema: StudentGradeSchema },
     ]),
     StudentsModule,
-    EvaluationsModule,
+    forwardRef(() => EvaluationsModule),
     EnrollmentsModule,
     UserModule,
   ],

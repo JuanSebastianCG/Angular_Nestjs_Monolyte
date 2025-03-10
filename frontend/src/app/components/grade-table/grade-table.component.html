@@ -1,0 +1,129 @@
+<div class="grade-table-container">
+  <div class="table-header">
+    <h3 *ngIf="evaluation">Grades for: {{ evaluation.name }}</h3>
+    <p *ngIf="evaluation" class="max-score">
+      Maximum score: <span>{{ evaluation.maxScore }}</span>
+    </p>
+  </div>
+
+  <div *ngIf="!evaluation" class="no-evaluation-selected">
+    <p>Please select an evaluation to view or manage grades.</p>
+  </div>
+
+  <div *ngIf="evaluation && gradeEntries.length === 0" class="no-students">
+    <p>No students are enrolled in this course.</p>
+  </div>
+
+  <div
+    *ngIf="evaluation && gradeEntries.length > 0"
+    class="grades-table-wrapper"
+  >
+    <table class="grades-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Grade</th>
+          <th>Percentage</th>
+          <th>Comments</th>
+          <th *ngIf="canManage">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let entry of gradeEntries"
+          [ngClass]="{
+            editing: entry.isEditing,
+            passing: entry.grade !== null && isPassingGrade(entry),
+            failing: entry.grade !== null && !isPassingGrade(entry),
+            'no-grade': entry.grade === null,
+          }"
+        >
+          <td class="student-name">{{ entry.studentName }}</td>
+
+          <!-- View mode -->
+          <ng-container *ngIf="!entry.isEditing">
+            <td class="grade">
+              {{ entry.grade !== null ? entry.grade : 'Not graded' }}
+            </td>
+            <td class="percentage">
+              {{
+                entry.grade !== null && evaluation
+                  ? ((entry.grade / evaluation.maxScore) * 100).toFixed(1) + '%'
+                  : 'N/A'
+              }}
+            </td>
+            <td class="comments">
+              {{ entry.comments || 'No comments' }}
+            </td>
+            <td class="actions" *ngIf="canManage">
+              <button
+                class="edit-btn"
+                (click)="editGrade(entry)"
+                title="Edit grade"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button
+                *ngIf="entry.original"
+                class="delete-btn"
+                (click)="removeGrade(entry)"
+                title="Delete grade"
+              >
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </td>
+          </ng-container>
+
+          <!-- Edit mode -->
+          <ng-container *ngIf="entry.isEditing">
+            <td class="grade-input">
+              <input
+                type="number"
+                [min]="0"
+                [max]="evaluation ? evaluation.maxScore : 100"
+                [(ngModel)]="entry.grade"
+                (ngModelChange)="onGradeChange(entry)"
+                placeholder="Enter grade"
+              />
+              <span class="max-score-hint"
+                >(Max: {{ evaluation ? evaluation.maxScore : 0 }})</span
+              >
+            </td>
+            <td class="percentage-calc">
+              {{
+                entry.grade !== null && evaluation
+                  ? ((entry.grade / evaluation.maxScore) * 100).toFixed(1) + '%'
+                  : 'N/A'
+              }}
+            </td>
+            <td class="comments-input">
+              <textarea
+                [(ngModel)]="entry.comments"
+                (ngModelChange)="onGradeChange(entry)"
+                placeholder="Add comments (optional)"
+                rows="2"
+              ></textarea>
+            </td>
+            <td class="edit-actions">
+              <button
+                class="save-btn"
+                [disabled]="entry.grade === null || !entry.hasChanges"
+                (click)="saveGradeChanges(entry)"
+                title="Save grade"
+              >
+                <i class="fas fa-save"></i> Save
+              </button>
+              <button
+                class="cancel-btn"
+                (click)="cancelEdit(entry)"
+                title="Cancel"
+              >
+                <i class="fas fa-times"></i> Cancel
+              </button>
+            </td>
+          </ng-container>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

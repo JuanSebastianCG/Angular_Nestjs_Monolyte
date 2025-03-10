@@ -16,6 +16,7 @@ import { ProfessorsService } from '../professors/professors.service';
 import { SchedulesService } from '../schedules/schedules.service';
 import { Schedule } from '../schedules/schemas/schedule.schema';
 import { PrerequisitesService } from '../prerequisites/prerequisites.service';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 import * as mongoose from 'mongoose';
 
 // Export this interface so it can be used by controllers
@@ -40,6 +41,8 @@ export class CoursesService {
     private schedulesService: SchedulesService,
     @Inject(forwardRef(() => PrerequisitesService))
     private prerequisitesService: PrerequisitesService,
+    @Inject(forwardRef(() => EnrollmentsService))
+    private enrollmentsService: EnrollmentsService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto): Promise<Course> {
@@ -520,6 +523,31 @@ export class CoursesService {
           `Failed to delete prerequisite relationships: ${error.message}`,
         );
       }
+    }
+
+    // Delete all enrollment records for this course
+    try {
+      // Find all enrollments for this course
+      const enrollments = await this.enrollmentsService.findAllByCourse(id);
+      console.log(`Found ${enrollments.length} enrollments for course ${id}`);
+
+      // Delete each enrollment
+      for (const enrollment of enrollments) {
+        const studentId = enrollment.studentId.toString();
+        console.log(
+          `Deleting enrollment for student ${studentId} in course ${id}`,
+        );
+        await this.enrollmentsService.remove(studentId, id);
+      }
+
+      console.log(
+        `Deleted all ${enrollments.length} enrollments for course ${id}`,
+      );
+    } catch (error) {
+      // Log the error but continue with course deletion
+      console.error(
+        `Failed to delete enrollments for course: ${error.message}`,
+      );
     }
 
     // Delete the associated schedule if it exists

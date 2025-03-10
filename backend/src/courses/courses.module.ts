@@ -6,6 +6,7 @@ import { Course, CourseSchema } from './schemas/course.schema';
 import { ProfessorsModule } from '../professors/professors.module';
 import { SchedulesModule } from '../schedules/schedules.module';
 import { PrerequisitesModule } from '../prerequisites/prerequisites.module';
+import { EnrollmentsModule } from '../enrollments/enrollments.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { PrerequisitesModule } from '../prerequisites/prerequisites.module';
     forwardRef(() => ProfessorsModule),
     SchedulesModule,
     forwardRef(() => PrerequisitesModule),
+    forwardRef(() => EnrollmentsModule),
   ],
   controllers: [CoursesController],
   providers: [CoursesService],

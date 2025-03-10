@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -22,6 +24,7 @@ export class StudentGradesService {
     @InjectModel(StudentGrade.name)
     private studentGradeModel: Model<StudentGradeDocument>,
     private studentsService: StudentsService,
+    @Inject(forwardRef(() => EvaluationsService))
     private evaluationsService: EvaluationsService,
     private enrollmentsService: EnrollmentsService,
     private userService: UserService,
@@ -192,5 +195,32 @@ export class StudentGradesService {
     }
 
     return grade;
+  }
+
+  /**
+   * Elimina todas las calificaciones asociadas a una evaluación específica
+   * @param evaluationId ID de la evaluación cuyas calificaciones serán eliminadas
+   * @returns Un objeto con el número de documentos eliminados
+   */
+  async deleteAllForEvaluation(
+    evaluationId: string,
+  ): Promise<{ deletedCount: number }> {
+    try {
+      const result = await this.studentGradeModel
+        .deleteMany({ evaluationId })
+        .exec();
+
+      console.log(
+        `Deleted ${result.deletedCount} student grades for evaluation ${evaluationId}`,
+      );
+
+      return { deletedCount: result.deletedCount };
+    } catch (error) {
+      console.error(
+        `Error deleting grades for evaluation ${evaluationId}:`,
+        error.message,
+      );
+      return { deletedCount: 0 };
+    }
   }
 }

@@ -1,9 +1,14 @@
 import { Injectable } from '@angular/core';
-import { Observable, map, forkJoin } from 'rxjs';
+import { Observable, map, forkJoin, of } from 'rxjs';
 import { ApiService } from './api.service';
-import { StudentGrade } from '../models/student-grade.model';
+import {
+  StudentGrade,
+  isEvaluationObject,
+  isStudentObject,
+  getEvaluationId,
+  getStudentId,
+} from '../models/student-grade.model';
 import { EvaluationService } from './evaluation.service';
-import { Evaluation } from '../models/evaluation.model';
 import { Student } from '../models/student.model';
 
 @Injectable({
@@ -50,7 +55,7 @@ export class StudentGradeService {
   }
 
   /**
-   * Create a new student grade
+   * Create a student grade
    */
   createStudentGrade(
     studentId: string,
@@ -67,7 +72,7 @@ export class StudentGradeService {
   }
 
   /**
-   * Update student grade
+   * Update a student grade
    */
   updateStudentGrade(
     evaluationId: string,
@@ -85,17 +90,16 @@ export class StudentGradeService {
   }
 
   /**
-   * Delete student grade
+   * Delete a student grade
    */
   deleteStudentGrade(evaluationId: string, studentId: string): Observable<any> {
-    return this.apiService.delete<any>(
+    return this.apiService.delete(
       `student-grades/${evaluationId}/${studentId}`,
     );
   }
 
   /**
-   * Get student's total course grade
-   * Calculates the weighted average of all evaluations in a course for a student
+   * Get student's grade for a course
    */
   getStudentCourseGrade(
     studentId: string,
@@ -111,13 +115,16 @@ export class StudentGradeService {
       studentGrades: this.getGradesByStudent(studentId),
     }).pipe(
       map(({ evaluations, studentGrades }) => {
-        // Filter evaluations for this course
+        // Get IDs of evaluations for this course
         const courseEvaluationIds = evaluations.map((e) => e._id);
 
         // Filter grades for these evaluations
-        const relevantGrades = studentGrades.filter((grade) =>
-          courseEvaluationIds.includes(grade.evaluationId._id),
-        );
+        const relevantGrades = studentGrades.filter((grade) => {
+          const evalId = isEvaluationObject(grade.evaluationId)
+            ? grade.evaluationId._id
+            : grade.evaluationId;
+          return courseEvaluationIds.includes(evalId);
+        });
 
         const totalEvaluations = evaluations.length;
         const completedEvaluations = relevantGrades.length;
@@ -127,34 +134,39 @@ export class StudentGradeService {
             totalGrade: 0,
             completedEvaluations: 0,
             totalEvaluations,
-            passStatus: 'incomplete' as const,
+            passStatus: 'incomplete',
           };
         }
 
-        // Calculate total max score from all evaluations
-        const totalMaxScore = evaluations.reduce(
-          (sum, evaluation) => sum + evaluation.maxScore,
-          0,
-        );
-
-        // Calculate student's total score
+        // Calculate total score based on completed evaluations
         const totalStudentScore = relevantGrades.reduce((sum, grade) => {
-          const evaluation = evaluations.find(
-            (e) => e._id === grade.evaluationId._id,
-          );
+          const evalId = isEvaluationObject(grade.evaluationId)
+            ? grade.evaluationId._id
+            : grade.evaluationId;
+
+          const evaluation = evaluations.find((e) => e._id === evalId);
           return sum + grade.grade;
         }, 0);
 
-        // Calculate percentage
-        const totalGrade = (totalStudentScore / totalMaxScore) * 100;
+        // Calculate average
+        const totalPossibleScore = relevantGrades.reduce((sum, grade) => {
+          const evalId = isEvaluationObject(grade.evaluationId)
+            ? grade.evaluationId._id
+            : grade.evaluationId;
 
-        // Determine pass/fail status (usually 60% is passing)
+          const evaluation = evaluations.find((e) => e._id === evalId);
+          return sum + (evaluation?.maxScore || 100); // Default to 100 if not found
+        }, 0);
+
+        const totalGrade = (totalStudentScore / totalPossibleScore) * 100;
+
+        // Determine if passing (>= 60%)
         const passStatus =
-          totalGrade >= 60
-            ? ('passing' as const)
-            : completedEvaluations < totalEvaluations
-              ? ('incomplete' as const)
-              : ('failing' as const);
+          completedEvaluations < totalEvaluations
+            ? 'incomplete'
+            : totalGrade >= 60
+              ? 'passing'
+              : 'failing';
 
         return {
           totalGrade,
@@ -167,14 +179,14 @@ export class StudentGradeService {
   }
 
   /**
-   * Get all grades for all students in a specific course evaluation
+   * Get all grades for a specific evaluation with student info
    */
   getAllGradesForCourseEvaluation(
     courseId: string,
     evaluationId: string,
   ): Observable<
     Array<{
-      student: Student;
+      student: any; // Changed from Student to any to avoid type conflicts
       grade: number;
       maxScore: number;
       percentage: number;
@@ -186,43 +198,73 @@ export class StudentGradeService {
       grades: this.getGradesByEvaluation(evaluationId),
     }).pipe(
       map(({ evaluation, grades }) => {
-        return grades.map((grade) => ({
-          student: grade.studentId,
-          grade: grade.grade,
-          maxScore: evaluation.maxScore,
-          percentage: (grade.grade / evaluation.maxScore) * 100,
-          comments: grade.comments,
-        }));
+        if (!evaluation) return [];
+
+        return grades.map((grade) => {
+          const student = isStudentObject(grade.studentId)
+            ? grade.studentId
+            : grade.studentId;
+
+          const maxScore = evaluation.maxScore;
+          const percentage = (grade.grade / maxScore) * 100;
+
+          return {
+            student,
+            grade: grade.grade,
+            maxScore,
+            percentage,
+            comments: grade.comments,
+          };
+        });
       }),
     );
   }
 
   /**
    * Get grade distribution for an evaluation
-   * Returns counts of grades in different ranges
    */
   getGradeDistribution(evaluationId: string): Observable<{
     ranges: Array<{ min: number; max: number; count: number }>;
     totalStudents: number;
     averageGrade: number;
   }> {
-    return this.getGradesByEvaluation(evaluationId).pipe(
-      map((grades) => {
-        // Define grade ranges (e.g., 0-59, 60-69, 70-79, 80-89, 90-100)
+    return forkJoin({
+      evaluation: this.evaluationService.getEvaluationById(evaluationId),
+      grades: this.getGradesByEvaluation(evaluationId),
+    }).pipe(
+      map(({ evaluation, grades }) => {
+        if (!evaluation || !grades.length) {
+          return {
+            ranges: [],
+            totalStudents: 0,
+            averageGrade: 0,
+          };
+        }
+
+        // Define grade ranges (0-9, 10-19, ..., 90-100)
         const ranges = [
-          { min: 0, max: 59, count: 0 },
+          { min: 0, max: 9, count: 0 },
+          { min: 10, max: 19, count: 0 },
+          { min: 20, max: 29, count: 0 },
+          { min: 30, max: 39, count: 0 },
+          { min: 40, max: 49, count: 0 },
+          { min: 50, max: 59, count: 0 },
           { min: 60, max: 69, count: 0 },
           { min: 70, max: 79, count: 0 },
           { min: 80, max: 89, count: 0 },
           { min: 90, max: 100, count: 0 },
         ];
 
-        const totalStudents = grades.length;
         let totalGrade = 0;
 
         // Count grades in each range
         grades.forEach((grade) => {
-          const percentage = (grade.grade / grade.evaluationId.maxScore) * 100;
+          // Handle union type - get maxScore safely
+          const maxScore = isEvaluationObject(grade.evaluationId)
+            ? grade.evaluationId.maxScore
+            : 100; // Default to 100 if string
+
+          const percentage = (grade.grade / maxScore) * 100;
           totalGrade += percentage;
 
           for (const range of ranges) {
@@ -233,7 +275,8 @@ export class StudentGradeService {
           }
         });
 
-        const averageGrade = totalStudents > 0 ? totalGrade / totalStudents : 0;
+        const totalStudents = grades.length;
+        const averageGrade = totalGrade / totalStudents;
 
         return {
           ranges,
@@ -294,31 +337,15 @@ export class StudentGradeService {
     );
   }
 
-  /**
-   * Import grades from CSV
-   * This is a placeholder method - in a real app, you'd implement file upload
-   */
-  importGradesFromCSV(
-    evaluationId: string,
-    fileData: any,
-  ): Observable<{
-    success: boolean;
-    imported: number;
-    errors: any[];
-  }> {
-    return this.apiService.post<{
-      success: boolean;
-      imported: number;
-      errors: any[];
-    }>(`student-grades/import/${evaluationId}`, fileData);
-  }
-
-  /**
-   * Export grades to CSV format
-   */
-  exportGradesToCSV(evaluationId: string): Observable<{ csvContent: string }> {
-    return this.apiService.get<{ csvContent: string }>(
-      `student-grades/export/${evaluationId}`,
+  /* this will return a json of the exams with the califications of that course */
+  getAllGradesForAllEvaluationsInCourse(courseId: string): Observable<any> {
+    return this.evaluationService.getEvaluationsByCourse(courseId).pipe(
+      map((evaluations) => {
+        return evaluations.map((evaluation) => {
+          if (!evaluation._id) return of([]);
+          return this.getGradesByEvaluation(evaluation._id);
+        });
+      }),
     );
   }
 }

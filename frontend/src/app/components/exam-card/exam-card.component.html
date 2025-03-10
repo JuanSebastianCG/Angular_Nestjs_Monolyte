@@ -1,0 +1,26 @@
+<div class="exam-card">
+  <div class="exam-info">
+    <h3 class="exam-name">{{ exam.name }}</h3>
+    <p class="exam-description">
+      {{ exam.description || 'No description provided' }}
+    </p>
+  </div>
+  <div class="exam-details">
+    <div class="exam-score">
+      <span class="exam-label">Max Score</span>
+      <span class="exam-value">{{ exam.maxScore }}</span>
+    </div>
+    <div class="exam-date">
+      <span class="exam-label">Date</span>
+      <span class="exam-value">{{ formattedDate }}</span>
+    </div>
+    <div class="exam-actions" *ngIf="canManage">
+      <button class="edit-btn" (click)="editExam()" title="Edit exam">
+        <i class="fas fa-edit"></i> Edit
+      </button>
+      <button class="delete-btn" (click)="deleteExam()" title="Delete exam">
+        <i class="fas fa-trash"></i> Delete
+      </button>
+    </div>
+  </div>
+</div>

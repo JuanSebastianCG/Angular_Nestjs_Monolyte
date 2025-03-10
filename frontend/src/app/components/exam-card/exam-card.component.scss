@@ -1,0 +1,122 @@
+.exam-card {
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .exam-info {
+    margin-bottom: 1rem;
+    
+    .exam-name {
+      font-size: 1.2rem;
+      color: #333;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .exam-description {
+      color: #666;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+  }
+  
+  .exam-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .exam-score, .exam-date {
+      display: flex;
+      flex-direction: column;
+      
+      .exam-label {
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+      }
+      
+      .exam-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+      }
+    }
+    
+    .exam-score .exam-value {
+      color: #4361ee;
+    }
+    
+    .exam-actions {
+      display: flex;
+      gap: 0.5rem;
+      
+      button {
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        font-weight: 500;
+        
+        i {
+          margin-right: 0.4rem;
+          font-size: 0.9rem;
+        }
+      }
+      
+      .edit-btn {
+        background-color: #f0f7ff;
+        color: #4361ee;
+        
+        &:hover {
+          background-color: #4361ee;
+          color: white;
+          transform: translateY(-2px);
+        }
+      }
+      
+      .delete-btn {
+        background-color: #fff0f0;
+        color: #f44336;
+        
+        &:hover {
+          background-color: #f44336;
+          color: white;
+          transform: translateY(-2px);
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .exam-card {
+    .exam-details {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+      
+      .exam-score, .exam-date {
+        width: 100%;
+      }
+      
+      .exam-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+  }
+} 

@@ -147,55 +147,224 @@
     <div class="tab-content">
       <!-- Students Tab -->
       <div *ngIf="activeTab === 'students'" class="tab-pane">
-        <h2>Estudiantes inscritos</h2>
-        <p *ngIf="true" class="empty-state">
-          No hay estudiantes inscritos en este curso.
+        <div class="tab-header">
+          <h2>Students Enrolled</h2>
+          <div class="tab-actions" *ngIf="canManageCourse">
+            <!-- In a real app, you'd have an "Add Student" button here -->
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="loadingEnrollments" class="loading-container">
+          <div class="spinner"></div>
+          <p>Loading enrolled students...</p>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="enrollmentError" class="error-container">
+          <p class="error-message">{{ enrollmentError }}</p>
+          <button
+            class="retry-btn"
+            (click)="course ? loadEnrollments(course._id) : null"
+          >
+            Try Again
+          </button>
+        </div>
+
+        <!-- Empty state -->
+        <p
+          *ngIf="
+            !loadingEnrollments && !enrollmentError && enrollments.length === 0
+          "
+          class="empty-state"
+        >
+          No students enrolled in this course.
         </p>
-        <!-- Student list would go here -->
+
+        <!-- Students list -->
+        <div
+          *ngIf="
+            !loadingEnrollments && !enrollmentError && enrollments.length > 0
+          "
+          class="students-list"
+        >
+          <app-student-card
+            *ngFor="let enrollment of enrollments"
+            [enrollment]="enrollment"
+            [canManage]="canManageCourse"
+            (remove)="removeEnrollment($event)"
+          ></app-student-card>
+        </div>
       </div>
 
       <!-- Exams Tab -->
       <div *ngIf="activeTab === 'exams'" class="tab-pane">
-        <div class="tab-actions" *ngIf="canManageCourse">
-          <button class="create-btn">
-            <i class="fas fa-plus"></i> Crear Examen
+        <div class="tab-header">
+          <h2>Course Exams</h2>
+          <div class="tab-actions" *ngIf="canManageCourse">
+            <button class="create-btn" (click)="openCreateExamForm()">
+              <i class="fas fa-plus"></i> Create Exam
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="loadingExams" class="loading-container">
+          <div class="spinner"></div>
+          <p>Loading exams...</p>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="examError" class="error-container">
+          <p class="error-message">{{ examError }}</p>
+          <button
+            class="retry-btn"
+            (click)="course ? loadExams(course._id) : null"
+          >
+            Try Again
           </button>
         </div>
 
-        <div class="exams-list">
-          <div *ngFor="let exam of exams" class="exam-card">
-            <div class="exam-info">
-              <h3 class="exam-name">{{ exam.name }}</h3>
-              <p class="exam-description">{{ exam.description }}</p>
-            </div>
-            <div class="exam-details">
-              <div class="exam-grade">
-                <span class="exam-label">Calificacion Maxima</span>
-                <span class="exam-value">{{ exam.maxGrade }}</span>
-              </div>
-              <div class="exam-date">
-                <span class="exam-date-value">{{ exam.date }}</span>
-              </div>
-              <button *ngIf="canManageCourse" class="delete-btn">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </div>
+        <!-- Empty state -->
+        <p
+          *ngIf="!loadingExams && !examError && exams.length === 0"
+          class="empty-state"
+        >
+          No exams have been created for this course yet.
+        </p>
 
-          <p *ngIf="exams.length === 0" class="empty-state">
-            No hay exámenes programados para este curso.
-          </p>
+        <!-- Exams list -->
+        <div
+          *ngIf="!loadingExams && !examError && exams.length > 0"
+          class="exams-list"
+        >
+          <app-exam-card
+            *ngFor="let exam of exams"
+            [exam]="exam"
+            [canManage]="canManageCourse"
+            (edit)="openEditExamForm($event)"
+            (delete)="deleteExam($event)"
+          ></app-exam-card>
         </div>
       </div>
 
       <!-- Grades Tab -->
       <div *ngIf="activeTab === 'grades'" class="tab-pane">
-        <h2>Calificaciones</h2>
-        <p *ngIf="true" class="empty-state">
-          No hay calificaciones disponibles.
-        </p>
-        <!-- Grades would go here -->
+        <div class="tab-header">
+          <h2>Course Grades</h2>
+          <div
+            class="tab-actions"
+            *ngIf="
+              canManageCourse && selectedEvaluationId && enrollments.length > 0
+            "
+          ></div>
+        </div>
+
+        <!-- Evaluation selector -->
+        <div class="evaluation-selector">
+          <label for="evaluation-select">Select Evaluation:</label>
+          <select
+            id="evaluation-select"
+            [(ngModel)]="selectedEvaluationId"
+            (change)="onEvaluationSelect(selectedEvaluationId!)"
+          >
+            <option [value]="null">Select an evaluation</option>
+            <option *ngFor="let exam of exams" [value]="exam._id">
+              {{ exam.name }} ({{ exam.evaluationDate | date: 'mediumDate' }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Loading state for exams -->
+        <div *ngIf="loadingExams" class="loading-container">
+          <div class="spinner"></div>
+          <p>Loading evaluations...</p>
+        </div>
+
+        <!-- Error state for exams -->
+        <div *ngIf="examError" class="error-container">
+          <p class="error-message">{{ examError }}</p>
+          <button
+            class="retry-btn"
+            (click)="course ? loadExams(course._id) : null"
+          >
+            Try Again
+          </button>
+        </div>
+
+        <!-- No exams state -->
+        <div
+          *ngIf="!loadingExams && !examError && exams.length === 0"
+          class="no-exams"
+        >
+          <p>No evaluations have been created for this course yet.</p>
+          <button
+            *ngIf="canManageCourse"
+            class="create-btn"
+            (click)="openCreateExamForm()"
+          >
+            <i class="fas fa-plus"></i> Create an Evaluation
+          </button>
+        </div>
+
+        <!-- Grades table -->
+        <app-grade-table
+          *ngIf="exams.length > 0 && selectedEvaluationId"
+          [grades]="grades"
+          [evaluation]="selectedEvaluation"
+          [enrolledStudents]="enrollments"
+          [canManage]="canManageCourse"
+          (saveGrade)="saveStudentGrade($event)"
+          (deleteGrade)="deleteStudentGrade($event)"
+        ></app-grade-table>
+
+        <!-- Loading state for grades -->
+        <div *ngIf="loadingGrades" class="loading-container">
+          <div class="spinner"></div>
+          <p>Loading grades...</p>
+        </div>
+
+        <!-- Error state for grades -->
+        <div *ngIf="gradesError" class="error-container">
+          <p class="error-message">{{ gradesError }}</p>
+          <button
+            class="retry-btn"
+            (click)="
+              selectedEvaluationId
+                ? loadGradesForEvaluation(selectedEvaluationId)
+                : null
+            "
+          >
+            Try Again
+          </button>
+        </div>
+
+        <!-- Select an evaluation prompt -->
+        <div
+          *ngIf="
+            !loadingExams &&
+            !examError &&
+            exams.length > 0 &&
+            !selectedEvaluationId &&
+            !loadingGrades
+          "
+          class="select-evaluation-prompt"
+        >
+          <p>
+            Please select an evaluation from the dropdown to view or manage
+            grades.
+          </p>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Exam Form Modal -->
+  <app-exam-form
+    [isVisible]="isExamFormVisible"
+    [exam]="currentExam"
+    [courseId]="course?._id || ''"
+    (save)="saveExam($event)"
+    (cancel)="closeExamForm()"
+  ></app-exam-form>
 </div>

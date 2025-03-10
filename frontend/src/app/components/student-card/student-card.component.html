@@ -1,0 +1,28 @@
+<div class="student-card">
+  <div class="student-info">
+    <h3 class="student-name">{{ studentName }}</h3>
+    <div class="enrollment-details">
+      <span class="enrollment-date">
+        <i class="fas fa-calendar-alt"></i> Enrolled: {{ enrollmentDate }}
+      </span>
+      <span
+        class="enrollment-status"
+        [ngClass]="{
+          'status-active': status === 'START',
+          'status-completed': status === 'FINISH',
+        }"
+      >
+        <i class="fas fa-circle"></i> {{ status }}
+      </span>
+    </div>
+  </div>
+  <div class="student-actions" *ngIf="canManage">
+    <button
+      class="remove-btn"
+      (click)="removeStudent()"
+      title="Remove student from course"
+    >
+      <i class="fas fa-user-minus"></i> Remove Enrollment
+    </button>
+  </div>
+</div>

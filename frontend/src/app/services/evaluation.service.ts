@@ -2,7 +2,10 @@ import { Injectable } from '@angular/core';
 import { Observable, map, forkJoin } from 'rxjs';
 import { ApiService } from './api.service';
 import { Evaluation, EvaluationJustId } from '../models/evaluation.model';
-import { StudentGrade } from '../models/student-grade.model';
+import {
+  StudentGrade,
+  isEvaluationObject,
+} from '../models/student-grade.model';
 
 @Injectable({
   providedIn: 'root',
@@ -82,7 +85,7 @@ export class EvaluationService {
    */
   getUpcomingEvaluationsForCourse(courseId: string): Observable<Evaluation[]> {
     return this.apiService.get<Evaluation[]>(
-      `evaluations/course/${courseId}/upcoming`,
+      `evaluations/upcoming/course/${courseId}`,
     );
   }
 
@@ -107,48 +110,53 @@ export class EvaluationService {
     totalCount: number;
     passRate: number;
   }> {
-    return this.getGradesByEvaluation(evaluationId).pipe(
-      map((grades) => {
-        // If no grades, return default stats
-        if (!grades || grades.length === 0) {
+    return this.apiService
+      .get<StudentGrade[]>(`student-grades/evaluation/${evaluationId}`)
+      .pipe(
+        map((grades) => {
+          if (!grades || grades.length === 0) {
+            return {
+              averageGrade: 0,
+              maxGrade: 0,
+              minGrade: 0,
+              passCount: 0,
+              failCount: 0,
+              totalCount: 0,
+              passRate: 0,
+            };
+          }
+
+          // Calculate statistics
+          const totalCount = grades.length;
+          const sum = grades.reduce((acc, grade) => acc + grade.grade, 0);
+          const averageGrade = sum / totalCount;
+          const maxGrade = Math.max(...grades.map((grade) => grade.grade));
+          const minGrade = Math.min(...grades.map((grade) => grade.grade));
+
+          // Assuming passing grade is 60% of max score
+          const evaluation = grades[0].evaluationId;
+          // Safely access maxScore using type guard
+          const maxScore = isEvaluationObject(evaluation)
+            ? evaluation.maxScore
+            : 100;
+          const passingThreshold = maxScore * 0.6;
+          const passCount = grades.filter(
+            (grade) => grade.grade >= passingThreshold,
+          ).length;
+          const failCount = totalCount - passCount;
+          const passRate = (passCount / totalCount) * 100;
+
           return {
-            averageGrade: 0,
-            maxGrade: 0,
-            minGrade: 0,
-            passCount: 0,
-            failCount: 0,
-            totalCount: 0,
-            passRate: 0,
+            averageGrade,
+            maxGrade,
+            minGrade,
+            passCount,
+            failCount,
+            totalCount,
+            passRate,
           };
-        }
-
-        // Calculate statistics
-        const totalCount = grades.length;
-        const sum = grades.reduce((acc, grade) => acc + grade.grade, 0);
-        const averageGrade = sum / totalCount;
-        const maxGrade = Math.max(...grades.map((grade) => grade.grade));
-        const minGrade = Math.min(...grades.map((grade) => grade.grade));
-
-        // Assuming passing grade is 60% of max score
-        const evaluation = grades[0].evaluationId;
-        const passingThreshold = evaluation.maxScore * 0.6;
-        const passCount = grades.filter(
-          (grade) => grade.grade >= passingThreshold,
-        ).length;
-        const failCount = totalCount - passCount;
-        const passRate = (passCount / totalCount) * 100;
-
-        return {
-          averageGrade,
-          maxGrade,
-          minGrade,
-          passCount,
-          failCount,
-          totalCount,
-          passRate,
-        };
-      }),
-    );
+        }),
+      );
   }
 
   /**
@@ -166,9 +174,14 @@ export class EvaluationService {
     }).pipe(
       map(({ evaluations, grades }) => {
         return evaluations.map((evaluation) => {
-          const gradeInfo = grades.find(
-            (g) => g.evaluationId._id === evaluation._id,
-          );
+          // Safely find matching grade with type guard
+          const gradeInfo = grades.find((g) => {
+            if (isEvaluationObject(g.evaluationId)) {
+              return g.evaluationId._id === evaluation._id;
+            }
+            return g.evaluationId === evaluation._id;
+          });
+
           return {
             ...evaluation,
             grade: gradeInfo ? gradeInfo.grade : undefined,
@@ -201,6 +214,15 @@ export class EvaluationService {
           .map((evaluation) =>
             this.getGradeStatisticsForEvaluation(evaluation._id as string),
           );
+
+        // If no evaluations, return empty summary
+        if (evaluationCount === 0) {
+          return {
+            evaluationCount: 0,
+            averageScore: 0,
+            nextEvaluation: undefined,
+          };
+        }
 
         // For simplicity in this example, we're returning basic info
         // In a real implementation, you would use forkJoin again to get all grade statistics

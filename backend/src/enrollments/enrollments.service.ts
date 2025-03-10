@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -23,8 +25,11 @@ export class EnrollmentsService {
     @InjectModel(Enrollment.name)
     private enrollmentModel: Model<EnrollmentDocument>,
     private studentsService: StudentsService,
+    @Inject(forwardRef(() => CoursesService))
     private coursesService: CoursesService,
+    @Inject(forwardRef(() => UserService))
     private userService: UserService,
+    @Inject(forwardRef(() => PrerequisitesService))
     private prerequisitesService: PrerequisitesService,
   ) {}
 
