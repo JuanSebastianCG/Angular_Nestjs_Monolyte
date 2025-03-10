@@ -52,7 +52,13 @@ export const routes: Routes = [
     path: 'admin',
     children: [
       { path: 'dashboard', component: HomeComponent },
-      { path: 'users', component: HomeComponent },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./pages/admin/users/admin-users.component').then(
+            (m) => m.AdminUsersComponent,
+          ),
+      },
     ],
     canActivate: [authGuard, RoleGuard],
     data: { expectedRole: 'admin' },
@@ -68,7 +74,14 @@ export const routes: Routes = [
   { path: 'departments', component: HomeComponent }, // Placeholder
 
   // Profile route
-  { path: 'profile', component: HomeComponent, canActivate: [authGuard] }, // Placeholder
+  {
+    path: 'profile',
+    loadComponent: () =>
+      import('./pages/profile/profile.component').then(
+        (m) => m.ProfileComponent,
+      ),
+    canActivate: [authGuard],
+  },
 
   // Fallback route
   { path: '**', redirectTo: '/home' },

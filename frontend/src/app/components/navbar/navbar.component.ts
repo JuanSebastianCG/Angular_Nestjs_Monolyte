@@ -72,7 +72,10 @@ export class NavbarComponent implements OnInit {
    * Navigate to profile page
    */
   navigateToProfile() {
+    console.log('Navigating to profile page...');
+    this.isProfileDropdownOpen = false; // Close the dropdown
     this.navigateTo('/profile');
+    console.log('Navigation completed');
   }
 
   /**
@@ -175,85 +178,59 @@ export class NavbarComponent implements OnInit {
    * Get navigation links based on user role
    */
   get navLinks(): { label: string; path: string; icon: string }[] {
-    const commonLinks = [
-      {
+    const links = [];
+
+    // Always visible for authenticated users
+    if (this.isAuthenticated) {
+      links.push({
         label: 'Home',
-        path: '/',
+        path: '/home',
         icon: 'fa-home',
-      },
-      {
+      });
+
+      // Add profile link for all authenticated users
+      links.push({
+        label: 'Profile',
+        path: '/profile',
+        icon: 'fa-user',
+      });
+
+      // Add courses link for all users
+      links.push({
         label: 'Courses',
         path: '/courses',
         icon: 'fa-book',
-      },
-    ];
+      });
 
-    // Only show these links when authenticated
-    if (!this.isAuthenticated) {
-      return commonLinks;
-    }
+      // Student-specific links
+      if (this.user?.role === 'student') {
+        links.push({
+          label: 'Enrollment',
+          path: '/enrollment',
+          icon: 'fa-pen-to-square',
+        });
+      }
 
-    const user = this.authService.getCurrentUser();
-    if (!user) return commonLinks;
-
-    // Admin links
-    if (this.authService.isAdmin()) {
-      return [
-        ...commonLinks,
-        {
-          label: 'Departments',
-          path: '/departments',
-          icon: 'fa-building',
-        },
-        {
-          label: 'Users',
-          path: '/users',
-          icon: 'fa-users',
-        },
-        {
-          label: 'Reports',
-          path: '/reports',
-          icon: 'fa-chart-bar',
-        },
-      ];
-    }
-
-    // Professor links
-    if (this.authService.isProfessor()) {
-      return [
-        ...commonLinks,
-        {
+      // Professor-specific links
+      if (this.user?.role === 'professor') {
+        links.push({
           label: 'My Courses',
           path: '/professor/courses',
           icon: 'fa-chalkboard-teacher',
-        },
-        {
-          label: 'Evaluations',
-          path: '/evaluations',
-          icon: 'fa-tasks',
-        },
-      ];
+        });
+      }
+
+      // Admin-specific links
+      if (this.user?.role === 'admin') {
+        links.push({
+          label: 'Users',
+          path: '/admin/users',
+          icon: 'fa-users',
+        });
+      }
     }
 
-    // Student links
-    if (this.authService.isStudent()) {
-      return [
-        ...commonLinks,
-        {
-          label: 'My Enrollments',
-          path: '/enrollment',
-          icon: 'fa-user-graduate',
-        },
-        {
-          label: 'My Grades',
-          path: '/grades',
-          icon: 'fa-graduation-cap',
-        },
-      ];
-    }
-
-    // Default links if role not recognized
-    return commonLinks;
+    return links;
   }
 
   // Get profile display name (or username as fallback)

@@ -1,0 +1,72 @@
+.admin-container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-title {
+  color: #333;
+  font-size: 1.5rem;
+}
+
+/* Table styling */
+.table {
+  vertical-align: middle;
+}
+
+.table th {
+  font-weight: 600;
+  color: #495057;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.03);
+}
+
+/* Modal styling */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+}
+
+.modal-dialog {
+  z-index: 1050;
+}
+
+.user-details {
+  background-color: #f8f9fa;
+  border-left: 3px solid #dc3545;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 1rem;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  /* Stack header items on small screens */
+  header .d-flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

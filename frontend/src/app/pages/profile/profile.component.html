@@ -1,0 +1,243 @@
+<div class="profile-container">
+  <div class="container">
+    <!-- Header -->
+    <header class="mb-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1 class="page-title">My Profile</h1>
+        <button
+          *ngIf="!isEditing"
+          class="btn btn-primary"
+          (click)="enableEditing()"
+        >
+          <i class="fas fa-edit me-2"></i>Edit Profile
+        </button>
+      </div>
+    </header>
+
+    <!-- Loading spinner -->
+    <div *ngIf="isLoading" class="text-center my-5">
+      <div class="spinner-border text-primary"></div>
+      <p class="mt-3 text-muted">Loading your profile...</p>
+    </div>
+
+    <!-- Success message -->
+    <div
+      *ngIf="saveSuccess"
+      class="alert alert-success alert-dismissible fade show"
+      role="alert"
+    >
+      <i class="fas fa-check-circle me-2"></i>
+      Your profile has been updated successfully!
+      <button
+        type="button"
+        class="btn-close"
+        (click)="saveSuccess = false"
+      ></button>
+    </div>
+
+    <!-- Error message -->
+    <div
+      *ngIf="saveError"
+      class="alert alert-danger alert-dismissible fade show"
+      role="alert"
+    >
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      {{ saveError }}
+      <button type="button" class="btn-close" (click)="saveError = ''"></button>
+    </div>
+
+    <div *ngIf="userData && !isLoading" class="row">
+      <!-- Left column: Profile summary -->
+      <div class="col-md-4 mb-4">
+        <div class="card profile-card">
+          <div class="card-body text-center">
+            <div class="avatar-container">
+              <div class="avatar-circle">
+                <span>{{ userData.name.charAt(0).toUpperCase() }}</span>
+              </div>
+            </div>
+            <h3 class="mt-3">{{ userData.name }}</h3>
+            <p
+              class="badge rounded-pill role-badge"
+              [ngClass]="{
+                'bg-danger': userData.role === 'admin',
+                'bg-primary': userData.role === 'professor',
+                'bg-success': userData.role === 'student',
+              }"
+            >
+              {{ userData.role | titlecase }}
+            </p>
+            <div class="user-details mt-3">
+              <p><i class="fas fa-envelope me-2"></i>{{ userData.email }}</p>
+              <p><i class="fas fa-id-badge me-2"></i>{{ userData.username }}</p>
+              <p>
+                <i class="fas fa-calendar me-2"></i>Joined
+                {{ formatDate(userData.createdAt) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: Profile details/edit form -->
+      <div class="col-md-8">
+        <div class="card">
+          <div
+            class="card-header d-flex justify-content-between align-items-center"
+          >
+            <h5 class="mb-0">Profile Information</h5>
+            <div *ngIf="isEditing" class="btn-group">
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                (click)="cancelEditing()"
+              >
+                Cancel
+              </button>
+              <button
+                class="btn btn-sm btn-success"
+                (click)="saveProfile()"
+                [disabled]="userProfileForm.invalid"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- View mode -->
+            <div *ngIf="!isEditing" class="profile-details">
+              <div class="detail-group">
+                <h6 class="detail-label">Full Name</h6>
+                <p class="detail-value">{{ userData.name || '-' }}</p>
+              </div>
+              <div class="detail-group">
+                <h6 class="detail-label">Email Address</h6>
+                <p class="detail-value">{{ userData.email || '-' }}</p>
+              </div>
+              <div class="detail-group">
+                <h6 class="detail-label">Username</h6>
+                <p class="detail-value">{{ userData.username }}</p>
+              </div>
+              <div class="detail-group">
+                <h6 class="detail-label">Date of Birth</h6>
+                <p class="detail-value">{{ formatDate(userData.birthDate) }}</p>
+              </div>
+
+              <!-- Professor-specific information -->
+              <div *ngIf="isProfessor(userData)">
+                <hr />
+                <h5 class="mb-3">Professor Information</h5>
+                <div class="detail-group">
+                  <h6 class="detail-label">Hiring Date</h6>
+                  <p class="detail-value">
+                    {{ formatDate(userData.professorInfo?.hiringDate) }}
+                  </p>
+                </div>
+                <div class="detail-group">
+                  <h6 class="detail-label">Department</h6>
+                  <p class="detail-value">
+                    {{ userData.professorInfo?.departmentId || '-' }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Student-specific information -->
+              <div *ngIf="isStudent(userData)">
+                <hr />
+                <h5 class="mb-3">Student Information</h5>
+                <!-- Add student-specific information here -->
+              </div>
+            </div>
+
+            <!-- Edit mode -->
+            <form *ngIf="isEditing" [formGroup]="userProfileForm">
+              <div class="mb-3">
+                <label for="name" class="form-label">Full Name *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="name"
+                  formControlName="name"
+                  required
+                />
+                <div
+                  *ngIf="
+                    userProfileForm.controls['name'].invalid &&
+                    userProfileForm.controls['name'].touched
+                  "
+                  class="text-danger"
+                >
+                  Name is required
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="email" class="form-label">Email Address *</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  formControlName="email"
+                  required
+                />
+                <div
+                  *ngIf="
+                    userProfileForm.controls['email'].invalid &&
+                    userProfileForm.controls['email'].touched
+                  "
+                  class="text-danger"
+                >
+                  Valid email is required
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="birthDate" class="form-label">Date of Birth</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="birthDate"
+                  formControlName="birthDate"
+                />
+              </div>
+
+              <!-- Professor-specific fields -->
+              <div *ngIf="userData && isProfessor(userData)">
+                <hr />
+                <h5 class="mb-3">Professor Information</h5>
+                <div class="mb-3">
+                  <label for="hiringDate" class="form-label">Hiring Date</label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="hiringDate"
+                    formControlName="hiringDate"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="departmentId" class="form-label"
+                    >Department</label
+                  >
+                  <select
+                    class="form-select"
+                    id="departmentId"
+                    formControlName="departmentId"
+                  >
+                    <option value="">-- Select Department --</option>
+                    <option *ngFor="let dept of departments" [value]="dept._id">
+                      {{ dept.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Student-specific fields -->
+              <div *ngIf="userData && isStudent(userData)">
+                <hr />
+                <h5 class="mb-3">Student Information</h5>
+                <!-- Add student-specific form fields here if needed in the future -->
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
