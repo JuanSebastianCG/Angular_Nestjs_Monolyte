@@ -125,7 +125,38 @@ export class UserService {
    * Update user profile
    */
   updateProfile(userData: Partial<User>): Observable<User> {
-    return this.http.patch<User>(`${this.apiUrl}/me`, userData);
+    // Get user ID from localStorage using the correct key
+    const USER_DATA_KEY = 'user_data'; // Debe coincidir con la clave en AuthService
+    let userId = '';
+    
+    try {
+      const userDataStr = localStorage.getItem(USER_DATA_KEY);
+      if (userDataStr) {
+        const user = JSON.parse(userDataStr);
+        // Puede estar guardado como _id o id
+        userId = user._id || user.id;
+        
+        if (!userId) {
+          console.error('User ID not found in stored user data');
+        }
+      } else {
+        console.error('User data not found in localStorage');
+      }
+    } catch (error) {
+      console.error('Error retrieving user ID from storage:', error);
+    }
+
+    // Log para depuración
+    console.log('User ID for update:', userId);
+    
+    // Si tenemos ID, usamos la ruta específica, de lo contrario fallback a /me
+    if (userId) {
+      console.log(`Updating user profile with ID: ${userId}`);
+      return this.http.patch<User>(`${this.apiUrl}/${userId}`, userData);
+    } else {
+      console.warn('No user ID found, falling back to /me endpoint');
+      return this.http.patch<User>(`${this.apiUrl}/me`, userData);
+    }
   }
 
   /**
@@ -142,5 +173,22 @@ export class UserService {
     return this.http.get<Student>(
       `${environment.apiUrl}/students/${studentId}`,
     );
+  }
+
+  /**
+   * Update user profile using explicit user ID
+   * This method should be preferred over updateProfile
+   */
+  updateUserProfile(userId: string, userData: Partial<User>): Observable<User> {
+    if (!userId) {
+      throw new Error('User ID is required for profile update');
+    }
+    
+    // Construir URL explícitamente para evitar problemas
+    const url = `${environment.apiUrl}/users/${userId}`;
+    console.log(`Sending PATCH request to: ${url}`, userData);
+    
+    // Usar URL explícita en lugar de apiUrl + userId
+    return this.http.patch<User>(url, userData);
   }
 }

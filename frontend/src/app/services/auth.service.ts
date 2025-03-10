@@ -191,18 +191,34 @@ export class AuthService {
   /**
    * Store user data in local storage
    */
-  private storeUserData(user: User): void {
+  public storeUserData(user: User): void {
+    try {
+      if (!user) return;
+      
+      // Ensure user has at least username if name is missing
+      const userData = {
+        ...user,
+        // Set default name to username if not provided
+        name: user.name || user.username,
+      };
+      
+      // Nota: No se usa la propiedad 'id' en esta aplicación, solo '_id'
+      
+      localStorage.setItem(this.USER_DATA_KEY, JSON.stringify(userData));
+      this.currentUserSubject.next(userData);
+      console.log('User data stored successfully', userData);
+    } catch (error) {
+      console.error('Error storing user data:', error);
+    }
+  }
+
+  /**
+   * Update current user data in the BehaviorSubject
+   * This method is used to update the current user state after profile updates
+   */
+  public updateCurrentUser(user: User): void {
     if (!user) return;
-
-    // Ensure user has at least username if name is missing
-    const userData = {
-      ...user,
-      // Set default name to username if not provided
-      name: user.name || user.username,
-    };
-
-    localStorage.setItem(this.USER_DATA_KEY, JSON.stringify(userData));
-    this.currentUserSubject.next(userData);
+    this.storeUserData(user);
   }
 
   /**

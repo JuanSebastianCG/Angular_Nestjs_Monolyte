@@ -70,12 +70,16 @@ export class NavbarComponent implements OnInit {
 
   /**
    * Navigate to profile page
+   * Enhanced for smoother transition and better user experience
    */
   navigateToProfile() {
-    console.log('Navigating to profile page...');
     this.isProfileDropdownOpen = false; // Close the dropdown
-    this.navigateTo('/profile');
-    console.log('Navigation completed');
+    this.isMobileMenuOpen = false; // Close mobile menu if open
+    
+    // Use setTimeout to ensure dropdown animation completes before navigation
+    setTimeout(() => {
+      this.router.navigate(['/profile']);
+    }, 100);
   }
 
   /**
@@ -186,13 +190,6 @@ export class NavbarComponent implements OnInit {
         label: 'Home',
         path: '/home',
         icon: 'fa-home',
-      });
-
-      // Add profile link for all authenticated users
-      links.push({
-        label: 'Profile',
-        path: '/profile',
-        icon: 'fa-user',
       });
 
       // Add courses link for all users

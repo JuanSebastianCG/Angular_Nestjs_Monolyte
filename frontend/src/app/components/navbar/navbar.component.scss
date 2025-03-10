@@ -505,6 +505,11 @@
     color: var(--primary);
   }
   
+  &:focus {
+    outline: none;
+    background-color: rgba(67, 97, 238, 0.05);
+  }
+  
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -516,6 +521,20 @@
     
     i {
       opacity: 0.6;
+    }
+  }
+  
+  &.dropdown-item-highlight {
+    background-color: rgba(67, 97, 238, 0.08);
+    color: var(--primary);
+    font-weight: 500;
+    
+    &:hover {
+      background-color: rgba(67, 97, 238, 0.15);
+    }
+    
+    i {
+      color: var(--primary);
     }
   }
 } 

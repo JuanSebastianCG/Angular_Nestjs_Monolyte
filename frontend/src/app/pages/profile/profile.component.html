@@ -4,13 +4,15 @@
     <header class="mb-4">
       <div class="d-flex justify-content-between align-items-center">
         <h1 class="page-title">My Profile</h1>
-        <button
+        <app-button 
           *ngIf="!isEditing"
-          class="btn btn-primary"
-          (click)="enableEditing()"
+          variant="primary"
+          size="medium"
+          (buttonClick)="enableEditing()"
+          [loading]="false"
         >
           <i class="fas fa-edit me-2"></i>Edit Profile
-        </button>
+        </app-button>
       </div>
     </header>
 
@@ -32,6 +34,7 @@
         type="button"
         class="btn-close"
         (click)="saveSuccess = false"
+        aria-label="Close"
       ></button>
     </div>
 
@@ -42,8 +45,18 @@
       role="alert"
     >
       <i class="fas fa-exclamation-triangle me-2"></i>
-      {{ saveError }}
-      <button type="button" class="btn-close" (click)="saveError = ''"></button>
+      <div>
+        <strong>Error updating profile:</strong> {{ saveError }}
+        <div *ngIf="saveError.includes('403') || saveError.includes('Forbidden')" class="mt-2 small">
+          <em>Tip: This could be due to permissions. Make sure you're updating your own profile.</em>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="btn-close"
+        (click)="saveError = ''"
+        aria-label="Close"
+      ></button>
     </div>
 
     <div *ngIf="userData && !isLoading" class="row">
@@ -87,19 +100,25 @@
           >
             <h5 class="mb-0">Profile Information</h5>
             <div *ngIf="isEditing" class="btn-group">
-              <button
-                class="btn btn-sm btn-outline-secondary"
-                (click)="cancelEditing()"
+              <app-button
+                variant="outline"
+                size="small"
+                (buttonClick)="cancelEditing()"
+                [loading]="false"
               >
-                Cancel
-              </button>
-              <button
-                class="btn btn-sm btn-success"
-                (click)="saveProfile()"
+                <i class="fas fa-times me-1"></i>Cancel
+              </app-button>
+              <app-button
+                variant="primary"
+                size="small"
+                (buttonClick)="saveProfile()"
                 [disabled]="userProfileForm.invalid"
+                [loading]="isLoading"
               >
-                Save
-              </button>
+                <i class="fas fa-check me-1"></i>
+                <span *ngIf="!isLoading">Save</span>
+                <span *ngIf="isLoading">Saving...</span>
+              </app-button>
             </div>
           </div>
           <div class="card-body">
@@ -129,13 +148,13 @@
                 <div class="detail-group">
                   <h6 class="detail-label">Hiring Date</h6>
                   <p class="detail-value">
-                    {{ formatDate(userData.professorInfo?.hiringDate) }}
+                    {{ formatDate(userData.professorInfo.hiringDate) }}
                   </p>
                 </div>
                 <div class="detail-group">
                   <h6 class="detail-label">Department</h6>
                   <p class="detail-value">
-                    {{ userData.professorInfo?.departmentId || '-' }}
+                    {{ userData.professorInfo.departmentId || '-' }}
                   </p>
                 </div>
               </div>
@@ -151,51 +170,34 @@
             <!-- Edit mode -->
             <form *ngIf="isEditing" [formGroup]="userProfileForm">
               <div class="mb-3">
-                <label for="name" class="form-label">Full Name *</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="name"
-                  formControlName="name"
-                  required
-                />
-                <div
-                  *ngIf="
-                    userProfileForm.controls['name'].invalid &&
-                    userProfileForm.controls['name'].touched
-                  "
-                  class="text-danger"
-                >
-                  Name is required
-                </div>
+                <app-form-field
+                  label="Full Name *"
+                  inputId="name"
+                  [control]="userProfileForm.controls['name']"
+                  placeholder="Enter your full name"
+                  [showSuccessIndicator]="true"
+                  icon="fas fa-user"
+                ></app-form-field>
               </div>
               <div class="mb-3">
-                <label for="email" class="form-label">Email Address *</label>
-                <input
+                <app-form-field
+                  label="Email Address *"
+                  inputId="email"
+                  [control]="userProfileForm.controls['email']"
                   type="email"
-                  class="form-control"
-                  id="email"
-                  formControlName="email"
-                  required
-                />
-                <div
-                  *ngIf="
-                    userProfileForm.controls['email'].invalid &&
-                    userProfileForm.controls['email'].touched
-                  "
-                  class="text-danger"
-                >
-                  Valid email is required
-                </div>
+                  placeholder="Enter your email address"
+                  [showSuccessIndicator]="true"
+                  icon="fas fa-envelope"
+                ></app-form-field>
               </div>
               <div class="mb-3">
-                <label for="birthDate" class="form-label">Date of Birth</label>
-                <input
+                <app-form-field
+                  label="Date of Birth"
+                  inputId="birthDate"
+                  [control]="userProfileForm.controls['birthDate']"
                   type="date"
-                  class="form-control"
-                  id="birthDate"
-                  formControlName="birthDate"
-                />
+                  [showSuccessIndicator]="true"
+                ></app-form-field>
               </div>
 
               <!-- Professor-specific fields -->
@@ -203,28 +205,24 @@
                 <hr />
                 <h5 class="mb-3">Professor Information</h5>
                 <div class="mb-3">
-                  <label for="hiringDate" class="form-label">Hiring Date</label>
-                  <input
+                  <app-form-field
+                    label="Hiring Date"
+                    inputId="hiringDate"
+                    [control]="userProfileForm.controls['hiringDate']"
                     type="date"
-                    class="form-control"
-                    id="hiringDate"
-                    formControlName="hiringDate"
-                  />
+                    [showSuccessIndicator]="true"
+                  ></app-form-field>
                 </div>
                 <div class="mb-3">
-                  <label for="departmentId" class="form-label"
-                    >Department</label
-                  >
-                  <select
-                    class="form-select"
-                    id="departmentId"
-                    formControlName="departmentId"
-                  >
-                    <option value="">-- Select Department --</option>
-                    <option *ngFor="let dept of departments" [value]="dept._id">
-                      {{ dept.name }}
-                    </option>
-                  </select>
+                  <app-form-field
+                    label="Department"
+                    inputId="departmentId"
+                    [control]="userProfileForm.controls['departmentId']"
+                    type="select"
+                    [options]="departmentOptions"
+                    [showSuccessIndicator]="true"
+                    icon="fas fa-building"
+                  ></app-form-field>
                 </div>
               </div>
 
