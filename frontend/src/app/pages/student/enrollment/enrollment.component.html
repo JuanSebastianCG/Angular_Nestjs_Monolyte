@@ -16,7 +16,7 @@
 
         <button
           *ngIf="!hasActiveEnrollmentCycle && selectedCourses.length > 0"
-          class="btn btn-success btn-sm"
+          class="btn btn-success btn-lg enrollment-btn"
           (click)="enrollInSelectedCourses()"
           [disabled]="isEnrolling"
         >
@@ -24,6 +24,7 @@
             *ngIf="isEnrolling"
             class="spinner-border spinner-border-sm me-1"
           ></span>
+          <i *ngIf="!isEnrolling" class="bi bi-plus-circle me-1"></i>
           Enroll ({{ selectedCourses.length }})
         </button>
       </div>
@@ -53,7 +54,7 @@
         <div class="card-header bg-light">
           <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Enrolled Courses</h5>
-            <span class="badge bg-primary">{{ enrolledCourses.length }}</span>
+            <span class="badge">{{ enrolledCourses.length }}</span>
           </div>
         </div>
 

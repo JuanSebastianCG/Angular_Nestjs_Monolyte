@@ -102,6 +102,52 @@
   cursor: pointer;
 }
 
+/* Enhanced enrollment button */
+.enrollment-btn {
+  border: 3px solid #198754;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.enrollment-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  border-color: #157347;
+}
+
+.enrollment-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.enrollment-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s ease;
+  z-index: 0;
+}
+
+.enrollment-btn:hover::after {
+  transform: scaleX(1);
+}
+
+.enrollment-btn i,
+.enrollment-btn span {
+  position: relative;
+  z-index: 1;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .enrollment-header {
