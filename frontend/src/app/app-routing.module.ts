@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard } from './guards/auth.guard';
+import { authGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
 
 import { HomeComponent } from './pages/home/home.component';
@@ -16,8 +16,17 @@ const routes: Routes = [
   {
     path: 'courses',
     component: CoursesComponent,
-    canActivate: [AuthGuard],
+    canActivate: [authGuard],
     data: { roles: ['admin', 'professor', 'student'] },
+  },
+  {
+    path: 'enrollment',
+    loadComponent: () =>
+      import('./pages/student/enrollment/enrollment.component').then(
+        (m) => m.EnrollmentComponent,
+      ),
+    canActivate: [authGuard, RoleGuard],
+    data: { expectedRole: 'student' },
   },
 ];
 

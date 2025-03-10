@@ -10,6 +10,8 @@ import { HomeComponent } from './pages/home/home.component';
 import { LoginPageComponent } from './pages/auth/login/login.component';
 import { RegisterPageComponent } from './pages/auth/register/register.component';
 import { CoursesComponent } from './pages/courses/courses.component';
+// The EnrollmentComponent is now standalone and will be loaded through the router
+// import { EnrollmentComponent } from './pages/student/enrollment/enrollment.component';
 
 // Shared Components
 import { NavbarComponent } from './components/navbar/navbar.component';
@@ -27,6 +29,7 @@ import { authInterceptor } from './interceptors/auth.interceptor';
 import { AuthService } from './services/auth.service';
 import { CourseService } from './services/course.service';
 import { DepartmentService } from './services/department.service';
+import { EnrollmentService } from './services/enrollment.service';
 
 @NgModule({
   declarations: [
@@ -44,6 +47,7 @@ import { DepartmentService } from './services/department.service';
     LoginPageComponent,
     RegisterPageComponent,
     CoursesComponent,
+    // EnrollmentComponent is now standalone and will be loaded through the router
     NavbarComponent,
     AlertComponent,
     FormFieldComponent,
@@ -57,6 +61,7 @@ import { DepartmentService } from './services/department.service';
     AuthService,
     CourseService,
     DepartmentService,
+    EnrollmentService,
   ],
 })
 export class AppModule {}

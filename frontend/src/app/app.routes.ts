@@ -25,6 +25,17 @@ export const routes: Routes = [
     data: { expectedRole: 'student' },
   },
 
+  // Enrollment route
+  {
+    path: 'enrollment',
+    loadComponent: () =>
+      import('./pages/student/enrollment/enrollment.component').then(
+        (m) => m.EnrollmentComponent,
+      ),
+    canActivate: [authGuard, RoleGuard],
+    data: { expectedRole: 'student' },
+  },
+
   // Professor-specific routes
   {
     path: 'professor',
