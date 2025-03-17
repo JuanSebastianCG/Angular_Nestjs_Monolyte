@@ -105,13 +105,23 @@
                   </div>
                 </div>
 
-                <button
-                  *ngIf="enrollment.status === 'start'"
-                  class="btn btn-sm btn-outline-danger"
-                  (click)="removeEnrollment(enrollment.courseId._id)"
-                >
-                  <i class="bi bi-x"></i>
-                </button>
+                <div class="d-flex gap-2">
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="viewCourse(enrollment.courseId._id)"
+                    title="View course details"
+                  >
+                    <i class="bi bi-eye"></i> View
+                  </button>
+                  <button
+                    *ngIf="enrollment.status === 'start'"
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="removeEnrollment(enrollment.courseId._id)"
+                    title="Remove enrollment"
+                  >
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
               </div>
               <hr />
             </div>
@@ -161,6 +171,7 @@
               type="text"
               class="form-control"
               placeholder="Search courses..."
+              aria-label="Search courses"
               [(ngModel)]="searchQuery"
               (input)="applySearchFilter()"
             />
@@ -168,6 +179,7 @@
               *ngIf="searchQuery"
               class="btn btn-outline-secondary"
               (click)="searchQuery = ''; applySearchFilter()"
+              title="Clear search"
             >
               <i class="bi bi-x"></i>
             </button>
@@ -198,7 +210,12 @@
                     class="form-check-input"
                     [checked]="isCourseSelected(course._id)"
                     (change)="toggleCourseSelection(course._id)"
+                    [id]="'course-' + course._id"
+                    [attr.aria-label]="'Select ' + course.name + ' course'"
                   />
+                  <label class="visually-hidden" [for]="'course-' + course._id">
+                    Select {{course.name}} course
+                  </label>
                 </div>
                 <div
                   class="ms-2 course-content"

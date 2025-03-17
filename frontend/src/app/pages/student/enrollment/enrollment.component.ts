@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { EnrollmentService } from '../../../services/enrollment.service';
 import { CourseService } from '../../../services/course.service';
 import { AuthService } from '../../../services/auth.service';
@@ -47,6 +47,7 @@ export class EnrollmentComponent implements OnInit {
     private enrollmentService: EnrollmentService,
     private courseService: CourseService,
     private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -420,5 +421,18 @@ export class EnrollmentComponent implements OnInit {
           );
         });
     }
+  }
+
+  /**
+   * Navigate to view course details
+   */
+  viewCourse(courseId: string): void {
+    if (!courseId) {
+      console.error('Cannot view course: Course ID is missing');
+      return;
+    }
+    
+    console.log('Navigating to course details:', courseId);
+    this.router.navigate(['/courses', courseId]);
   }
 }
