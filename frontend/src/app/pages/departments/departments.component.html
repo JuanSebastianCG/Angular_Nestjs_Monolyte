@@ -1,20 +1,181 @@
-<div class="container">
-    <h1>Departamentos</h1>
-    
-    <div *ngIf="loading" class="loading">
-        Cargando departamentos...
-    </div>
+<div class="departments-page">
+    <div class="container">
+        <div class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">Deparments</h1>
+                <p class="page-description">List of academic departments</p>
+            </div>
+            <div class="header-actions" *ngIf="canManageDepartments">
+                <app-button (click)="openCreateModal()" variant="primary">
+                    <i class="fas fa-plus-circle"></i> Create department
+                </app-button>
+            </div>
+        </div>
 
-    <div *ngIf="error" class="error">
-        {{ error }}
-    </div>
+        <app-alert
+            *ngIf="error"
+            [message]="error"
+            type="danger"
+            [dismissible]="true"
+            (dismiss)="clearMessages()"
+        >
+        </app-alert>
 
-    <div *ngIf="!loading && !error" class="departments-list">
-        <div *ngFor="let department of departments" class="department-card">
-            <h2>{{ department.name }}</h2>
-            <p>{{ department.description }}</p>
+        <app-alert
+            *ngIf="success"
+            [message]="success"
+            type="success"
+            [dismissible]="true"
+            (dismiss)="clearMessages()"
+        >
+        </app-alert>
+
+        <div *ngIf="loading" class="loading-container">
+            <div class="spinner"></div>
+            <p>Loading departments...</p>
+        </div>
+
+        <div *ngIf="!loading && !error" class="departments-grid">
+            <div *ngFor="let department of departments" class="department-card">
+                <div class="card-body">
+                    <div class="card-header">
+                        <h2>{{ department.name }}</h2>
+                        <div class="card-actions" *ngIf="canManageDepartments">
+                            <button class="action-btn edit-btn" (click)="openEditModal(department)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete-btn" (click)="openDeleteModal(department)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="department-description">{{ department.description }}</p>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Create Department Modal -->
+    <app-modal
+        [title]="'Create New Department'"
+        [showModal]="showCreateModal"
+        (close)="closeModals()"
+    >
+        <form [formGroup]="departmentForm" (ngSubmit)="createDepartment()">
+            <app-form-field
+                label="Name"
+                [control]="nameControl"
+                type="text"
+                placeholder="Enter department name"
+            ></app-form-field>
+
+            <app-form-field
+                label="Description"
+                [control]="descriptionControl"
+                type="textarea"
+                placeholder="Enter department description"
+            ></app-form-field>
+
+            <div class="form-actions">
+                <app-button
+                    type="submit"
+                    [loading]="loading"
+                    [disabled]="departmentForm.invalid || loading"
+                    variant="primary"
+                >
+                    Create Department
+                </app-button>
+                <app-button
+                    type="button"
+                    (click)="closeModals()"
+                    [disabled]="loading"
+                    variant="secondary"
+                >
+                    Cancel
+                </app-button>
+            </div>
+        </form>
+    </app-modal>
+
+    <!-- Edit Department Modal -->
+    <app-modal
+        [title]="'Edit Department'"
+        [showModal]="showEditModal"
+        (close)="closeModals()"
+    >
+        <form [formGroup]="departmentForm" (ngSubmit)="updateDepartment()">
+            <app-form-field
+                label="Name"
+                [control]="nameControl"
+                type="text"
+                placeholder="Enter department name"
+            ></app-form-field>
+
+            <app-form-field
+                label="Description"
+                [control]="descriptionControl"
+                type="textarea"
+                placeholder="Enter department description"
+            ></app-form-field>
+
+            <div class="form-actions">
+                <app-button
+                    type="submit"
+                    [loading]="loading"
+                    [disabled]="departmentForm.invalid || loading"
+                    variant="primary"
+                >
+                    Update Department
+                </app-button>
+                <app-button
+                    type="button"
+                    (click)="closeModals()"
+                    [disabled]="loading"
+                    variant="secondary"
+                >
+                    Cancel
+                </app-button>
+            </div>
+        </form>
+    </app-modal>
+
+    <!-- Delete Confirmation Modal -->
+    <app-modal
+        [title]="'Confirm Deletion'"
+        [showModal]="showDeleteModal"
+        (close)="closeModals()"
+    >
+        <div class="delete-confirmation">
+            <p class="warning-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                Are you sure you want to delete this department?
+            </p>
+            <p class="description">
+                This action cannot be undone. All data associated with this department will be permanently deleted.
+            </p>
+
+            <div class="modal-actions">
+                <app-button
+                    type="button"
+                    (click)="closeModals()"
+                    [disabled]="loading"
+                    variant="secondary"
+                >
+                    Cancel
+                </app-button>
+                <app-button
+                    type="button"
+                    (click)="deleteDepartment()"
+                    [loading]="loading"
+                    [disabled]="loading"
+                    variant="primary"
+                    class="danger-button"
+                >
+                    Delete Department
+                </app-button>
+            </div>
+        </div>
+    </app-modal>
 </div>
 
 
