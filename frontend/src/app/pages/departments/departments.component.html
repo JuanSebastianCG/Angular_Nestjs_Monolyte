@@ -1,20 +1,91 @@
-<div class="container">
-    <h1>Departamentos</h1>
-    
-    <div *ngIf="loading" class="loading">
-        Cargando departamentos...
-    </div>
+<div class="departments-page">
+    <div class="container">
+        <div class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">Deparments</h1>
+                <p class="page-description">List of academic departments</p>
+            </div>
+            <div class="header-actions" *ngIf="canManageDepartments">
+                <app-button (click)="openCreateModal()" variant="primary">
+                    <i class="fas fa-plus-circle"></i> Create department
+                </app-button>
+            </div>
+        </div>
 
-    <div *ngIf="error" class="error">
-        {{ error }}
-    </div>
+        <app-alert
+            *ngIf="error"
+            [message]="error"
+            type="danger"
+            [dismissible]="true"
+            (dismiss)="clearMessages()"
+        >
+        </app-alert>
 
-    <div *ngIf="!loading && !error" class="departments-list">
-        <div *ngFor="let department of departments" class="department-card">
-            <h2>{{ department.name }}</h2>
-            <p>{{ department.description }}</p>
+        <app-alert
+            *ngIf="success"
+            [message]="success"
+            type="success"
+            [dismissible]="true"
+            (dismiss)="clearMessages()"
+        >
+        </app-alert>
+
+        <div *ngIf="loading" class="loading-container">
+            <div class="spinner"></div>
+            <p>Cargando departamentos...</p>
+        </div>
+
+        <div *ngIf="!loading && !error" class="departments-grid">
+            <div *ngFor="let department of departments" class="department-card">
+                <div class="card-body">
+                    <h2>{{ department.name }}</h2>
+                    <p class="department-description">{{ department.description }}</p>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Modal de creación de departamento -->
+    <app-modal
+        [title]="'Crear Nuevo Departamento'"
+        [showModal]="showCreateModal"
+        (close)="closeCreateModal()"
+    >
+        <form [formGroup]="departmentForm" (ngSubmit)="createDepartment()">
+            <app-form-field
+                label="Nombre"
+                [control]="nameControl"
+                type="text"
+                placeholder="Ingrese el nombre del departamento"
+            ></app-form-field>
+
+            <app-form-field
+                label="Descripción"
+                [control]="descriptionControl"
+                type="textarea"
+                placeholder="Ingrese la descripción del departamento"
+            ></app-form-field>
+
+            <div class="form-actions">
+                <app-button
+                    type="submit"
+                    [loading]="loading"
+                    [disabled]="departmentForm.invalid || loading"
+                    variant="primary"
+                >
+                    Create department
+                </app-button>
+                <app-button
+                    type="button"
+                    (click)="closeCreateModal()"
+                    [disabled]="loading"
+                    variant="secondary"
+                >
+                    Cancel
+                </app-button>
+            </div>
+        </form>
+    </app-modal>
 </div>
 
 
