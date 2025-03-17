@@ -44,7 +44,10 @@ export class DepartmentsComponent implements OnInit {
     error = '';
     success = '';
     showCreateModal = false;
+    showEditModal = false;
+    showDeleteModal = false;
     departmentForm: FormGroup;
+    selectedDepartment: Department | null = null;
 
     constructor(
         private departmentService: DepartmentService,
@@ -89,7 +92,7 @@ export class DepartmentsComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                this.error = 'Error al cargar los departamentos';
+                this.error = 'Error loading departments';
                 this.loading = false;
             }
         });
@@ -101,15 +104,41 @@ export class DepartmentsComponent implements OnInit {
 
     openCreateModal(): void {
         if (!this.canManageDepartments) {
-            this.error = 'No tienes permiso para crear departamentos. Solo administradores y profesores pueden realizar esta acción.';
+            this.error = 'You do not have permission to create departments. Only administrators and professors can perform this action.';
             return;
         }
         this.departmentForm.reset();
         this.showCreateModal = true;
     }
 
-    closeCreateModal(): void {
+    openEditModal(department: Department): void {
+        if (!this.canManageDepartments) {
+            this.error = 'You do not have permission to edit departments. Only administrators and professors can perform this action.';
+            return;
+        }
+        this.selectedDepartment = department;
+        this.departmentForm.patchValue({
+            name: department.name,
+            description: department.description
+        });
+        this.showEditModal = true;
+    }
+
+    openDeleteModal(department: Department): void {
+        if (!this.canManageDepartments) {
+            this.error = 'You do not have permission to delete departments. Only administrators and professors can perform this action.';
+            return;
+        }
+        this.selectedDepartment = department;
+        this.showDeleteModal = true;
+    }
+
+    closeModals(): void {
         this.showCreateModal = false;
+        this.showEditModal = false;
+        this.showDeleteModal = false;
+        this.selectedDepartment = null;
+        this.departmentForm.reset();
     }
 
     createDepartment(): void {
@@ -122,13 +151,55 @@ export class DepartmentsComponent implements OnInit {
 
         this.departmentService.createDepartment(formValue).subscribe({
             next: () => {
-                this.success = 'Departamento creado exitosamente';
+                this.success = 'Department created successfully';
                 this.loadDepartments();
-                this.closeCreateModal();
+                this.closeModals();
                 this.loading = false;
             },
             error: (error) => {
-                this.error = 'Error al crear el departamento';
+                this.error = 'Error creating department';
+                this.loading = false;
+            }
+        });
+    }
+
+    updateDepartment(): void {
+        if (this.departmentForm.invalid || !this.selectedDepartment) {
+            return;
+        }
+
+        this.loading = true;
+        const formValue = this.departmentForm.value;
+
+        this.departmentService.updateDepartment(this.selectedDepartment._id, formValue).subscribe({
+            next: () => {
+                this.success = 'Department updated successfully';
+                this.loadDepartments();
+                this.closeModals();
+                this.loading = false;
+            },
+            error: (error) => {
+                this.error = 'Error updating department';
+                this.loading = false;
+            }
+        });
+    }
+
+    deleteDepartment(): void {
+        if (!this.selectedDepartment) {
+            return;
+        }
+
+        this.loading = true;
+        this.departmentService.deleteDepartment(this.selectedDepartment._id).subscribe({
+            next: () => {
+                this.success = 'Department deleted successfully';
+                this.loadDepartments();
+                this.closeModals();
+                this.loading = false;
+            },
+            error: (error) => {
+                this.error = 'Error deleting department';
                 this.loading = false;
             }
         });

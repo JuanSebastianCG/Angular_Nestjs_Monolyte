@@ -124,10 +124,54 @@
   .card-body {
     padding: 1.5rem;
     
-    h2 {
-      margin: 0 0 1rem;
-      color: #2c3e50;
-      font-size: 1.25rem;
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      
+      h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.25rem;
+      }
+      
+      .card-actions {
+        display: flex;
+        gap: 0.5rem;
+        
+        .action-btn {
+          background: none;
+          border: none;
+          padding: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          
+          &.edit-btn {
+            color: #17a2b8;
+            
+            &:hover {
+              background-color: rgba(23, 162, 184, 0.1);
+            }
+          }
+          
+          &.delete-btn {
+            color: #dc3545;
+            
+            &:hover {
+              background-color: rgba(220, 53, 69, 0.1);
+            }
+          }
+          
+          i {
+            font-size: 1rem;
+          }
+        }
+      }
     }
     
     .department-description {
@@ -138,11 +182,55 @@
   }
 }
 
+.delete-confirmation {
+  padding: 1rem 0;
+  
+  .warning-message {
+    color: #e74c3c;
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    i {
+      font-size: 1.5rem;
+    }
+  }
+  
+  .description {
+    color: #6c757d;
+    margin-bottom: 2rem;
+  }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 1.5rem;
+
+  .danger-button {
+    background-color: #dc3545;
+    border-color: #dc3545;
+
+    &:hover:not(:disabled) {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
+
+    &:disabled {
+      background-color: #e4606d;
+      border-color: #e4606d;
+    }
+  }
 }
 
 @keyframes spin {
