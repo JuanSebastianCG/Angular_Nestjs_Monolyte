@@ -457,4 +457,63 @@
       width: 100%;
     }
   }
+}
+
+.view-tabs {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e1e4e8;
+  
+  .tab {
+    padding: 0.5rem 1rem;
+    margin-right: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #586069;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    
+    i {
+      margin-right: 0.5rem;
+    }
+    
+    &:hover {
+      background-color: #f6f8fa;
+      color: #0366d6;
+    }
+    
+    &.active {
+      color: #24292e;
+      font-weight: 600;
+      border-bottom: 2px solid #0366d6;
+      position: relative;
+      
+      &:after {
+        content: '';
+        position: absolute;
+        bottom: -0.5rem;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: #0366d6;
+      }
+    }
+    
+    .badge {
+      background-color: #0366d6;
+      color: white;
+      border-radius: 10px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      margin-left: 0.5rem;
+    }
+  }
+  
+  .tab-actions {
+    margin-left: auto;
+  }
 } 

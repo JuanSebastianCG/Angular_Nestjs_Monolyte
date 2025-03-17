@@ -48,78 +48,171 @@ import { CourseCardComponent } from '../../components/course-card/course-card.co
 export class CoursesComponent implements OnInit {
   // Course data
   courses: Course[] = [];
+  filteredCourses: Course[] = [];
   departments: Department[] = [];
   professors: Array<{ _id: string; name: string }> = [];
-
-  // UI state
-  loading = false;
-  error = '';
-  success = '';
-  showCreateModal = false;
-  showEditModal = false;
-  showDeleteConfirm = false;
-
-  // Filters
-  searchTerm = '';
-  selectedDepartment = '';
-
-  // Selected course for edit/delete
-  currentCourse: Course | null = null;
+  
+  // Nuevas propiedades para las opciones de los selectores
+  departmentOptions: Array<{ value: string; label: string }> = [];
+  professorOptions: Array<{ value: string; label: string }> = [];
+  
+  // Vista actual: 'all' para All Courses, 'my' para My Courses
+  currentView: 'all' | 'my' = 'all';
 
   // Form
   courseForm!: FormGroup;
 
-  // Nuevas propiedades para las opciones de los selectores
-  departmentOptions: Array<{ value: string; label: string }> = [];
-  professorOptions: Array<{ value: string; label: string }> = [];
+  // Estado de UI
+  loading = false;
+  error = '';
+  success = '';
+  searchTerm = '';
+  selectedDepartment = '';
+  currentCourse: Course | null = null;
+  showCreateModal = false;
+  showEditModal = false;
+  showDeleteConfirm = false;
 
   constructor(
+    private formBuilder: FormBuilder,
+    private router: Router,
+    private route: ActivatedRoute,
     private courseService: CourseService,
     private departmentService: DepartmentService,
     private userService: UserService,
-    private authService: AuthService,
-    private router: Router,
-    private route: ActivatedRoute,
-    private formBuilder: FormBuilder,
-  ) {}
+    public authService: AuthService
+  ) {
+    // Iniciar el modo de depuración para rastrear problemas
+    console.log('DEBUG: CoursesComponent inicializado');
+    console.log('DEBUG: Usuario actual:', this.authService.getCurrentUser());
+  }
 
   ngOnInit(): void {
-    // Check if user is authenticated before proceeding
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: this.router.url },
-      });
-      return;
-    }
+    // Initialize form
+    this.initForm();
 
-    this.initCourseForm();
-    this.loadCourses();
-    this.loadDepartments();
-    this.loadProfessors();
-
-    // Check if we need to open the edit modal from URL parameters
-    this.route.queryParams.subscribe((params) => {
-      if (params['edit'] && this.canManageCourses) {
-        // Find the course in the loaded courses
-        const courseToEdit = this.courses.find((c) => c._id === params['edit']);
-        if (courseToEdit) {
-          this.openEditModal(courseToEdit);
-        } else {
-          // If the course is not yet loaded, fetch it directly
-          this.courseService.getCourse(params['edit']).subscribe({
-            next: (course) => {
-              this.openEditModal(course);
-            },
-            error: (error) => {
-              this.handleApiError(error, 'Error loading course to edit');
-            },
-          });
-        }
+    // Check for query params (for filter)
+    this.route.queryParams.subscribe(params => {
+      if (params['view'] === 'my' && this.authService.isProfessor()) {
+        this.currentView = 'my';
+        console.log('Vista establecida a "My Courses" por parámetro URL');
+      } else if (this.authService.isProfessor() && !this.authService.isAdmin()) {
+        // Por defecto, mostrar "My Courses" para profesores no administradores
+        this.currentView = 'my';
+        console.log('Vista establecida a "My Courses" por defecto para profesor');
+      } else {
+        this.currentView = 'all';
+        console.log('Vista establecida a "All Courses"');
       }
+      
+      // Load initial data
+      this.loadCourses();
+      this.loadDepartments();
+      this.loadProfessors();
     });
   }
 
-  initCourseForm(): void {
+  // Cambiar entre vista de All Courses y My Courses
+  toggleView(view: 'all' | 'my'): void {
+    this.currentView = view;
+    this.applyFilter();
+  }
+
+  // Verificar si el curso pertenece al profesor actual
+  isOwnCourse(course: Course): boolean {
+    if (!this.authService.isProfessor()) {
+      return false;
+    }
+    
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser || !currentUser._id) {
+      return false;
+    }
+    
+    console.log(`Checking if course "${course.name}" belongs to professor ${currentUser._id}`);
+    
+    try {
+      // Caso: professorId es un objeto (respuesta API con populate)
+      if (typeof course.professorId === 'object' && course.professorId) {
+        const prof = course.professorId as any;
+        
+        // La API devuelve directamente el objeto User como professorId
+        // El ejemplo: "professorId": { "_id": "67cdcc42ceb9d047ce5d57ac", "name": "Professor Name", ... }
+        if (prof._id) {
+          const isMatch = currentUser._id === prof._id;
+          console.log(`Comparing with User ID directly: ${currentUser._id} vs ${prof._id} = ${isMatch}`);
+          return isMatch;
+        }
+      } 
+      // Caso: professorId es un string (ID sin populate)
+      else if (typeof course.professorId === 'string') {
+        const isMatch = currentUser._id === course.professorId;
+        console.log(`Comparing with string ID: ${currentUser._id} vs ${course.professorId} = ${isMatch}`);
+        return isMatch;
+      }
+    } catch (err) {
+      console.error('Error checking course ownership:', err);
+    }
+    
+    return false;
+  }
+
+  // Aplicar filtros y actualizar vista
+  applyFilter(): void {
+    console.log('Aplicando filtros con vista:', this.currentView);
+    console.log('Cursos disponibles:', this.courses.length);
+    
+    let filtered = [...this.courses];
+    
+    // Filtrar por término de búsqueda
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(course => 
+        course.name.toLowerCase().includes(term) || 
+        course.description.toLowerCase().includes(term)
+      );
+      console.log(`Después del filtro por búsqueda: ${filtered.length} cursos`);
+    }
+    
+    // Filtrar por departamento
+    if (this.selectedDepartment) {
+      filtered = filtered.filter(course => {
+        if (typeof course.professorId === 'object') {
+          // Si el departamento está anidado en el profesor
+          const professor = course.professorId as any;
+          return professor?.departmentId?._id === this.selectedDepartment;
+        }
+        return false;
+      });
+      console.log(`Después del filtro por departamento: ${filtered.length} cursos`);
+    }
+    
+    // Filtrar por "My Courses" si estamos en esa vista
+    if (this.currentView === 'my' && this.authService.isProfessor()) {
+      console.log('Filtrando solo My Courses...');
+      const currentUser = this.authService.getCurrentUser();
+      console.log('Usuario actual:', currentUser?._id);
+      
+      const beforeFilter = filtered.length;
+      filtered = filtered.filter(course => {
+        const isOwn = this.isOwnCourse(course);
+        console.log(`Curso ${course.name}: ¿es propio? ${isOwn}`);
+        return isOwn;
+      });
+      
+      console.log(`Después del filtro 'My Courses': ${filtered.length} cursos (eliminados ${beforeFilter - filtered.length})`);
+      
+      // Si no hay cursos propios, mostrar mensaje
+      if (filtered.length === 0) {
+        console.warn('¡IMPORTANTE! No se encontraron cursos propios para este profesor.');
+      }
+    }
+    
+    this.filteredCourses = filtered;
+    console.log('Filtrado finalizado, cursos mostrados:', this.filteredCourses.length);
+  }
+
+  initForm(): void {
     this.courseForm = this.formBuilder.group({
       name: ['', [Validators.required, Validators.maxLength(100)]],
       description: ['', [Validators.required, Validators.maxLength(500)]],
@@ -137,21 +230,36 @@ export class CoursesComponent implements OnInit {
 
   loadCourses(): void {
     this.loading = true;
+    this.error = '';
+    
+    console.log('Cargando cursos desde API...');
+    
     this.courseService.getAllCourses().subscribe({
-      next: (data: Course[]) => {
-        this.courses = data;
+      next: (courses) => {
+        this.courses = courses;
+        console.log(`Cursos cargados: ${courses.length}`);
+        
+        // Depurar la estructura de cada curso para identificar problemas
+        courses.forEach((course, index) => {
+          if (index < 3) { // Solo para los primeros 3 cursos para no saturar la consola
+            this.debugCourseStructure(course);
+          }
+        });
+        
+        this.applyFilter(); // Aplica los filtros actuales, incluyendo la vista de "My Courses"
         this.loading = false;
       },
-      error: (error: any) => {
-        this.handleApiError(error, 'Error loading courses');
+      error: (error) => {
+        this.error = 'Error al cargar los cursos. Por favor, inténtalo de nuevo.';
+        console.error('Error loading courses:', error);
         this.loading = false;
-      },
+      }
     });
   }
 
   loadDepartments(): void {
-    this.departmentService.getDepartments().subscribe({
-      next: (departments) => {
+    this.departmentService.getAllDepartments().subscribe({
+      next: (departments: Department[]) => {
         this.departments = departments;
         // Crear opciones para el selector
         this.departmentOptions = this.departments.map(d => ({ 
@@ -159,24 +267,44 @@ export class CoursesComponent implements OnInit {
           label: d.name 
         }));
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading departments', error);
       },
     });
   }
 
   loadProfessors(): void {
-    this.userService.getProfessors().subscribe({
-      next: (users) => {
-        this.professors = users;
+    this.userService.getAllProfessors().subscribe({
+      next: (professors: Professor[]) => {
+        console.log("Profesores obtenidos de la API:", professors);
+        
+        // Mapear correctamente profesores para incluir todos los disponibles
+        this.professors = professors.map(p => {
+          // Asegurarse de que estamos usando el ID del USUARIO, no el de la tabla professor
+          if (p.userId && typeof p.userId === 'object') {
+            return {
+              _id: p.userId._id, // Usamos el ID del usuario del profesor
+              name: p.userId.name || p.userId.username || 'Unknown'
+            };
+          }
+          // Fallback por si acaso
+          return { 
+            _id: typeof p._id === 'string' ? p._id : 'unknown-id', 
+            name: 'Unknown Professor' 
+          };
+        });
+        
         // Crear opciones para el selector
         this.professorOptions = this.professors.map(p => ({ 
           value: p._id, 
           label: p.name 
         }));
+        
+        console.log('Profesores procesados para el formulario:', this.professorOptions);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading professors', error);
+        this.error = 'Error al cargar los profesores. Por favor, inténtalo de nuevo.';
       },
     });
   }
@@ -206,73 +334,84 @@ export class CoursesComponent implements OnInit {
     }
   }
 
-  applyFilter(): void {
-    if (!this.searchTerm) {
-      // If no search term, load all courses
-      this.loadCourses();
-      return;
-    }
-
-    // Use the updated searchCourses method that filters locally
-    this.loading = true;
-    this.courseService.searchCourses(this.searchTerm).subscribe({
-      next: (filteredCourses: Course[]) => {
-        this.courses = filteredCourses;
-        this.loading = false;
-      },
-      error: (error: any) => {
-        this.handleApiError(error, 'Error filtering courses');
-        this.loading = false;
-      },
-    });
-  }
-
-  // Since we have a dedicated search method, we can simplify the filteredCourses getter
-  get filteredCourses(): Course[] {
-    return this.courses;
-  }
-
-  // Extend resetFilters to reload all courses
-  resetFilters(): void {
-    this.searchTerm = '';
-    this.loadCourses(); // Reload all courses when filters are reset
-  }
-
   get canManageCourses(): boolean {
     return this.authService.isAdmin() || this.authService.isProfessor();
   }
 
+  // Determinar si un curso específico puede ser editado por el usuario actual
+  canManageCourse(course: Course): boolean {
+    // Los administradores pueden editar cualquier curso
+    if (this.authService.isAdmin()) return true;
+    
+    // Los profesores solo pueden editar sus propios cursos
+    if (this.authService.isProfessor()) {
+      const isOwner = this.isOwnCourse(course);
+      console.log(`¿Puede gestionar el curso ${course.name}? ${isOwner}`);
+      return isOwner;
+    }
+    
+    return false;
+  }
+
+  resetFilters(): void {
+    this.searchTerm = '';
+    this.selectedDepartment = '';
+    this.applyFilter();
+  }
+
   openCreateModal(): void {
-    // Check authorization before allowing creation
+    // Verificar permisos antes de permitir la creación
     if (!this.canManageCourses) {
-      this.error = 'You do not have permission to create courses';
+      this.error = 'No tienes permiso para crear cursos';
       return;
     }
 
+    // Resetear el formulario
     this.courseForm.reset();
     this.courseForm.get('schedule')?.reset();
+    
+    // Si es un profesor, preseleccionar su ID en el formulario
+    if (this.authService.isProfessor() && !this.authService.isAdmin()) {
+      const currentUser = this.authService.getCurrentUser();
+      if (currentUser && currentUser._id) {
+        // Asignar al profesor actual como profesor del curso
+        this.courseForm.patchValue({
+          professorId: currentUser._id
+        });
+        
+        // Si estamos en "My Courses", deshabilitar el cambio de profesor
+        if (this.currentView === 'my') {
+          this.courseForm.get('professorId')?.disable();
+        }
+      }
+    }
+    
     this.showCreateModal = true;
   }
 
   openEditModal(course: Course): void {
-    // Check authorization before allowing edit
-    if (!this.canManageCourses) {
-      this.error = 'You do not have permission to edit courses';
+    // Verificar permisos para editar este curso específico
+    if (!this.canManageCourse(course)) {
+      this.error = 'No tienes permiso para editar este curso';
       return;
     }
 
     this.loading = true;
+    console.log(`Abriendo modal de edición para curso: ${course.name}`);
 
     // Fetch fresh course data from the server to ensure we have all details
     this.courseService.getCourse(course._id).subscribe({
       next: (fullCourse) => {
         this.currentCourse = fullCourse;
+        console.log('Curso completo cargado:', fullCourse);
 
         // Fill the form with course data
         this.courseForm.patchValue({
           name: fullCourse.name,
           description: fullCourse.description,
-          professorId: fullCourse.professorId,
+          professorId: typeof fullCourse.professorId === 'object' ? 
+                      (fullCourse.professorId as any)._id : 
+                      fullCourse.professorId,
         });
 
         if (fullCourse.scheduleId) {
@@ -305,9 +444,9 @@ export class CoursesComponent implements OnInit {
   }
 
   confirmDelete(course: Course): void {
-    // Check authorization before allowing delete
-    if (!this.canManageCourses) {
-      this.error = 'You do not have permission to delete courses';
+    // Verificar permisos antes de permitir eliminar
+    if (!this.canManageCourse(course)) {
+      this.error = 'No tienes permiso para eliminar este curso';
       return;
     }
 
@@ -329,6 +468,9 @@ export class CoursesComponent implements OnInit {
 
     this.loading = true;
     const formValue = this.courseForm.value;
+    
+    console.log("Formulario enviado:", formValue);
+    console.log("ID de profesor seleccionado:", formValue.professorId);
 
     // Prepare dates in the correct format
     if (formValue.schedule) {
@@ -350,7 +492,7 @@ export class CoursesComponent implements OnInit {
       .createCourse(
         formValue.name,
         formValue.description,
-        formValue.professorId || null,
+        formValue.professorId || null, // Este ID debería ser el ID de usuario
         formValue.schedule,
       )
       .subscribe({
@@ -381,6 +523,9 @@ export class CoursesComponent implements OnInit {
     this.success = '';
 
     const formValue = this.courseForm.value;
+    
+    console.log("Actualizando curso con datos:", formValue);
+    console.log("ID de profesor seleccionado para actualización:", formValue.professorId);
 
     // Prepare dates in the correct format
     if (formValue.schedule) {
@@ -403,8 +548,9 @@ export class CoursesComponent implements OnInit {
       schedule: formValue.schedule,
     };
 
+    // Solo incluir el professorId si está definido
     if (formValue.professorId) {
-      updateData.professorId = formValue.professorId;
+      updateData.professorId = formValue.professorId; // Este es el ID de usuario
     }
 
     this.courseService
@@ -487,9 +633,37 @@ export class CoursesComponent implements OnInit {
   }
 
   /**
-   * Navigate to view a specific course
+   * Navegar para ver un curso específico
    */
   viewCourse(course: Course): void {
     this.router.navigate(['/courses', course._id]);
+  }
+
+  // Obtener el número de cursos propios del profesor
+  get ownCoursesCount(): number {
+    return this.courses.filter(course => this.isOwnCourse(course)).length;
+  }
+
+  // Método de depuración para inspeccionar la estructura del profesor
+  debugCourseStructure(course: Course): void {
+    console.log('DEBUG: Estructura del curso:', course.name);
+    console.log('DEBUG: ID del curso:', course._id);
+    console.log('DEBUG: Tipo de professorId:', typeof course.professorId);
+    
+    if (typeof course.professorId === 'object') {
+      const prof = course.professorId as any;
+      console.log('DEBUG: Estructura completa del profesor:', prof);
+      console.log('DEBUG: ID del profesor (objeto):', prof._id);
+      if (prof.userId) {
+        console.log('DEBUG: Tiene userId anidado:', prof.userId);
+      }
+    } else {
+      console.log('DEBUG: ID del profesor (string):', course.professorId);
+    }
+    
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      console.log('DEBUG: Usuario actual ID:', currentUser._id);
+    }
   }
 }

@@ -7,11 +7,24 @@
       </p>
     </div>
 
-    <div class="header-actions" *ngIf="canManageCourses">
+    <div class="header-actions" *ngIf="authService.isAdmin()">
       <button class="btn btn-primary create-btn" (click)="openCreateModal()">
         <i class="fas fa-plus"></i>
         <span>Create Course</span>
       </button>
+    </div>
+  </div>
+
+  <!-- Pestañas para profesores -->
+  <div class="view-tabs" *ngIf="authService.isProfessor()">
+    <div class="tab" [class.active]="currentView === 'all'" (click)="toggleView('all')">
+      <i class="fas fa-book"></i> All Courses
+    </div>
+    <div class="tab" [class.active]="currentView === 'my'" (click)="toggleView('my')">
+      <i class="fas fa-chalkboard-teacher"></i> My Courses
+      <span class="badge" *ngIf="ownCoursesCount > 0">
+        {{ ownCoursesCount }}
+      </span>
     </div>
   </div>
 
@@ -39,6 +52,7 @@
         *ngIf="searchQuery"
         class="clear-search"
         (click)="searchQuery = ''; onSearchChange()"
+        title="Limpiar campo de búsqueda"
       >
         <i class="fas fa-times"></i>
       </button>
@@ -69,7 +83,7 @@
         }}
       </p>
       <button
-        *ngIf="canManageCourses && !searchQuery"
+        *ngIf="authService.isAdmin() && !searchQuery"
         class="btn btn-primary"
         (click)="openCreateModal()"
       >
@@ -79,6 +93,7 @@
         *ngIf="searchQuery"
         class="btn btn-secondary"
         (click)="searchQuery = ''; onSearchChange()"
+        title="Limpiar búsqueda"
       >
         Clear Search
       </button>
@@ -89,7 +104,7 @@
       <div class="course-card-wrapper" *ngFor="let course of filteredCourses">
         <app-course-card
           [course]="course"
-          [showActions]="canManageCourses"
+          [showActions]="canManageCourse(course)"
           (edit)="onEditCourse($event)"
           (delete)="onDeleteCourse($event)"
           (view)="onViewCourse($event)"
@@ -175,7 +190,7 @@
         }}
       </p>
       <button
-        *ngIf="canManageCourses && !searchQuery"
+        *ngIf="authService.isAdmin() && !searchQuery"
         class="btn btn-primary"
         (click)="openCreateModal()"
       >

@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 import { Course } from '../models/course.model';
 import { Schedule } from '../models/schedule.model';
 import { Prerequisite } from '../models/prerequisite.model';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, tap } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 
 @Injectable({
@@ -170,9 +170,12 @@ export class CourseService {
    * Get courses by professor ID
    */
   getCoursesByProfessor(professorId: string): Observable<Course[]> {
+    console.log(`Getting courses for professor with ID: ${professorId}`);
     return this.http.get<Course[]>(`${this.apiUrl}`, {
       params: { professorId },
-    });
+    }).pipe(
+      tap(courses => console.log(`Found ${courses.length} courses for professor ID ${professorId}`))
+    );
   }
 
   /**

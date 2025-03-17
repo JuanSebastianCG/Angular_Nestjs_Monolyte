@@ -14,8 +14,8 @@ export class CourseCardComponent {
   @Input() showActions: boolean = true;
 
   @Output() edit = new EventEmitter<Course>();
-  @Output() delete = new EventEmitter<string>();
-  @Output() view = new EventEmitter<string>();
+  @Output() delete = new EventEmitter<Course>();
+  @Output() view = new EventEmitter<Course>();
 
   /**
    * Returns formatted schedule days
@@ -94,23 +94,23 @@ export class CourseCardComponent {
   }
 
   /**
-   * Emits the edit event with the current course
+   * Handle edit button click
    */
   onEdit(): void {
     this.edit.emit(this.course);
   }
 
   /**
-   * Emits the delete event with the course id
+   * Handle delete button click
    */
   onDelete(): void {
-    this.delete.emit(this.course._id);
+    this.delete.emit(this.course);
   }
 
   /**
-   * Emits the view event with the course id
+   * Handle view button click
    */
   onView(): void {
-    this.view.emit(this.course._id);
+    this.view.emit(this.course);
   }
 }

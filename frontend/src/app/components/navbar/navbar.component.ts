@@ -214,15 +214,6 @@ export class NavbarComponent implements OnInit {
         });
       }
 
-      // Professor-specific links
-      if (this.user?.role === 'professor') {
-        links.push({
-          label: 'My Courses',
-          path: '/professor/courses',
-          icon: 'fa-chalkboard-teacher',
-        });
-      }
-
       // Admin-specific links
       if (this.user?.role === 'admin') {
         links.push({

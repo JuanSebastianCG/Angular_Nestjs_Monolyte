@@ -179,20 +179,35 @@ export class CoursesService {
     // Build query based on provided filters
     const query: any = {};
 
-    // Add professorId filter if provided - use directly as userId
+    // Add professorId filter if provided
     if (options.professorId) {
-      console.log(`Using ID directly as userId filter: ${options.professorId}`);
-      query.professorId = new mongoose.Types.ObjectId(options.professorId);
+      try {
+        console.log(`Filtering courses by professorId: ${options.professorId}`);
+
+        // El ID proporcionado puede ser el ID del usuario, no el ID del documento professor
+        // Debemos buscar cursos donde professorId coincida con este ID de usuario
+        query.professorId = new mongoose.Types.ObjectId(options.professorId);
+      } catch (error) {
+        console.error('Error converting professorId to ObjectId:', error);
+        throw new BadRequestException('Invalid professor ID format');
+      }
     }
 
     const courses = await this.courseModel
       .find(query)
       .populate({
         path: 'professorId',
+        // Incluir información del profesor para poder comparar con el userId
         select: '-password', // Exclude password field
       })
       .populate('scheduleId')
       .exec();
+
+    if (options.professorId) {
+      console.log(
+        `Found ${courses.length} courses for professor ID ${options.professorId}`,
+      );
+    }
 
     // If we don't want prerequisites or don't have the service, return as is
     if (!options.includePrerequisites || !this.prerequisitesService) {

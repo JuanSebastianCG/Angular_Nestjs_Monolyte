@@ -5,10 +5,30 @@
       <div class="header-content">
         <h1 class="page-title">Gestión de Cursos</h1>
         <p class="page-description">
-          Administra todos los cursos disponibles en la universidad
+          Administra All Courses disponibles en la universidad
         </p>
       </div>
       <div class="header-actions">
+        <app-button (click)="openCreateModal()" variant="primary" *ngIf="authService.isAdmin()">
+          <i class="fas fa-plus-circle"></i> Nuevo Curso
+        </app-button>
+      </div>
+    </div>
+
+    <!-- Pestañas para profesores -->
+    <div class="view-tabs" *ngIf="authService.isProfessor()">
+      <div class="tab" [class.active]="currentView === 'all'" (click)="toggleView('all')">
+        <i class="fas fa-book"></i> All Courses
+      </div>
+      <div class="tab" [class.active]="currentView === 'my'" (click)="toggleView('my')">
+        <i class="fas fa-chalkboard-teacher"></i> My Courses
+        <span class="badge" *ngIf="ownCoursesCount > 0">
+          {{ ownCoursesCount }}
+        </span>
+      </div>
+      
+      <!-- Botón para crear curso (solo visible en "My Courses") -->
+      <div class="tab-actions" *ngIf="currentView === 'my' && authService.isProfessor()">
         <app-button (click)="openCreateModal()" variant="primary">
           <i class="fas fa-plus-circle"></i> Nuevo Curso
         </app-button>
@@ -107,7 +127,7 @@
       <app-course-card
         *ngFor="let course of filteredCourses"
         [course]="course"
-        [showActions]="canManageCourses"
+        [showActions]="canManageCourse(course)"
         (edit)="openEditModal($event)"
         (delete)="confirmDelete($event)"
         (view)="viewCourse($event)"
@@ -387,7 +407,7 @@
           (click)="deleteCourse()"
           [loading]="loading"
           [disabled]="loading"
-          variant="danger"
+          variant="primary"
         >
           Eliminar
         </app-button>

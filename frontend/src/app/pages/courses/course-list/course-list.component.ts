@@ -54,6 +54,7 @@ export class CourseListComponent implements OnInit, OnDestroy {
   // Filtering
   searchQuery = '';
   selectedDay = '';
+  currentView: 'all' | 'my' = 'all';
 
   // Form data
   professors: { value: string; label: string }[] = [];
@@ -71,7 +72,7 @@ export class CourseListComponent implements OnInit, OnDestroy {
   constructor(
     private courseService: CourseService,
     private userService: UserService,
-    private authService: AuthService,
+    public authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
   ) {}
@@ -80,10 +81,20 @@ export class CourseListComponent implements OnInit, OnDestroy {
     this.loadCourses();
     this.loadProfessors();
 
-    // Check for the edit query parameter
+    // Check for query params (active tab or edit mode)
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe((params) => {
+        // Check if 'view' parameter is present (all or my)
+        if (params['view'] === 'my' && this.authService.isProfessor()) {
+          this.currentView = 'my';
+          this.loadMyCoursesOnly();
+        } else {
+          this.currentView = 'all';
+          this.loadAllCourses();
+        }
+
+        // Check for edit parameter
         const courseId = params['edit'];
         if (courseId) {
           this.courseService.getCourse(courseId).subscribe({
@@ -116,6 +127,18 @@ export class CourseListComponent implements OnInit, OnDestroy {
    * Load all courses
    */
   loadCourses(): void {
+    // Determine which courses to load based on the current view
+    if (this.currentView === 'my' && this.authService.isProfessor()) {
+      this.loadMyCoursesOnly();
+    } else {
+      this.loadAllCourses();
+    }
+  }
+
+  /**
+   * Load all courses without filtering
+   */
+  loadAllCourses(): void {
     this.loading = true;
 
     this.courseService
@@ -126,12 +149,72 @@ export class CourseListComponent implements OnInit, OnDestroy {
           this.courses = courses;
           this.filteredCourses = [...courses];
           this.loading = false;
+          console.log("Cargados All Courses:", courses.length);
         },
         error: (error: any) => {
           this.showAlert('Error loading courses: ' + error.message, 'danger');
           this.loading = false;
         },
       });
+  }
+
+  /**
+   * Load only courses assigned to the current professor
+   */
+  loadMyCoursesOnly(): void {
+    if (!this.authService.isProfessor()) {
+      return this.loadAllCourses();
+    }
+
+    this.loading = true;
+    const currentUser = this.authService.getCurrentUser();
+    
+    if (!currentUser || !currentUser._id) {
+      this.loading = false;
+      this.showAlert('Error: No user data available', 'danger');
+      return;
+    }
+
+    console.log("Loading courses for professor ID:", currentUser._id);
+    
+    // Get all courses and filter client-side - this is more reliable
+    this.courseService
+      .getAllCourses()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (allCourses) => {
+          console.log(`Received ${allCourses.length} courses from API`);
+          
+          // Filter courses where the professor ID matches the current user ID
+          const myCourses = allCourses.filter(course => this.canManageCourse(course));
+          
+          this.courses = myCourses;
+          this.filteredCourses = [...myCourses];
+          this.loading = false;
+          console.log(`Filtered to ${myCourses.length} courses belonging to the current professor`);
+        },
+        error: (error: any) => {
+          this.showAlert('Error loading your courses: ' + error.message, 'danger');
+          this.loading = false;
+        },
+      });
+  }
+
+  /**
+   * Toggle between all courses and my courses views
+   */
+  toggleView(view: 'all' | 'my'): void {
+    if (this.currentView === view) return;
+    
+    this.currentView = view;
+    this.loadCourses();
+    
+    // Update URL to reflect the current view
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { view },
+      queryParamsHandling: 'merge',
+    });
   }
 
   /**
@@ -144,14 +227,30 @@ export class CourseListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (professors: Professor[]) => {
+          console.log("Datos de profesores recibidos:", professors);
+          
           // Extract the user data from the nested structure
-          this.professors = professors.map((prof: Professor) => ({
-            value: prof.userId._id,
-            label: prof.userId.name || prof.userId.username,
-          }));
+          // Es importante usar el ID de usuario, no el ID de profesor
+          this.professors = professors.map((prof: Professor) => {
+            // Verificar que prof.userId es un objeto
+            if (prof.userId && typeof prof.userId === 'object') {
+              return {
+                value: prof.userId._id, // Usar el ID del USUARIO, no el ID del profesor
+                label: prof.userId.name || prof.userId.username || 'Unknown',
+              };
+            }
+            // Fallback en caso de estructura inesperada
+            return {
+              value: typeof prof._id === 'string' ? prof._id : 'unknown-id',
+              label: 'Unknown Professor'
+            };
+          });
+          
+          console.log("Opciones de profesores preparadas:", this.professors);
         },
         error: (error: any) => {
           console.error('Error loading professors', error);
+          this.showAlert('Error loading professors. Please try again.', 'danger');
         },
       });
   }
@@ -283,8 +382,14 @@ export class CourseListComponent implements OnInit, OnDestroy {
   /**
    * Navigate to the detailed view of a course
    */
-  onViewCourse(courseId: string): void {
-    this.router.navigate(['/courses', courseId]);
+  onViewCourse(course: Course): void {
+    console.log("Navegando al detalle del curso:", course);
+    if (course && course._id) {
+      this.router.navigate(['/courses', course._id]);
+    } else {
+      console.error("Error: Curso inválido o sin ID", course);
+      this.showAlert('Error: No se puede ver el curso seleccionado', 'danger');
+    }
   }
 
   /**
@@ -297,10 +402,13 @@ export class CourseListComponent implements OnInit, OnDestroy {
   /**
    * Handle card delete action
    */
-  onDeleteCourse(courseId: string): void {
-    const course = this.courses.find((c) => c._id === courseId);
-    if (course) {
+  onDeleteCourse(course: Course): void {
+    console.log("Procesando eliminación del curso:", course);
+    if (course && course._id) {
       this.openDeleteModal(course);
+    } else {
+      console.error("Error: Curso inválido o sin ID para eliminar", course);
+      this.showAlert('Error: No se puede eliminar el curso seleccionado', 'danger');
     }
   }
 
@@ -425,5 +533,51 @@ export class CourseListComponent implements OnInit, OnDestroy {
       .unsubscribe();
 
     return canManage;
+  }
+
+  /**
+   * Check if user can manage a specific course
+   * Admins can manage all courses, professors only their own
+   */
+  canManageCourse(course: Course): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    
+    if (!currentUser) return false;
+    
+    // Admins can manage all courses
+    if (currentUser.role === 'admin') {
+      return true;
+    }
+    
+    // Professors can only manage their own courses
+    if (currentUser.role === 'professor') {
+      // La estructura según la API: "professorId": { "_id": "67cdcc42ceb9d047ce5d57ac", "name": "Professor Name", ... }
+      if (typeof course.professorId === 'object' && course.professorId) {
+        const prof = course.professorId as any;
+        
+        // Comparar directamente con el _id del objeto profesor
+        if (prof._id) {
+          const isMatch = currentUser._id === prof._id;
+          return isMatch;
+        }
+      } 
+      // Si por alguna razón professorId es un string (ID sin populate)
+      else if (typeof course.professorId === 'string') {
+        return currentUser._id === course.professorId;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * Get the count of courses owned by the current professor
+   */
+  get ownCoursesCount(): number {
+    if (!this.authService.isProfessor() || !this.courses) {
+      return 0;
+    }
+    
+    return this.courses.filter(course => this.canManageCourse(course)).length;
   }
 }

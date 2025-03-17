@@ -80,6 +80,67 @@
   }
 }
 
+// Pestañas de navegación
+.view-tabs {
+  display: flex;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e9ecef;
+  
+  .tab {
+    position: relative;
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    color: #6c757d;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: color 0.3s;
+    
+    i {
+      font-size: 0.9rem;
+    }
+    
+    &:hover {
+      color: #4361ee;
+    }
+    
+    &.active {
+      color: #4361ee;
+      font-weight: 600;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: #4361ee;
+      }
+    }
+    
+    .badge {
+      background-color: #4361ee;
+      color: white;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      min-width: 20px;
+      display: inline-flex;
+      justify-content: center;
+      margin-left: 0.25rem;
+    }
+  }
+  
+  .tab-actions {
+    margin-left: auto;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+  }
+}
+
 // Alert styles will be provided by the alert component
 
 // Filters section
