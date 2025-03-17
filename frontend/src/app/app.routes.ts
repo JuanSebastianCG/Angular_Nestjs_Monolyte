@@ -6,6 +6,7 @@ import { RoleGuard } from './guards/role.guard';
 import { CourseListComponent } from './pages/courses/course-list/course-list.component';
 import { ViewCourseComponent } from './pages/view-course/view-course.component';
 import { authGuard, professorOrAdminGuard } from './guards/auth.guard';
+import { DepartmentsComponent } from './pages/departments/departments.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -71,7 +72,11 @@ export const routes: Routes = [
     component: ViewCourseComponent,
     canActivate: [authGuard],
   },
-  { path: 'departments', component: HomeComponent }, // Placeholder
+  { 
+    path: 'departments', 
+    component: DepartmentsComponent,
+    canActivate: [authGuard]
+  },
 
   // Profile route
   {

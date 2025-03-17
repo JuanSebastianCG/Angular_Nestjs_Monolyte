@@ -1,0 +1,20 @@
+<div class="container">
+    <h1>Departamentos</h1>
+    
+    <div *ngIf="loading" class="loading">
+        Cargando departamentos...
+    </div>
+
+    <div *ngIf="error" class="error">
+        {{ error }}
+    </div>
+
+    <div *ngIf="!loading && !error" class="departments-list">
+        <div *ngFor="let department of departments" class="department-card">
+            <h2>{{ department.name }}</h2>
+            <p>{{ department.description }}</p>
+        </div>
+    </div>
+</div>
+
+

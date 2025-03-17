@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
   styleUrls: ['./navbar.component.scss'],
   standalone: true,
   imports: [CommonModule],
-})
+})    
 export class NavbarComponent implements OnInit {
   user: User | null = null;
   isAuthenticated = false;
@@ -191,6 +191,12 @@ export class NavbarComponent implements OnInit {
         path: '/home',
         icon: 'fa-home',
       });
+
+      links.push({
+        label: 'Departments',
+        path: '/departments',
+        icon:'fa-book',
+      })
 
       // Add courses link for all users
       links.push({
